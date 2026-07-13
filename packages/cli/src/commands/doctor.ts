@@ -137,13 +137,22 @@ function checkOpencodeWiring(root: string): DoctorCheck {
       remedy: "upgrade portable-hooks once the OpenCode plugin ships; not fixable today",
     };
   }
-  const pluginsDir = path.join(root, ".opencode", "plugins");
-  if (!fs.existsSync(pluginsDir) || fs.readdirSync(pluginsDir).length === 0) {
+  const pluginPath = path.join(root, ".opencode", "plugins", "portable-hooks.js");
+  if (!fs.existsSync(pluginPath)) {
     return {
       name: "harness:opencode",
       status: "fail",
-      message: "OpenCode detected but the plugin is not installed.",
+      message: "OpenCode detected but the portable-hooks plugin is not installed.",
       remedy: "run `portable-hooks init`",
+    };
+  }
+  const lockedHash = readLock(tenetsDir(root))?.files["engine/shims/opencode/portable-hooks.js"];
+  if (lockedHash !== undefined && sha256File(pluginPath) !== lockedHash) {
+    return {
+      name: "harness:opencode",
+      status: "warn",
+      message: "OpenCode runtime plugin differs from the lock-covered engine copy.",
+      remedy: "re-run `portable-hooks init` to refresh .opencode/plugins/portable-hooks.js",
     };
   }
   return { name: "harness:opencode", status: "pass", message: "OpenCode plugin installed." };

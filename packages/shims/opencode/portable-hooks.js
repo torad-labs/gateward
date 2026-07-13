@@ -47,8 +47,29 @@ const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const CORE_PRETOOLUSE = path.join(__dirname, "..", "..", "core", "src", "events", "pretooluse.py");
+const DEV_LAYOUT_PRETOOLUSE = path.join(__dirname, "..", "..", "core", "src", "events", "pretooluse.py");
 const SUBPROCESS_TIMEOUT_MS = 10_000;
+
+/**
+ * Locate the gate engine for the layout this plugin is actually running in.
+ * Vendored install first: the CLI copies this plugin into
+ * `<project>/.opencode/plugins/` and the engine into `<project>/.tenets/engine/`,
+ * so walk up from the working directory looking for that engine. Fall back to
+ * the monorepo dev layout (this file under packages/shims/opencode/). A
+ * `__dirname`-only resolution bricked every vendored install: the relative
+ * hop landed on a nonexistent path and all writes failed closed.
+ */
+function resolveEnginePretooluse(startDir) {
+  let dir = startDir;
+  for (;;) {
+    const vendored = path.join(dir, ".tenets", "engine", "events", "pretooluse.py");
+    if (fs.existsSync(vendored)) return vendored;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return fs.existsSync(DEV_LAYOUT_PRETOOLUSE) ? DEV_LAYOUT_PRETOOLUSE : null;
+}
 
 const WRITE_TOOLS = new Set(["write"]);
 const EDIT_TOOLS = new Set(["edit"]);
@@ -118,8 +139,17 @@ async function PortableHooksPlugin(ctx) {
         );
       }
 
+      const engine = resolveEnginePretooluse(cwd);
+      if (engine === null) {
+        return failClosedOrAllow(
+          cwd,
+          "the gate engine was not found — no .tenets/engine/ above the working " +
+            "directory and no dev layout. Re-run `portable-hooks init`, then retry.",
+        );
+      }
+
       const payload = JSON.stringify({ tool_name: mapped.name, tool_input: mapped.input });
-      const result = spawnSync(python3, [CORE_PRETOOLUSE], {
+      const result = spawnSync(python3, [engine], {
         input: payload,
         encoding: "utf8",
         timeout: SUBPROCESS_TIMEOUT_MS,
@@ -130,8 +160,7 @@ async function PortableHooksPlugin(ctx) {
         const why = result.error ? result.error.message : `exited via signal ${result.signal || result.status}`;
         return failClosedOrAllow(
           cwd,
-          `the gate engine did not respond (${why}). Check that ` +
-            "packages/core/src/events/pretooluse.py runs under python3, then retry.",
+          `the gate engine did not respond (${why}). Check that ${engine} runs under python3, then retry.`,
         );
       }
 

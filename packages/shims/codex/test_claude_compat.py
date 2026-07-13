@@ -308,5 +308,47 @@ class EvaluateRealCoreInvocation(unittest.TestCase):
         self.assertIsNone(claude_compat.evaluate(payload))
 
 
+class EmptyContextLines(unittest.TestCase):
+    """Regression: a bare empty line inside an Update hunk is an empty context
+    line, not noise. Dropping it made the anchor unfindable, which skipped
+    (allowed) a patch Codex itself applies — a fail-open hole in the gate."""
+
+    def test_bare_empty_line_is_context(self):
+        text = (
+            "*** Begin Patch\n"
+            "*** Update File: A.kt\n"
+            "@@\n"
+            " fun a() {}\n"
+            "\n"
+            " fun b() {}\n"
+            "-val ok = 1\n"
+            "+val ok = 2\n"
+            "*** End Patch\n"
+        )
+        files = claude_compat._parse_apply_patch(text)
+        self.assertEqual(len(files), 1)
+        self.assertEqual(len(files[0].hunks), 1)
+        hunk = files[0].hunks[0]
+        self.assertIn("", hunk.old_lines)
+        content = "fun a() {}\n\nfun b() {}\nval ok = 1\n"
+        projected = claude_compat._apply_hunks(content, files[0].hunks)
+        self.assertEqual(projected, "fun a() {}\n\nfun b() {}\nval ok = 2\n")
+
+    def test_blank_line_between_file_headers_stays_ignored(self):
+        text = (
+            "*** Begin Patch\n"
+            "*** Update File: A.kt\n"
+            "\n"
+            "@@\n"
+            "-val a = 1\n"
+            "+val a = 2\n"
+            "*** End Patch\n"
+        )
+        files = claude_compat._parse_apply_patch(text)
+        self.assertEqual(len(files), 1)
+        self.assertEqual(len(files[0].hunks), 1)
+        self.assertNotIn("", files[0].hunks[0].old_lines)
+
+
 if __name__ == "__main__":
     unittest.main()
