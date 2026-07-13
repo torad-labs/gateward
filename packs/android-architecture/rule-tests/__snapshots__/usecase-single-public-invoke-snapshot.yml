@@ -1,0 +1,36 @@
+id: usecase-single-public-invoke
+snapshots:
+  ? |
+    class ObserveListingsUseCase @Inject constructor(
+        private val repository: ListingsRepository,
+    ) {
+        operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+        fun refreshCache() { repository.observeListings() }
+    }
+  : labels:
+    - source: fun refreshCache() { repository.observeListings() }
+      style: primary
+      start: 184
+      end: 235
+    - source: ObserveListingsUseCase
+      style: secondary
+      start: 6
+      end: 28
+    - source: |-
+        class ObserveListingsUseCase @Inject constructor(
+            private val repository: ListingsRepository,
+        ) {
+            operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+            fun refreshCache() { repository.observeListings() }
+        }
+      style: secondary
+      start: 0
+      end: 237
+    - source: |-
+        {
+            operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+            fun refreshCache() { repository.observeListings() }
+        }
+      style: secondary
+      start: 100
+      end: 237

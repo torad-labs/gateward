@@ -1,0 +1,9 @@
+id: no-runblocking-in-main
+valid:
+  - |
+    suspend fun load(listingId: String): Listing {
+        return repository.getListingById(listingId)
+    }
+invalid:
+  - 'fun load(listingId: String) = runBlocking { repository.getListingById(listingId) }'
+  - 'fun load() = runBlocking(Dispatchers.IO) { repository.getListings() }'

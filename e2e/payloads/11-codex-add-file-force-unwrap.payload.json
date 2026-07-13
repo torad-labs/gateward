@@ -1,0 +1,6 @@
+{
+  "tool_name": "apply_patch",
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Add File: {{WORKSPACE}}/CodexNew.kt\n+package com.example\n+\n+val bad = maybeNull!!\n*** End Patch\n"
+  }
+}

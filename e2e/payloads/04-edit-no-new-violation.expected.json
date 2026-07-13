@@ -1,0 +1,4 @@
+{
+  "description": "Edit touches the same dirty file but adds no new violation; the two legacy force-unwraps never block, so allow.",
+  "verdict": "allow"
+}

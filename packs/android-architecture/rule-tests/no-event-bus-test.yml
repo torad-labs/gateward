@@ -1,0 +1,23 @@
+id: no-event-bus
+valid:
+  - |
+    class FavoritesRepositoryImpl(
+        private val dataSource: FavoritesDataSource,
+    ) : FavoritesRepository {
+        override fun observeFavoriteIds(): Flow<Set<String>> = dataSource.observeFavoriteIds()
+    }
+  - |
+    class Publisher {
+        fun subscribe(listener: () -> Unit) {}
+        fun publish() {}
+    }
+invalid:
+  - |
+    object AppEventBus {
+        fun publish() {}
+    }
+  - |
+    fun refresh() {
+        AppEventBus.publish()
+    }
+  - 'import org.greenrobot.eventbus.EventBus'

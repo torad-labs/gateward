@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/packages/core/src/events/pretooluse.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

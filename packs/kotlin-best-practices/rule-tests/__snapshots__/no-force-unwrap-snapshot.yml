@@ -1,0 +1,14 @@
+id: no-force-unwrap
+snapshots:
+  'fun show(x: String?) { println(x!!) }':
+    labels:
+    - source: x!!
+      style: primary
+      start: 31
+      end: 34
+  val length = value!!.length:
+    labels:
+    - source: value!!
+      style: primary
+      start: 13
+      end: 20

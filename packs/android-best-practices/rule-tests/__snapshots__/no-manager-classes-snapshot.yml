@@ -1,0 +1,22 @@
+id: no-manager-classes
+snapshots:
+  class ListingManager private constructor():
+    labels:
+    - source: class ListingManager private constructor()
+      style: primary
+      start: 0
+      end: 42
+    - source: ListingManager
+      style: secondary
+      start: 6
+      end: 20
+  object SomeManager:
+    labels:
+    - source: object SomeManager
+      style: primary
+      start: 0
+      end: 18
+    - source: SomeManager
+      style: secondary
+      start: 7
+      end: 18

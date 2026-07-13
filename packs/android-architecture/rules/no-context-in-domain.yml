@@ -1,0 +1,17 @@
+id: no-context-in-domain
+language: kotlin
+severity: error
+message: >-
+  Domain code must stay platform-agnostic — drop this Context parameter and
+  pass the plain data the domain layer actually needs.
+metadata:
+  tier: deny
+files:
+  - '**/domain/**'
+rule:
+  any:
+    - kind: class_parameter
+    - kind: parameter
+  has:
+    kind: user_type
+    regex: '^Context$'

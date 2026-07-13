@@ -1,0 +1,50 @@
+id: no-business-logic-in-composable
+snapshots:
+  ? |
+    @Composable
+    fun ListingsScreen(listings: List<Listing>, searchQuery: String) {
+        val visible = listings
+            .filter { it.address.contains(searchQuery, ignoreCase = true) }
+            .sortedBy { it.price }
+    }
+  : labels:
+    - source: |-
+        listings
+                .filter { it.address.contains(searchQuery, ignoreCase = true) }
+                .sortedBy { it.price }
+      style: primary
+      start: 97
+      end: 208
+    - source: '@Composable'
+      style: secondary
+      start: 0
+      end: 11
+    - source: '@Composable'
+      style: secondary
+      start: 0
+      end: 11
+    - source: |-
+        @Composable
+        fun ListingsScreen(listings: List<Listing>, searchQuery: String) {
+            val visible = listings
+                .filter { it.address.contains(searchQuery, ignoreCase = true) }
+                .sortedBy { it.price }
+        }
+      style: secondary
+      start: 0
+      end: 210
+    - source: sortedBy
+      style: secondary
+      start: 187
+      end: 195
+    - source: .sortedBy
+      style: secondary
+      start: 186
+      end: 195
+    - source: |-
+        listings
+                .filter { it.address.contains(searchQuery, ignoreCase = true) }
+                .sortedBy
+      style: secondary
+      start: 97
+      end: 195

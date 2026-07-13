@@ -1,0 +1,15 @@
+id: no-global-scope
+language: kotlin
+severity: error
+message: >-
+  GlobalScope outlives every lifecycle — launch from viewModelScope,
+  lifecycleScope, or an injected CoroutineScope instead.
+metadata:
+  tier: deny
+rule:
+  kind: call_expression
+  has:
+    kind: navigation_expression
+    has:
+      kind: simple_identifier
+      regex: '^GlobalScope$'

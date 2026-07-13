@@ -1,0 +1,19 @@
+# Pack manifest. This file indexes the pack and records each rule's default
+# tier for humans and the installer CLI; it is NOT read by ast-grep or by the
+# stdlib core (the core resolves tier from a project's .tenets/config.toml).
+id: kotlin-best-practices
+title: Kotlin Best Practices
+description: >-
+  Correctness and clarity rules for Kotlin source, enforced at edit time by the
+  portable-hooks gate. Every rule is plain ast-grep YAML and runs standalone
+  under `ast-grep test`.
+rules:
+  - id: no-force-unwrap
+    tier: deny
+    summary: Force-unwrap (!!) is banned; handle nullability explicitly.
+  - id: no-assert-equals-boolean
+    tier: autofix
+    summary: assertEquals(true/false, x) is rewritten to assertTrue/assertFalse(x).
+  - id: no-suppression-comments
+    tier: deny
+    summary: ast-grep suppression comments cannot be used to silence the gate.

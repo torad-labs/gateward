@@ -1,0 +1,18 @@
+id: vm-actions-only
+valid:
+  - |
+    class ListingsViewModel : ViewModel() {
+        fun onAction(action: ListingsAction) {}
+        private fun refresh() {}
+        override fun onCleared() {}
+    }
+invalid:
+  - |
+    class ListingsViewModel : ViewModel() {
+        fun onAction(action: ListingsAction) {}
+        fun loadListings() {}
+    }
+  - |
+    class FavoritesViewModel : ViewModel() {
+        fun toggleFavorite(listingId: String) {}
+    }

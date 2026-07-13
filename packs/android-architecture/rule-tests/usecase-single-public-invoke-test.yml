@@ -1,0 +1,23 @@
+id: usecase-single-public-invoke
+valid:
+  - |
+    class ObserveListingsUseCase @Inject constructor(
+        private val repository: ListingsRepository,
+    ) {
+        operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+    }
+  - |
+    class ToggleFavoriteUseCase @Inject constructor(
+        private val repository: FavoritesRepository,
+    ) {
+        suspend operator fun invoke(listingId: String) = repository.toggleFavorite(listingId)
+        private fun log() {}
+    }
+invalid:
+  - |
+    class ObserveListingsUseCase @Inject constructor(
+        private val repository: ListingsRepository,
+    ) {
+        operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+        fun refreshCache() { repository.observeListings() }
+    }

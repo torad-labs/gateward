@@ -1,0 +1,5 @@
+{
+  "description": "New-file Write injecting a Repository into a ViewModel constructor is denied.",
+  "verdict": "deny",
+  "contains": "no-repository-in-viewmodel"
+}

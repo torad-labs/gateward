@@ -1,0 +1,31 @@
+id: vm-no-public-mutable-state
+language: kotlin
+severity: error
+message: >-
+  Expose read-only ViewModel state — make this private and back a public
+  StateFlow, SharedFlow, or LiveData instead.
+metadata:
+  tier: deny
+rule:
+  kind: property_declaration
+  has:
+    kind: variable_declaration
+    has:
+      kind: user_type
+      regex: '^Mutable(StateFlow|SharedFlow|LiveData)'
+  not:
+    has:
+      kind: modifiers
+      has:
+        kind: visibility_modifier
+        regex: '^(private|protected|internal)$'
+  inside:
+    kind: class_body
+    inside:
+      kind: class_declaration
+      has:
+        kind: delegation_specifier
+        has:
+          kind: type_identifier
+          stopBy: end
+          regex: '^ViewModel$'

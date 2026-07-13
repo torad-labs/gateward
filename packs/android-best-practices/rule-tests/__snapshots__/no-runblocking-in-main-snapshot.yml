@@ -1,0 +1,22 @@
+id: no-runblocking-in-main
+snapshots:
+  fun load() = runBlocking(Dispatchers.IO) { repository.getListings() }:
+    labels:
+    - source: runBlocking(Dispatchers.IO) { repository.getListings() }
+      style: primary
+      start: 13
+      end: 69
+    - source: runBlocking
+      style: secondary
+      start: 13
+      end: 24
+  'fun load(listingId: String) = runBlocking { repository.getListingById(listingId) }':
+    labels:
+    - source: runBlocking { repository.getListingById(listingId) }
+      style: primary
+      start: 30
+      end: 82
+    - source: runBlocking
+      style: secondary
+      start: 30
+      end: 41

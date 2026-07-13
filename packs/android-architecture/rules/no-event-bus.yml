@@ -1,0 +1,18 @@
+id: no-event-bus
+language: kotlin
+severity: error
+message: >-
+  Event buses hide who-changed-what — replace this with an observable Flow
+  or StateFlow exposed by the repository that owns the state.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: type_identifier
+      regex: 'EventBus'
+    - kind: simple_identifier
+      regex: 'EventBus'
+    - kind: import_header
+      has:
+        kind: identifier
+        regex: '^org\.greenrobot'

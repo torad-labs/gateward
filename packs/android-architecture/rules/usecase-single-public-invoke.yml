@@ -1,0 +1,26 @@
+id: usecase-single-public-invoke
+language: kotlin
+severity: error
+message: >-
+  UseCases expose exactly one operation: operator fun invoke().
+metadata:
+  tier: deny
+rule:
+  kind: function_declaration
+  inside:
+    kind: class_body
+    inside:
+      kind: class_declaration
+      has:
+        kind: type_identifier
+        regex: 'UseCase$'
+  not:
+    any:
+      - has:
+          kind: modifiers
+          has:
+            kind: visibility_modifier
+            regex: '^(private|protected|internal)$'
+      - has:
+          kind: simple_identifier
+          regex: '^invoke$'

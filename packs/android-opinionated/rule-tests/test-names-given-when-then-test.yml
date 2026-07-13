@@ -1,0 +1,18 @@
+id: test-names-given-when-then
+valid:
+  - |
+    class ListingsRepositoryImplTest {
+        @Test
+        fun `Given the data source has listings When observeListings is called Then the repository emits the same listings`() = runTest {}
+    }
+invalid:
+  - |
+    class ListingsRepositoryTest {
+        @Test
+        fun testGetListingsReturnsData() {}
+    }
+  - |
+    class ListingManagerTest {
+        @Test
+        fun testFilterWorks() {}
+    }

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/LeakyViewModel.kt",
+    "content": "import androidx.lifecycle.ViewModel\n\nclass LeakyViewModel(\n    private val repository: FavoritesRepository,\n) : ViewModel() {\n    fun onAction(action: Int) {}\n}\n"
+  }
+}

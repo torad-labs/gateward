@@ -1,0 +1,10 @@
+id: no-force-unwrap
+language: kotlin
+severity: error
+message: >-
+  Force-unwrap (!!) is banned. Handle nullability explicitly — use ?. with a
+  checked fallback, requireNotNull(x) { "reason" }, or an early return.
+metadata:
+  tier: deny
+rule:
+  pattern: $A!!

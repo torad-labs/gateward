@@ -1,0 +1,16 @@
+id: no-android-import-in-domain
+language: kotlin
+severity: error
+message: >-
+  Domain code must stay platform-agnostic — remove this android/androidx
+  import and move the platform-specific bit to the data or presentation
+  layer.
+metadata:
+  tier: deny
+files:
+  - '**/domain/**'
+rule:
+  kind: import_header
+  has:
+    kind: identifier
+    regex: '^androidx?\.'

@@ -1,0 +1,27 @@
+id: flows-over-suspend-in-repository
+language: kotlin
+severity: error
+message: >-
+  Prefer Flow-returning streams in repositories — convert this one-shot
+  suspend read to a Flow so callers can observe it.
+metadata:
+  tier: deny
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: function_modifier
+          regex: '^suspend$'
+    - has:
+        kind: user_type
+        not:
+          regex: '^Unit$'
+  inside:
+    kind: class_body
+    inside:
+      kind: class_declaration
+      has:
+        kind: type_identifier
+        regex: 'Repository$'

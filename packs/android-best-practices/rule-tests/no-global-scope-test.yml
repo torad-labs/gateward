@@ -1,0 +1,13 @@
+id: no-global-scope
+valid:
+  - |
+    fun onAction(action: ListingsAction) {
+        viewModelScope.launch { toggleFavorite(action.listingId) }
+    }
+  - |
+    fun refresh(scope: CoroutineScope) {
+        scope.launch { reload() }
+    }
+invalid:
+  - 'fun leak() { GlobalScope.launch { reload() } }'
+  - 'fun leak() { GlobalScope.async(Dispatchers.IO) { fetch() } }'

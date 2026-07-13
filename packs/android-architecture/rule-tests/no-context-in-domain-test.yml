@@ -1,0 +1,10 @@
+id: no-context-in-domain
+valid:
+  - |
+    class FavoritesRepositoryImpl(
+        private val dataSource: FavoritesDataSource,
+    )
+  - 'fun observeListing(listingId: String): Flow<Listing?>'
+invalid:
+  - 'class FavoritesStore(context: Context)'
+  - 'fun refresh(context: Context) {}'

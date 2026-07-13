@@ -1,0 +1,15 @@
+id: no-usecase-composing-usecase
+valid:
+  - |
+    class ObserveListingsUseCase @Inject constructor(
+        private val repository: ListingsRepository,
+    ) {
+        operator fun invoke(): Flow<List<Listing>> = repository.observeListings()
+    }
+invalid:
+  - |
+    class RefreshFavoritesUseCase @Inject constructor(
+        private val observeFavorites: ObserveFavoriteIdsUseCase,
+    ) {
+        suspend operator fun invoke() = observeFavorites()
+    }

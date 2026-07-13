@@ -1,0 +1,22 @@
+id: no-context-in-domain
+snapshots:
+  'class FavoritesStore(context: Context)':
+    labels:
+    - source: 'context: Context'
+      style: primary
+      start: 21
+      end: 37
+    - source: Context
+      style: secondary
+      start: 30
+      end: 37
+  'fun refresh(context: Context) {}':
+    labels:
+    - source: 'context: Context'
+      style: primary
+      start: 12
+      end: 28
+    - source: Context
+      style: secondary
+      start: 21
+      end: 28

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/Missing.kt",
+    "content": "fun demo(x: String?) {\n    val y = x!!\n}\n"
+  }
+}

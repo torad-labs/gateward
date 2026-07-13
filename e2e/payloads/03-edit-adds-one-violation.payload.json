@@ -1,0 +1,8 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/DirtyThree.kt",
+    "old_string": "val y = b!!",
+    "new_string": "val y = b!!\n    val z = c!!"
+  }
+}

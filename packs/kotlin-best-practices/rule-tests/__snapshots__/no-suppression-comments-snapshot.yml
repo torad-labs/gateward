@@ -1,0 +1,20 @@
+id: no-suppression-comments
+snapshots:
+  /* ast-grep-ignore */:
+    labels:
+    - source: /* ast-grep-ignore */
+      style: primary
+      start: 0
+      end: 21
+  // ast-grep-ignore:
+    labels:
+    - source: // ast-grep-ignore
+      style: primary
+      start: 0
+      end: 18
+  '// ast-grep-ignore: no-force-unwrap':
+    labels:
+    - source: '// ast-grep-ignore: no-force-unwrap'
+      style: primary
+      start: 0
+      end: 35

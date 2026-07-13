@@ -1,0 +1,80 @@
+id: vm-no-public-mutable-state
+snapshots:
+  ? |
+    class DetailViewModel : ViewModel() {
+        var isFavorite: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    }
+  : labels:
+    - source: 'var isFavorite: MutableStateFlow<Boolean> = MutableStateFlow(false)'
+      style: primary
+      start: 42
+      end: 109
+    - source: ViewModel
+      style: secondary
+      start: 24
+      end: 33
+    - source: ViewModel()
+      style: secondary
+      start: 24
+      end: 35
+    - source: |-
+        class DetailViewModel : ViewModel() {
+            var isFavorite: MutableStateFlow<Boolean> = MutableStateFlow(false)
+        }
+      style: secondary
+      start: 0
+      end: 111
+    - source: |-
+        {
+            var isFavorite: MutableStateFlow<Boolean> = MutableStateFlow(false)
+        }
+      style: secondary
+      start: 36
+      end: 111
+    - source: MutableStateFlow<Boolean>
+      style: secondary
+      start: 58
+      end: 83
+    - source: 'isFavorite: MutableStateFlow<Boolean>'
+      style: secondary
+      start: 46
+      end: 83
+  ? |
+    class ListingsViewModel : ViewModel() {
+        val listings: MutableStateFlow<List<Listing>> = MutableStateFlow(emptyList())
+    }
+  : labels:
+    - source: 'val listings: MutableStateFlow<List<Listing>> = MutableStateFlow(emptyList())'
+      style: primary
+      start: 44
+      end: 121
+    - source: ViewModel
+      style: secondary
+      start: 26
+      end: 35
+    - source: ViewModel()
+      style: secondary
+      start: 26
+      end: 37
+    - source: |-
+        class ListingsViewModel : ViewModel() {
+            val listings: MutableStateFlow<List<Listing>> = MutableStateFlow(emptyList())
+        }
+      style: secondary
+      start: 0
+      end: 123
+    - source: |-
+        {
+            val listings: MutableStateFlow<List<Listing>> = MutableStateFlow(emptyList())
+        }
+      style: secondary
+      start: 38
+      end: 123
+    - source: MutableStateFlow<List<Listing>>
+      style: secondary
+      start: 58
+      end: 89
+    - source: 'listings: MutableStateFlow<List<Listing>>'
+      style: secondary
+      start: 48
+      end: 89
