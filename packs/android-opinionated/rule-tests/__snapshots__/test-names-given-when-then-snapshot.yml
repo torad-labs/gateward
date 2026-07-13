@@ -1,0 +1,50 @@
+id: test-names-given-when-then
+snapshots:
+  ? |
+    class ListingManagerTest {
+        @Test
+        fun testFilterWorks() {}
+    }
+  : labels:
+    - source: |-
+        @Test
+            fun testFilterWorks() {}
+      style: primary
+      start: 31
+      end: 65
+    - source: '@Test'
+      style: secondary
+      start: 31
+      end: 36
+    - source: '@Test'
+      style: secondary
+      start: 31
+      end: 36
+    - source: testFilterWorks
+      style: secondary
+      start: 45
+      end: 60
+  ? |
+    class ListingsRepositoryTest {
+        @Test
+        fun testGetListingsReturnsData() {}
+    }
+  : labels:
+    - source: |-
+        @Test
+            fun testGetListingsReturnsData() {}
+      style: primary
+      start: 35
+      end: 80
+    - source: '@Test'
+      style: secondary
+      start: 35
+      end: 40
+    - source: '@Test'
+      style: secondary
+      start: 35
+      end: 40
+    - source: testGetListingsReturnsData
+      style: secondary
+      start: 49
+      end: 75

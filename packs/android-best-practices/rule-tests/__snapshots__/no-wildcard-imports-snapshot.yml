@@ -1,0 +1,22 @@
+id: no-wildcard-imports
+snapshots:
+  import androidx.compose.material3.*:
+    labels:
+    - source: import androidx.compose.material3.*
+      style: primary
+      start: 0
+      end: 35
+    - source: '*'
+      style: secondary
+      start: 34
+      end: 35
+  import kotlinx.coroutines.flow.*:
+    labels:
+    - source: import kotlinx.coroutines.flow.*
+      style: primary
+      start: 0
+      end: 32
+    - source: '*'
+      style: secondary
+      start: 31
+      end: 32

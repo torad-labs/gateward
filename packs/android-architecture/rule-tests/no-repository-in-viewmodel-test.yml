@@ -1,0 +1,27 @@
+id: no-repository-in-viewmodel
+valid:
+  - |
+    class DetailViewModel @Inject constructor(
+        observeListingDetail: ObserveListingDetailUseCase,
+        private val toggleFavorite: ToggleFavoriteUseCase,
+    ) : ViewModel() {
+        fun onAction(action: DetailAction) {}
+    }
+  - |
+    class ObserveListingDetailUseCase @Inject constructor(
+        private val repository: ListingDetailRepository,
+    ) {
+        operator fun invoke(listingId: String) = repository.observeListing(listingId)
+    }
+invalid:
+  - |
+    class DetailViewModel @Inject constructor(
+        private val repository: ListingDetailRepository,
+    ) : ViewModel() {
+        fun onAction(action: DetailAction) {}
+    }
+  - |
+    class FavoritesViewModel(
+        observeListings: ObserveListingsUseCase,
+        private val repo: FavoritesRepository,
+    ) : ViewModel()

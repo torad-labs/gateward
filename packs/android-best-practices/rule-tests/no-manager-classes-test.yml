@@ -1,0 +1,13 @@
+id: no-manager-classes
+valid:
+  - |
+    class ListingsRepositoryImpl(
+        private val dataSource: ListingsDataSource,
+    ) : ListingsRepository
+  - |
+    class NormalClass {
+        fun manage() {}
+    }
+invalid:
+  - 'class ListingManager private constructor()'
+  - 'object SomeManager'

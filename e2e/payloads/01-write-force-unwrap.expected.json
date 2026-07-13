@@ -1,0 +1,5 @@
+{
+  "description": "New-file Write introducing a real force-unwrap is denied.",
+  "verdict": "deny",
+  "contains": "no-force-unwrap"
+}

@@ -1,0 +1,25 @@
+# Pack manifest. This file indexes the pack and records each rule's default
+# tier for humans and the installer CLI; it is NOT read by ast-grep or by the
+# stdlib core (the core resolves tier from a project's .tenets/config.toml).
+id: android-best-practices
+title: Android Best Practices
+description: >-
+  General Android/Kotlin hygiene rules independent of any one architecture:
+  naming, coroutine scoping, lifecycle-aware collection, and import hygiene.
+  Every rule is plain ast-grep YAML and runs standalone under `ast-grep test`.
+rules:
+  - id: no-manager-classes
+    tier: deny
+    summary: A class or object named *Manager is banned — name the real role instead.
+  - id: no-global-scope
+    tier: deny
+    summary: GlobalScope.<...> usage is banned.
+  - id: no-runblocking-in-main
+    tier: deny
+    summary: runBlocking is banned outside test/androidTest source sets.
+  - id: prefer-lifecycle-collect
+    tier: deny
+    summary: collectAsState() is banned in favor of collectAsStateWithLifecycle().
+  - id: no-wildcard-imports
+    tier: deny
+    summary: Imports ending in .* are banned.

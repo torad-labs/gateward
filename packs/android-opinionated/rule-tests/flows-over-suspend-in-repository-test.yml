@@ -1,0 +1,17 @@
+id: flows-over-suspend-in-repository
+valid:
+  - |
+    interface FavoritesRepository {
+        fun observeFavoriteIds(): Flow<Set<String>>
+        suspend fun toggleFavorite(listingId: String)
+    }
+  - |
+    class FavoritesRepositoryImpl : FavoritesRepository {
+        suspend fun toggleFavorite(listingId: String) = dataSource.toggle(listingId)
+        suspend fun refreshCache(): String = "warmed"
+    }
+invalid:
+  - |
+    interface UserRepository {
+        suspend fun getUser(id: String): User
+    }

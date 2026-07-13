@@ -1,0 +1,16 @@
+id: no-assert-equals-boolean
+snapshots:
+  assertEquals(false, user.isActive):
+    fixed: assertFalse(user.isActive)
+    labels:
+    - source: assertEquals(false, user.isActive)
+      style: primary
+      start: 0
+      end: 34
+  assertEquals(true, result):
+    fixed: assertTrue(result)
+    labels:
+    - source: assertEquals(true, result)
+      style: primary
+      start: 0
+      end: 26

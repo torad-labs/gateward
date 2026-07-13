@@ -1,0 +1,29 @@
+# Pack manifest. This file indexes the pack and records each rule's default
+# tier for humans and the installer CLI; it is NOT read by ast-grep — the
+# stdlib core resolves tier from a project's .tenets/config.toml. The core
+# DOES resolve each rule's `default_enabled` from this file (see
+# packages/core/src/config.py): a rule with `default_enabled: false` here
+# only runs once a project's .tenets/config.toml explicitly turns it on via
+# `[rules.<id>] enabled = true`.
+id: android-opinionated
+title: Android Opinionated
+description: >-
+  House-taste rules, each one a single, independently toggleable opinion —
+  not universal correctness like android-architecture, not general hygiene
+  like android-best-practices. Every rule is plain ast-grep YAML and runs
+  standalone under `ast-grep test`.
+rules:
+  - id: flows-over-suspend-in-repository
+    tier: deny
+    default_enabled: true
+    summary: A suspend fun that returns a value inside a *Repository should return a Flow instead.
+  - id: no-usecase-composing-usecase
+    tier: deny
+    default_enabled: false
+    summary: >-
+      Off by default: house taste allows a UseCase to take another UseCase as
+      a constructor dependency. Enable for teams that forbid UseCase composition.
+  - id: test-names-given-when-then
+    tier: deny
+    default_enabled: true
+    summary: "Test function names under test/ must read Given ... When ... Then ..."

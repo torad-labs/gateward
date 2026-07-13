@@ -1,0 +1,7 @@
+id: no-wildcard-imports
+valid:
+  - 'import androidx.compose.material3.Text'
+  - 'import kotlinx.coroutines.flow.Flow'
+invalid:
+  - 'import androidx.compose.material3.*'
+  - 'import kotlinx.coroutines.flow.*'

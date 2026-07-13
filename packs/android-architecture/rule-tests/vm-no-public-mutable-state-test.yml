@@ -1,0 +1,19 @@
+id: vm-no-public-mutable-state
+valid:
+  - |
+    class ListingsViewModel : ViewModel() {
+        val state: StateFlow<ListingsUiState> = combine(observeListings()) { it }.stateIn(viewModelScope)
+    }
+  - |
+    class InMemoryFavoritesDataSource : FavoritesDataSource {
+        private val favoriteIds = MutableStateFlow<Set<String>>(emptySet())
+    }
+invalid:
+  - |
+    class ListingsViewModel : ViewModel() {
+        val listings: MutableStateFlow<List<Listing>> = MutableStateFlow(emptyList())
+    }
+  - |
+    class DetailViewModel : ViewModel() {
+        var isFavorite: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    }

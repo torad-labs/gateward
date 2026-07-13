@@ -1,0 +1,41 @@
+id: flows-over-suspend-in-repository
+snapshots:
+  ? |
+    interface UserRepository {
+        suspend fun getUser(id: String): User
+    }
+  : labels:
+    - source: 'suspend fun getUser(id: String): User'
+      style: primary
+      start: 31
+      end: 68
+    - source: suspend
+      style: secondary
+      start: 31
+      end: 38
+    - source: suspend
+      style: secondary
+      start: 31
+      end: 38
+    - source: User
+      style: secondary
+      start: 64
+      end: 68
+    - source: UserRepository
+      style: secondary
+      start: 10
+      end: 24
+    - source: |-
+        interface UserRepository {
+            suspend fun getUser(id: String): User
+        }
+      style: secondary
+      start: 0
+      end: 70
+    - source: |-
+        {
+            suspend fun getUser(id: String): User
+        }
+      style: secondary
+      start: 25
+      end: 70

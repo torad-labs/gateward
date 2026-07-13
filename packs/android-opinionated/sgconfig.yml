@@ -1,0 +1,6 @@
+# Makes this pack a self-contained ast-grep project: `ast-grep test` and
+# `ast-grep scan` work inside this directory with no monorepo context.
+ruleDirs:
+  - rules
+testConfigs:
+  - testDir: rule-tests

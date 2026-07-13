@@ -1,0 +1,6 @@
+{
+  "description": "Config gates Kotlin but the ast-grep binary is absent (PATH stripped); fail closed with an install remedy.",
+  "verdict": "deny",
+  "contains": "ast-grep",
+  "scanner": "absent"
+}

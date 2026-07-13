@@ -1,0 +1,4 @@
+{
+  "extraPaths": ["packages/core/src", "packages/shims/codex"],
+  "exclude": ["apps/golden/**/build", "apps/broken/**/build", "**/__pycache__"]
+}

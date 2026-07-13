@@ -1,0 +1,16 @@
+id: no-runblocking-in-main
+language: kotlin
+severity: error
+message: >-
+  runBlocking freezes the calling thread — expose a suspend function or
+  launch in a proper coroutine scope instead.
+metadata:
+  tier: deny
+ignores:
+  - '**/test/**'
+  - '**/androidTest/**'
+rule:
+  kind: call_expression
+  has:
+    kind: simple_identifier
+    regex: '^runBlocking$'

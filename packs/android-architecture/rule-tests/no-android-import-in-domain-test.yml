@@ -1,0 +1,8 @@
+id: no-android-import-in-domain
+valid:
+  - 'import com.torad.openhouse.core.model.Listing'
+  - 'import kotlinx.coroutines.flow.Flow'
+  - 'import javax.inject.Inject'
+invalid:
+  - 'import android.content.Context'
+  - 'import androidx.lifecycle.ViewModel'

@@ -1,0 +1,12 @@
+id: no-wildcard-imports
+language: kotlin
+severity: error
+message: >-
+  Wildcard imports hide where a symbol comes from — import the specific
+  names this file actually uses.
+metadata:
+  tier: deny
+rule:
+  kind: import_header
+  has:
+    kind: wildcard_import

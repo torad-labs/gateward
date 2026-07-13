@@ -1,0 +1,7 @@
+{
+  "name": "portable-hooks-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/cli"
+  ]
+}

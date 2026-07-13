@@ -1,0 +1,25 @@
+id: no-repository-in-viewmodel
+language: kotlin
+severity: error
+message: >-
+  ViewModels depend on UseCases only — inject a UseCase that wraps this
+  repository.
+metadata:
+  tier: deny
+rule:
+  kind: class_parameter
+  has:
+    kind: user_type
+    has:
+      kind: type_identifier
+      regex: 'Repository$'
+  inside:
+    kind: primary_constructor
+    inside:
+      kind: class_declaration
+      has:
+        kind: delegation_specifier
+        has:
+          kind: type_identifier
+          stopBy: end
+          regex: '^ViewModel$'

@@ -1,0 +1,6 @@
+{
+  "description": "Edit adds one force-unwrap to a file that already has two; deny lists exactly the one new violation, not the legacy pair.",
+  "verdict": "deny",
+  "contains": "no-force-unwrap",
+  "lines": 1
+}

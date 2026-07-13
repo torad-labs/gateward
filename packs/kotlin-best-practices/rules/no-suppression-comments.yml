@@ -1,0 +1,13 @@
+id: no-suppression-comments
+language: kotlin
+severity: error
+message: >-
+  ast-grep suppression comments are not allowed — the gate must not be
+  commented off. Remove the suppression and fix the underlying violation.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: line_comment
+    - kind: multiline_comment
+  regex: 'ast-grep-ignore'

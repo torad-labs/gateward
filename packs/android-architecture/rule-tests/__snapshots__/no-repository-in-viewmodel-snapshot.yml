@@ -1,0 +1,87 @@
+id: no-repository-in-viewmodel
+snapshots:
+  ? |
+    class DetailViewModel @Inject constructor(
+        private val repository: ListingDetailRepository,
+    ) : ViewModel() {
+        fun onAction(action: DetailAction) {}
+    }
+  : labels:
+    - source: 'private val repository: ListingDetailRepository'
+      style: primary
+      start: 47
+      end: 94
+    - source: ViewModel
+      style: secondary
+      start: 100
+      end: 109
+    - source: ViewModel()
+      style: secondary
+      start: 100
+      end: 111
+    - source: |-
+        class DetailViewModel @Inject constructor(
+            private val repository: ListingDetailRepository,
+        ) : ViewModel() {
+            fun onAction(action: DetailAction) {}
+        }
+      style: secondary
+      start: 0
+      end: 157
+    - source: |-
+        @Inject constructor(
+            private val repository: ListingDetailRepository,
+        )
+      style: secondary
+      start: 22
+      end: 97
+    - source: ListingDetailRepository
+      style: secondary
+      start: 71
+      end: 94
+    - source: ListingDetailRepository
+      style: secondary
+      start: 71
+      end: 94
+  ? |
+    class FavoritesViewModel(
+        observeListings: ObserveListingsUseCase,
+        private val repo: FavoritesRepository,
+    ) : ViewModel()
+  : labels:
+    - source: 'private val repo: FavoritesRepository'
+      style: primary
+      start: 75
+      end: 112
+    - source: ViewModel
+      style: secondary
+      start: 118
+      end: 127
+    - source: ViewModel()
+      style: secondary
+      start: 118
+      end: 129
+    - source: |-
+        class FavoritesViewModel(
+            observeListings: ObserveListingsUseCase,
+            private val repo: FavoritesRepository,
+        ) : ViewModel()
+      style: secondary
+      start: 0
+      end: 129
+    - source: |-
+        (
+            observeListings: ObserveListingsUseCase,
+            private val repo: FavoritesRepository,
+        )
+      style: secondary
+      start: 24
+      end: 115
+    - source: FavoritesRepository
+      style: secondary
+      start: 93
+      end: 112
+    - source: FavoritesRepository
+      style: secondary
+      start: 93
+      end: 112

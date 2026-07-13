@@ -1,0 +1,41 @@
+id: no-usecase-composing-usecase
+snapshots:
+  ? |
+    class RefreshFavoritesUseCase @Inject constructor(
+        private val observeFavorites: ObserveFavoriteIdsUseCase,
+    ) {
+        suspend operator fun invoke() = observeFavorites()
+    }
+  : labels:
+    - source: 'private val observeFavorites: ObserveFavoriteIdsUseCase'
+      style: primary
+      start: 55
+      end: 110
+    - source: RefreshFavoritesUseCase
+      style: secondary
+      start: 6
+      end: 29
+    - source: |-
+        class RefreshFavoritesUseCase @Inject constructor(
+            private val observeFavorites: ObserveFavoriteIdsUseCase,
+        ) {
+            suspend operator fun invoke() = observeFavorites()
+        }
+      style: secondary
+      start: 0
+      end: 172
+    - source: |-
+        @Inject constructor(
+            private val observeFavorites: ObserveFavoriteIdsUseCase,
+        )
+      style: secondary
+      start: 30
+      end: 113
+    - source: ObserveFavoriteIdsUseCase
+      style: secondary
+      start: 85
+      end: 110
+    - source: ObserveFavoriteIdsUseCase
+      style: secondary
+      start: 85
+      end: 110

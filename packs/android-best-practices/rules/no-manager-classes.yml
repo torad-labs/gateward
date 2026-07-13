@@ -1,0 +1,15 @@
+id: no-manager-classes
+language: kotlin
+severity: error
+message: >-
+  Manager classes accumulate unrelated responsibilities — split this into
+  named roles, e.g. a Repository plus a UseCase, instead of one Manager.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: class_declaration
+    - kind: object_declaration
+  has:
+    kind: type_identifier
+    regex: 'Manager$'

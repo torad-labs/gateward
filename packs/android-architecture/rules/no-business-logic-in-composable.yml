@@ -1,0 +1,25 @@
+id: no-business-logic-in-composable
+language: kotlin
+severity: error
+message: >-
+  Composables render state — move this filter/sort into the ViewModel or a
+  UseCase.
+metadata:
+  tier: deny
+rule:
+  kind: call_expression
+  has:
+    kind: navigation_expression
+    has:
+      kind: navigation_suffix
+      has:
+        kind: simple_identifier
+        regex: '^(filter|sortedBy|sortedByDescending)$'
+  inside:
+    kind: function_declaration
+    stopBy: end
+    has:
+      kind: modifiers
+      has:
+        kind: annotation
+        regex: '^@Composable'

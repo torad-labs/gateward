@@ -1,0 +1,22 @@
+id: test-names-given-when-then
+language: kotlin
+severity: error
+message: >-
+  Name this test `Given ... When ... Then ...` so the scenario reads without
+  opening the body.
+metadata:
+  tier: deny
+files:
+  - '**/test/**'
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: annotation
+          regex: '^@Test'
+    - has:
+        kind: simple_identifier
+        not:
+          regex: '^`Given .* When .* Then .*`$'

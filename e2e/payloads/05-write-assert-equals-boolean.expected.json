@@ -1,0 +1,6 @@
+{
+  "description": "assertEquals(true, x) is the autofix tier; allow the Write but rewrite the content to assertTrue(x) via updatedInput.",
+  "verdict": "autofix",
+  "target": "content",
+  "contains": "assertTrue(result)"
+}

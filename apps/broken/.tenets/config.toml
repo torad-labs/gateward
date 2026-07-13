@@ -1,0 +1,15 @@
+# Installed gate configuration for the broken app. Same shape as golden's:
+# a language set, a pack, and the one tier override that makes the codemod
+# rule rewrite instead of block.
+[core]
+languages = ["kotlin"]
+default_tier = "deny"
+
+[packs]
+# Resolved from this file's directory (apps/broken/.tenets/) up to the repo's
+# top-level packs/ directory.
+packs_dir = "../../../packs"
+enabled = ["kotlin-best-practices", "android-architecture", "android-best-practices", "android-opinionated"]
+
+[rules.no-assert-equals-boolean]
+tier = "autofix"

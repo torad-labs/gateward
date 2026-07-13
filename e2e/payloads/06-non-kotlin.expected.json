@@ -1,0 +1,4 @@
+{
+  "description": "A non-Kotlin file type is not gated; allow even though the text contains !!.",
+  "verdict": "allow"
+}

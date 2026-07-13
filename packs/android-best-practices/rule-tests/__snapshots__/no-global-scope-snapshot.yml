@@ -1,0 +1,30 @@
+id: no-global-scope
+snapshots:
+  fun leak() { GlobalScope.async(Dispatchers.IO) { fetch() } }:
+    labels:
+    - source: GlobalScope.async(Dispatchers.IO) { fetch() }
+      style: primary
+      start: 13
+      end: 58
+    - source: GlobalScope
+      style: secondary
+      start: 13
+      end: 24
+    - source: GlobalScope.async
+      style: secondary
+      start: 13
+      end: 30
+  fun leak() { GlobalScope.launch { reload() } }:
+    labels:
+    - source: GlobalScope.launch { reload() }
+      style: primary
+      start: 13
+      end: 44
+    - source: GlobalScope
+      style: secondary
+      start: 13
+      end: 24
+    - source: GlobalScope.launch
+      style: secondary
+      start: 13
+      end: 31

@@ -1,0 +1,4 @@
+{
+  "description": "!! inside a string literal is not a force-unwrap; allow.",
+  "verdict": "allow"
+}

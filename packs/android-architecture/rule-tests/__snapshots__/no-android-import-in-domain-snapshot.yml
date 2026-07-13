@@ -1,0 +1,22 @@
+id: no-android-import-in-domain
+snapshots:
+  import android.content.Context:
+    labels:
+    - source: import android.content.Context
+      style: primary
+      start: 0
+      end: 30
+    - source: android.content.Context
+      style: secondary
+      start: 7
+      end: 30
+  import androidx.lifecycle.ViewModel:
+    labels:
+    - source: import androidx.lifecycle.ViewModel
+      style: primary
+      start: 0
+      end: 35
+    - source: androidx.lifecycle.ViewModel
+      style: secondary
+      start: 7
+      end: 35

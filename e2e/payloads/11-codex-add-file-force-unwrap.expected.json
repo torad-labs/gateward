@@ -1,0 +1,4 @@
+{
+  "verdict": "deny",
+  "contains": "no-force-unwrap"
+}

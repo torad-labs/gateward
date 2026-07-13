@@ -1,0 +1,67 @@
+id: vm-actions-only
+snapshots:
+  ? |
+    class FavoritesViewModel : ViewModel() {
+        fun toggleFavorite(listingId: String) {}
+    }
+  : labels:
+    - source: 'fun toggleFavorite(listingId: String) {}'
+      style: primary
+      start: 45
+      end: 85
+    - source: ViewModel
+      style: secondary
+      start: 27
+      end: 36
+    - source: ViewModel()
+      style: secondary
+      start: 27
+      end: 38
+    - source: |-
+        class FavoritesViewModel : ViewModel() {
+            fun toggleFavorite(listingId: String) {}
+        }
+      style: secondary
+      start: 0
+      end: 87
+    - source: |-
+        {
+            fun toggleFavorite(listingId: String) {}
+        }
+      style: secondary
+      start: 39
+      end: 87
+  ? |
+    class ListingsViewModel : ViewModel() {
+        fun onAction(action: ListingsAction) {}
+        fun loadListings() {}
+    }
+  : labels:
+    - source: fun loadListings() {}
+      style: primary
+      start: 88
+      end: 109
+    - source: ViewModel
+      style: secondary
+      start: 26
+      end: 35
+    - source: ViewModel()
+      style: secondary
+      start: 26
+      end: 37
+    - source: |-
+        class ListingsViewModel : ViewModel() {
+            fun onAction(action: ListingsAction) {}
+            fun loadListings() {}
+        }
+      style: secondary
+      start: 0
+      end: 111
+    - source: |-
+        {
+            fun onAction(action: ListingsAction) {}
+            fun loadListings() {}
+        }
+      style: secondary
+      start: 38
+      end: 111

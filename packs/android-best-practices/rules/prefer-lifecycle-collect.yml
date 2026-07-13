@@ -1,0 +1,21 @@
+id: prefer-lifecycle-collect
+language: kotlin
+severity: error
+message: >-
+  collectAsState() keeps collecting after the screen leaves the foreground —
+  use collectAsStateWithLifecycle() instead.
+metadata:
+  tier: deny
+rule:
+  kind: call_expression
+  any:
+    - has:
+        kind: navigation_expression
+        has:
+          kind: navigation_suffix
+          has:
+            kind: simple_identifier
+            regex: '^collectAsState$'
+    - has:
+        kind: simple_identifier
+        regex: '^collectAsState$'

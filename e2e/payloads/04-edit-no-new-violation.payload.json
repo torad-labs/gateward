@@ -1,0 +1,8 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/DirtyFour.kt",
+    "old_string": "val x = a!!",
+    "new_string": "val x = a!!\n    val ok = c ?: return"
+  }
+}

@@ -1,0 +1,35 @@
+id: vm-actions-only
+language: kotlin
+severity: error
+message: >-
+  ViewModels expose state plus a single onAction(...) entry point — make
+  this fun private or route it through onAction.
+metadata:
+  tier: deny
+rule:
+  kind: function_declaration
+  inside:
+    kind: class_body
+    inside:
+      kind: class_declaration
+      has:
+        kind: delegation_specifier
+        has:
+          kind: type_identifier
+          stopBy: end
+          regex: '^ViewModel$'
+  not:
+    any:
+      - has:
+          kind: modifiers
+          has:
+            kind: visibility_modifier
+            regex: '^(private|protected|internal)$'
+      - has:
+          kind: simple_identifier
+          regex: '^onAction$'
+      - has:
+          kind: modifiers
+          has:
+            kind: member_modifier
+            regex: '^override$'

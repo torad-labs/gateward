@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/app/src/main/kotlin/com/example/domain/SettingsStore.kt",
+    "content": "package com.example.domain\n\nimport android.content.Context\n\nclass SettingsStore(private val context: Context) {\n    fun isDark(): Boolean = context.getSharedPreferences(\"settings\", 0).getBoolean(\"dark\", false)\n}\n"
+  }
+}

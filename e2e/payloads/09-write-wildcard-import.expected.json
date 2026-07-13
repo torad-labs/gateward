@@ -1,0 +1,5 @@
+{
+  "description": "New-file Write with a wildcard import is denied.",
+  "verdict": "deny",
+  "contains": "no-wildcard-imports"
+}

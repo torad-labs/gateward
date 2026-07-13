@@ -1,0 +1,19 @@
+id: no-assert-equals-boolean
+language: kotlin
+severity: error
+message: >-
+  assertEquals(true/false, x) obscures intent and produces a poor failure
+  message. Use assertTrue(x) or assertFalse(x).
+metadata:
+  tier: autofix
+rule:
+  pattern: assertEquals($B, $X)
+constraints:
+  B:
+    regex: '^(true|false)$'
+transform:
+  SUFFIX:
+    convert:
+      source: $B
+      toCase: capitalize
+fix: assert$SUFFIX($X)

@@ -1,0 +1,8 @@
+id: no-force-unwrap
+valid:
+  - 'fun length(x: String?): Int = x?.length ?: 0'
+  - 'val name = requireNotNull(input) { "input is required" }'
+  - 'val banner = "closing sale!!"'
+invalid:
+  - 'val length = value!!.length'
+  - 'fun show(x: String?) { println(x!!) }'

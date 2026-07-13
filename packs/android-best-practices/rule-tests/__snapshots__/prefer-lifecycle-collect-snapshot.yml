@@ -1,0 +1,38 @@
+id: prefer-lifecycle-collect
+snapshots:
+  val listings by viewModel.listings.collectAsState():
+    labels:
+    - source: viewModel.listings.collectAsState()
+      style: primary
+      start: 16
+      end: 51
+    - source: collectAsState
+      style: secondary
+      start: 35
+      end: 49
+    - source: .collectAsState
+      style: secondary
+      start: 34
+      end: 49
+    - source: viewModel.listings.collectAsState
+      style: secondary
+      start: 16
+      end: 49
+  val state by viewModel.state.collectAsState():
+    labels:
+    - source: viewModel.state.collectAsState()
+      style: primary
+      start: 13
+      end: 45
+    - source: collectAsState
+      style: secondary
+      start: 29
+      end: 43
+    - source: .collectAsState
+      style: secondary
+      start: 28
+      end: 43
+    - source: viewModel.state.collectAsState
+      style: secondary
+      start: 13
+      end: 43

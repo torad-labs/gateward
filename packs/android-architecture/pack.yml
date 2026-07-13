@@ -1,0 +1,35 @@
+# Pack manifest. This file indexes the pack and records each rule's default
+# tier for humans and the installer CLI; it is NOT read by ast-grep or by the
+# stdlib core (the core resolves tier from a project's .tenets/config.toml).
+id: android-architecture
+title: Android Architecture
+description: >-
+  Layering rules for a ViewModel/UseCase/Repository Android app: domain stays
+  platform-agnostic, ViewModels depend on UseCases only, and UseCases expose
+  one operation. Every rule is plain ast-grep YAML and runs standalone under
+  `ast-grep test`.
+rules:
+  - id: no-repository-in-viewmodel
+    tier: deny
+    summary: A ViewModel constructor may not take a Repository — inject a UseCase instead.
+  - id: no-android-import-in-domain
+    tier: deny
+    summary: Files under domain/ may not import android.* or androidx.*.
+  - id: no-context-in-domain
+    tier: deny
+    summary: Files under domain/ may not take a Context parameter.
+  - id: no-event-bus
+    tier: deny
+    summary: Event-bus-shaped types (name contains EventBus, org.greenrobot imports) are banned.
+  - id: usecase-single-public-invoke
+    tier: deny
+    summary: A UseCase may expose only operator fun invoke() as public API.
+  - id: vm-no-public-mutable-state
+    tier: deny
+    summary: A ViewModel may not expose a public Mutable(StateFlow|SharedFlow|LiveData).
+  - id: vm-actions-only
+    tier: deny
+    summary: A ViewModel's only public entry point is onAction(...) (plus overrides).
+  - id: no-business-logic-in-composable
+    tier: deny
+    summary: filter/sortedBy/sortedByDescending may not run inside a @Composable function.

@@ -1,0 +1,6 @@
+id: prefer-lifecycle-collect
+valid:
+  - 'val state by viewModel.state.collectAsStateWithLifecycle()'
+invalid:
+  - 'val state by viewModel.state.collectAsState()'
+  - 'val listings by viewModel.listings.collectAsState()'

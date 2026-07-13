@@ -1,0 +1,23 @@
+id: no-business-logic-in-composable
+valid:
+  - |
+    class FavoritesViewModel : ViewModel() {
+        fun loadFavorites() {
+            state.value = repository.getListings().filter { it.id in favoriteIds }
+        }
+    }
+  - |
+    fun filterByMinBeds(minBeds: Int): List<Listing> = storage.filter { it.beds >= minBeds }
+  - |
+    @Composable
+    fun ListingsScreen(state: ListingsUiState) {
+        Text(state.listings.firstOrNull()?.address.orEmpty())
+    }
+invalid:
+  - |
+    @Composable
+    fun ListingsScreen(listings: List<Listing>, searchQuery: String) {
+        val visible = listings
+            .filter { it.address.contains(searchQuery, ignoreCase = true) }
+            .sortedBy { it.price }
+    }

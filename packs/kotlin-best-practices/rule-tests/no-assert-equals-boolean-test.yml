@@ -1,0 +1,8 @@
+id: no-assert-equals-boolean
+valid:
+  - 'assertEquals(expected, actual)'
+  - 'assertEquals(2, list.size)'
+  - 'assertTrue(user.isActive)'
+invalid:
+  - 'assertEquals(true, result)'
+  - 'assertEquals(false, user.isActive)'

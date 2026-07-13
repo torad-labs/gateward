@@ -1,0 +1,4 @@
+{
+  "description": "New-file Write that violates only the default-off no-usecase-composing-usecase rule is allowed.",
+  "verdict": "allow"
+}

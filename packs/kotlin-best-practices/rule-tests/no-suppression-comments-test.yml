@@ -1,0 +1,8 @@
+id: no-suppression-comments
+valid:
+  - '// explain why this branch exists'
+  - '/* license header */'
+invalid:
+  - '// ast-grep-ignore'
+  - '// ast-grep-ignore: no-force-unwrap'
+  - '/* ast-grep-ignore */'
