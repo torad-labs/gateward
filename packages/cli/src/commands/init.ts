@@ -165,10 +165,20 @@ export async function runInit(root: string, opts: InitOptions): Promise<InitOutc
   // specific file path and is unaffected by extra files sitting alongside it).
   const opencodeShimSrc = path.join(SHIMS_ROOT, "opencode");
   if (fs.existsSync(opencodeShimSrc)) {
+    // Two copies, one truth: the lock-covered copy lives with the engine
+    // (drift-visible to doctor/update); the runtime copy OpenCode actually
+    // loads sits in .opencode/plugins/. Test-shaped files stay out of the
+    // runtime dir — OpenCode loads every file in plugins/ as a plugin.
+    const opencodeEngineDest = path.join(engineDestDir(root), "shims", "opencode");
+    const engineCopies = vendorInto(opencodeShimSrc, opencodeEngineDest, { exclude: looksLikeTestFile });
+    for (const r of engineCopies) {
+      lockFiles[`engine/shims/opencode/${r.relPath}`] = r.hash;
+      markChanged(r.result);
+    }
     const opencodeDest = path.join(root, ".opencode", "plugins");
     const results = vendorInto(opencodeShimSrc, opencodeDest, { exclude: looksLikeTestFile });
     for (const r of results) markChanged(r.result);
-    note(`OpenCode plugin vendored -> .opencode/plugins/ (${results.length} files)`);
+    note(`OpenCode plugin vendored -> .opencode/plugins/ (${results.length} files, lock-covered under engine/shims/opencode/)`);
   } else {
     note("opencode: engine plugin not present in source, skipped");
   }

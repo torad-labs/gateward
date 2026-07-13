@@ -210,6 +210,13 @@ def _parse_apply_patch(text):
                 h.new_lines.append(raw[1:])
             elif raw.startswith("-"):
                 hunk().old_lines.append(raw[1:])
+            elif raw == "" and current_hunk is not None:
+                # A bare empty line inside a hunk is an empty context line —
+                # some generators emit "" instead of the space-prefixed form.
+                # Dropping it breaks the anchor and silently skips (allows) a
+                # patch Codex itself would apply fine: fail-open. Keep it.
+                current_hunk.old_lines.append("")
+                current_hunk.new_lines.append("")
 
     flush_file()
     return files
