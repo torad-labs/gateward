@@ -55,9 +55,9 @@
 <h1>Engineering tenets, enforced at write time</h1>
 <p class="lead">
 An agent writes code faster than any process built to review humans can absorb.
-This book describes a small system that moves your architecture, conventions, and
-best practices out of documents a model might read and into a gate its writes
-cannot pass — portably, across coding-agent harnesses.
+This book describes a small system that moves your architecture and conventions out
+of documents a model might read and into a gate its writes cannot pass, on
+every coding-agent harness.
 </p>
 <p class="dim">
 Everything in this book is running code in this repository. Every number was
@@ -111,8 +111,7 @@ at what got mechanized. Whitespace. Import order. Known bug patterns. Architectu
 layering, naming conventions — the things that make a codebase legible — stayed in
 heads and review comments. Later, tools like ArchUnit and Konsist made architecture
 itself assertable, which was real progress with a shared ceiling: every one of these
-tools judges code <em>after it exists</em>. Red build, failed test, review comment —
-all of it is reaction.</p>
+tools judges code <em>after it exists</em>.</p>
 <p>That worked because two assumptions held. Code arrived at human speed, and the
 author was a persistent learner — a person who absorbed the standards through
 review, pairing, osmosis, and stopped making the same mistake. Agents break both.
@@ -120,8 +119,8 @@ A coding agent produces hundreds of lines an hour, in parallel sessions, around 
 clock; the review math stops closing. And an agent carries nothing between sessions.
 Every session is an engineer on their first day, with no onboarding, shipping to
 main.</p>
-<p>The economics are worth stating precisely, because they explain why the existing
-tools are the right rules at the wrong time. An agent loop builds a feature for ten
+<p>State the economics precisely, because they are why the existing tools are the
+right rules at the wrong time. An agent loop builds a feature for ten
 or twenty minutes. A pre-commit hook, a pre-push gate, or CI discovers the violation
 <em>after the feature exists</em> — and now the loop reworks finished code. The
 feature costs double or triple, and every rework turn burns tokens re-establishing
@@ -155,8 +154,8 @@ call the harness executed on its behalf — and every harness above exposes a
 checkpoint between the ask and the write. A hook that runs there can inspect exactly
 what is about to land, refuse it, and hand the model a reason it reads in the same
 turn.</p>
-<p>Hooks come in four verbs, and the taxonomy is worth keeping because every
-harness's event list is a dialect of it:</p>
+<p>Hooks come in four verbs. Keep the taxonomy; every harness's event list is a
+dialect of it:</p>
 <table>
 <tr><th>Verb</th><th>What it does</th><th>Claude Code name</th></tr>
 <tr><td><b>block</b></td><td>Runs before a tool executes; may deny it with a reason, or rewrite its input.</td><td><code>PreToolUse</code></td></tr>
@@ -165,8 +164,7 @@ harness's event list is a dialect of it:</p>
 <tr><td><b>audit</b></td><td>Observes after the fact.</td><td><code>PostToolUse</code></td></tr>
 </table>
 <p>Nearly everything in this book is the first verb. The workhorse is the pre-write
-block: it is where enforcement stops being reactive for the first time in the
-history of this problem.</p>
+block: the point where enforcement stops being reactive.</p>
 <div class="note">One dialect note that saves everyone time: Codex adopted Claude
 Code's hook verdict JSON — the same <code>hookSpecificOutput.permissionDecision</code>
 fields. The convergence is real and this system leans on it (chapter 6). The full
@@ -192,8 +190,7 @@ rules, preserving the file's real relative path so path-scoped rules
 current and projected content, keyed by <code>(rule, matched text)</code> — a finding
 blocks only when its projected count exceeds its current count. <b>verdict</b> speaks
 the harness's JSON.</p>
-<p>A deny is not an error message; it is the review comment, delivered early enough
-to be free:</p>
+<p>A deny is a review comment that arrives early enough to be free:</p>
 <pre><code class="language-json">{"hookSpecificOutput": {
   "hookEventName": "PreToolUse",
   "permissionDecision": "deny",
@@ -201,10 +198,9 @@ to be free:</p>
    Handle nullability explicitly — use ?. with a checked fallback,
    requireNotNull(x) { \"reason\" }, or an early return."
 }}</code></pre>
-<p>The model reads that reason and corrects in the same turn. In practice it usually
-does not attempt the pattern again for the rest of the session — the block message
-is the cheapest code review the agent will ever get, and it only has to be delivered
-once per session instead of once per pull request.</p>
+<p>The model reads that reason and corrects in the same turn, and in practice it
+rarely attempts the pattern again that session: the correction is paid for once,
+at generation time, instead of at every pull request.</p>
 <p>Equally important is what the gate deliberately does <em>not</em> judge. Unknown
 tools, file types the project does not gate, projects with no <code>.tenets/</code>,
 and edits whose outcome cannot be reconstructed (a stale <code>old_string</code>, a
@@ -217,8 +213,8 @@ as such.</p>
 <code>python3 .tenets/engine/audit.py . --json</code>. It resolves configuration
 exactly as the hook does, scans real files at their real paths, and counts only
 authored rules — ast-grep's own built-in diagnostics are excluded, because scanning
-pack-by-pack triple-counts them (this repository learned that the honest way: a
-52-versus-55 discrepancy that turned out to be the built-in
+pack-by-pack triple-counts them (this repository hit exactly this: a 52-versus-55
+discrepancy, the built-in
 <code>unused-suppression</code> diagnostic firing once per pack whose scan the legacy
 suppression didn't apply to). CI pins the number: golden must audit 0, broken must
 audit 52, and drift fails the build until the change is made deliberately.</p>
@@ -314,7 +310,7 @@ translators at the edges:</p>
  Claude Code ── native ─────────────┐
  Codex ── apply_patch shim ─────────┤──▶  ONE gate engine (.tenets/engine/)
  OpenCode ── plugin (throw/mutate) ─┤        rules edited once,
- Antigravity ── pending (honest) ───┘        enforced identically everywhere
+ Antigravity ── pending (schema) ───┘        enforced identically everywhere
 </pre>
 <p><b>Claude Code</b> speaks the gate's native contract. <b>Codex</b> sends file
 edits as an <code>apply_patch</code> envelope — a <code>*** Begin Patch</code> text
@@ -326,8 +322,8 @@ output side needs no translation at all. <b>OpenCode</b> loads a small plugin wh
 and mutates <code>output.args</code> to apply the autofix tier. <b>Antigravity</b>
 gets block-only support once its verdict schema can be pinned against a real
 install: its official docs page could not be machine-read at research time, and
-third-party accounts contradict each other on field names. That sentence is the
-whole policy — say what is verified, flag what is not.</p>
+third-party accounts contradict each other on field names. That is the whole
+policy: verified claims stated, unverified claims flagged.</p>
 <p>The installer supports both shapes: canonical (one vendored engine, per-harness
 wiring pointing at it — one rule edit enforced identically everywhere) and
 <code>--copy</code> for teams that want fully independent per-harness installs
@@ -346,13 +342,13 @@ no second system:</p>
 <pre><code class="language-yaml">rule:
   pattern: assertEquals(true, $X)
 fix: assertTrue($X)</code></pre>
-<p>One honest limitation, documented where it lives: under Codex, autofix currently
+<p>One limitation, documented where it lives: under Codex, autofix currently
 degrades to a deny-with-reason, because <code>apply_patch</code> has no channel for
 handing back a revised envelope. The model fixes it itself; nothing slips through.</p>
 
 <h2 id="ch8">8 · A system that evolves</h2>
-<p>The gate is not a product you finish; it is a place your standards accumulate.
-The growth loop is the whole method:</p>
+<p>The gate is where a team's standards accumulate. The growth loop is the whole
+method:</p>
 <p class="lead" style="text-align:center">When review catches something twice,<br>
 it becomes a rule with a test.<br>Then it stops recurring.</p>
 <p>A rule is fifteen lines of YAML plus test cases, validated against two standing
@@ -406,7 +402,7 @@ the deployed shape is not green.</div>
 </table>
 <p class="dim">Notable trap: in Claude Code, exit code 2 blocks and exit 1 does not.
 Notable convergence: Codex sets <code>CLAUDE_PLUGIN_ROOT</code> for compatibility
-with existing Claude Code hooks. Notable honesty: nothing here relies on
+with existing Claude Code hooks. Also deliberate: nothing here relies on
 OpenCode's <code>permission.ask</code>, which is documented but has been broken in
 practice for months.</p>
 <h3>B · CLI</h3>
