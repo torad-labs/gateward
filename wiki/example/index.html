@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worked example — From a review comment to impossible</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+<script>window.addEventListener("DOMContentLoaded",()=>{window.hljs&&hljs.highlightAll();});</script>
+<style>
+  :root{
+    --bg:#101214; --panel:#16191c; --ink:#d7dce1; --dim:#8a949e; --line:#262b30;
+    --deny:#e5484d; --allow:#46a758; --autofix:#f0a53e; --accent:#6ea8dc;
+    --mono:ui-monospace,'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:17px/1.65 -apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;}
+  main{max-width:820px;margin:0 auto;padding:48px 24px 120px}
+  h1{font-size:1.9rem;line-height:1.25;margin:0 0 8px}
+  h2{font-size:1.3rem;margin:52px 0 12px;padding-top:22px;border-top:1px solid var(--line)}
+  p{margin:12px 0}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .kicker{color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-size:.75rem;margin-bottom:18px}
+  .dim{color:var(--dim)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel);
+    border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow-x:auto;font-size:.84rem;line-height:1.55}
+  pre code{background:none;border:none;padding:0;font-size:1em}
+  .red{border-left:3px solid var(--deny);background:var(--panel);border-radius:0 8px 8px 0;padding:12px 18px;margin:14px 0}
+  .green{border-left:3px solid var(--allow);background:var(--panel);border-radius:0 8px 8px 0;padding:12px 18px;margin:14px 0}
+  .breaks{border:1px solid var(--line);border-left:3px solid var(--deny);border-radius:0 8px 8px 0;
+    background:var(--panel);padding:14px 18px;margin:16px 0}
+  .breaks b{color:var(--deny)}
+</style>
+</head>
+<body>
+<main>
+
+<div class="kicker">portable-hooks · worked example</div>
+<h1>From a review comment to impossible</h1>
+<p class="dim">One pass through the growth loop, with the real artifacts. This is
+not a tutorial reconstruction: the rule, the payloads, and the red run below are
+this repository's actual history — the regression that fixed
+<a href="../index.html#ch9">case-history defect #1</a>.</p>
+
+<h2>1 · The comment</h2>
+<p>A reviewer writes, for the second time this month:</p>
+<pre><code class="language-text">This reads SharedPreferences inside the domain layer — domain must not
+know Android exists. Move the Context behind an interface in data.</code></pre>
+<p>Twice is the threshold. This stops being a comment and becomes a rule.</p>
+
+<h2>2 · The rule</h2>
+<p><code>packs/android-architecture/rules/no-context-in-domain.yml</code> — the whole
+thing. Note <code>files:</code> — the rule is path-scoped: it only judges files that
+live in a domain layer.</p>
+<pre><code class="language-yaml">id: no-context-in-domain
+language: kotlin
+severity: error
+message: >-
+  Domain must not know Android exists — no Context here. Put the Android
+  dependency behind an interface implemented in the data layer.
+metadata:
+  tier: deny
+files:
+  - '**/domain/**'
+rule:
+  kind: parameter
+  has:
+    kind: user_type
+    has:
+      kind: type_identifier
+      regex: '^Context$'</code></pre>
+
+<h2>3 · The rule's own tests</h2>
+<p><code>rule-tests/no-context-in-domain-test.yml</code>: what must match, what must
+not. <code>ast-grep test</code> runs these standalone inside the pack.</p>
+<pre><code class="language-yaml">id: no-context-in-domain
+valid:
+  - |
+    class SettingsStore(private val prefs: PreferencesGateway) {
+        fun isDark(): Boolean = prefs.readBoolean("dark")
+    }
+invalid:
+  - |
+    class SettingsStore(private val context: Context) {
+        fun isDark(): Boolean =
+            context.getSharedPreferences("s", 0).getBoolean("dark", false)
+    }</code></pre>
+
+<h2>4 · The wire — proving the gate sees it</h2>
+<p>A rule that passes its own tests can still never fire in production. So the rule
+gets an end-to-end payload: a real <code>PreToolUse</code> body, piped through the
+real entrypoint by <code>e2e/run.py</code>.</p>
+<pre><code class="language-json">{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/app/src/main/kotlin/com/example/domain/SettingsStore.kt",
+    "content": "package com.example.domain\n\nimport android.content.Context\n\nclass SettingsStore(private val context: Context) { ... }"
+  }
+}</code></pre>
+
+<h2>5 · Red</h2>
+<div class="red"><p style="margin:0"><b>The run that justified the whole step:</b></p>
+<pre style="margin:10px 0 0"><code class="language-text">FAIL  13-write-context-in-domain  expected deny, got allow
+
+12/13 passed</code></pre>
+<p style="margin:10px 0 0">The rule was green in its own tests and dead in the gate.
+The engine scanned projected content from a bare temp file, so the file's real path
+— the <code>/domain/</code> segment the rule keys on — was erased before ast-grep
+ever saw it. Path-scoped rules could never fire on a live edit, and nothing in the
+existing suites could know.</p></div>
+
+<h2>6 · The fix</h2>
+<p>The scanner now mirrors the file's project-relative path under a temp directory,
+so rule-level <code>files:</code> globs see the real shape
+(<code>engine/scan.py</code>):</p>
+<pre><code class="language-python"># Mirror the file's project-relative path under a temp dir. Rule-level
+# files:/ignores: globs (e.g. **/domain/**, **/test/**) match on path
+# shape; a bare temp name would erase it and those rules could never fire.
+root = config.config_dir.parent.resolve()
+rel = Path(path).resolve().relative_to(root)
+tmp = Path(tmpdir) / rel</code></pre>
+
+<h2>7 · Green</h2>
+<div class="green"><pre style="margin:0"><code class="language-text">PASS  13-write-context-in-domain
+
+13/13 passed</code></pre></div>
+<p>And the verdict the model now receives, in the same turn as its attempt:</p>
+<pre><code class="language-json">{"hookSpecificOutput": {
+  "hookEventName": "PreToolUse",
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "[no-context-in-domain] line 5: Domain must not know
+   Android exists — no Context here. Put the Android dependency behind an
+   interface implemented in the data layer."
+}}</code></pre>
+<p>The agent reads the reason, defines the interface in domain, implements it over
+SharedPreferences in data, and proceeds — architecture enforced mid-generation. The
+reviewer never writes that comment again, because the situation it corrects can no
+longer exist.</p>
+
+<h2>What breaks — skip a step and here is your failure</h2>
+<div class="breaks"><b>Skip the rule tests</b> and the pattern encodes what you
+imagined, not what the parser builds. A wrong node kind matches nothing, forever,
+silently — a rule that is green by vacuity. The invalid case is the rule's
+heartbeat.</div>
+<div class="breaks"><b>Skip the e2e payload</b> and you get defect #1 verbatim: a
+rule alive in its unit tests and dead in the gate, because some engine detail — a
+temp path, a config resolution, an extension filter — eats it in transit. Only a
+payload through the real entrypoint proves the gate sees what the rule sees.</div>
+<div class="breaks"><b>Skip the golden sweep</b> and false positives ship. The first
+time the gate blocks correct code, the team stops trusting every verdict it will
+ever emit — a gate that cries wolf is worse than no gate. Golden audits zero, always,
+and a rule that fires on it gets tightened, never the app.</div>
+<div class="breaks"><b>Soften it to a warning</b> and you have shipped documentation,
+not enforcement. Agents ignore warnings; humans do too, honestly. This system has no
+warning tier by law (<a href="../index.html#ch5">T2</a>) — a finding blocks, is
+autofixed, or the rule should not exist.</div>
+
+<p class="dim" style="margin-top:48px"><a href="../index.html">← back to the book</a></p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portable Hooks — The Book</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+<script>window.addEventListener("DOMContentLoaded",()=>{window.hljs&&hljs.highlightAll();});</script>
+<style>
+  :root{
+    --bg:#101214; --panel:#16191c; --ink:#d7dce1; --dim:#8a949e; --line:#262b30;
+    --deny:#e5484d; --allow:#46a758; --autofix:#f0a53e; --accent:#6ea8dc;
+    --mono:ui-monospace,'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:17px/1.65 -apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;}
+  main{max-width:820px;margin:0 auto;padding:48px 24px 120px}
+  h1{font-size:2.1rem;line-height:1.2;margin:0 0 8px}
+  h2{font-size:1.45rem;margin:64px 0 12px;padding-top:24px;border-top:1px solid var(--line)}
+  h3{font-size:1.05rem;margin:28px 0 8px;color:var(--ink)}
+  p{margin:12px 0}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .kicker{color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-size:.75rem;margin-bottom:18px}
+  .lead{font-size:1.12rem;color:var(--ink)}
+  .dim{color:var(--dim)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel);
+    border:1px solid var(--line);border-radius:4px;padding:.08em .35em}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:16px 18px;overflow-x:auto;font-size:.84rem;line-height:1.55}
+  pre code{background:none;border:none;padding:0;font-size:1em}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:.92rem}
+  th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel);font-weight:600}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 24px;margin:28px 0}
+  .toc ol{margin:8px 0 0;padding-left:22px} .toc li{margin:4px 0}
+  .inv{border-left:3px solid var(--deny);background:var(--panel);border-radius:0 8px 8px 0;
+    padding:12px 18px;margin:14px 0}
+  .inv b{font-family:var(--mono);font-size:.9em;color:var(--deny)}
+  .note{border-left:3px solid var(--accent);background:var(--panel);border-radius:0 8px 8px 0;
+    padding:12px 18px;margin:14px 0}
+  .verdict-deny{color:var(--deny);font-weight:600}
+  .verdict-allow{color:var(--allow);font-weight:600}
+  .verdict-fix{color:var(--autofix);font-weight:600}
+  .diagram{font-family:var(--mono);font-size:.8rem;line-height:1.5;color:var(--ink)}
+  .flag{font-size:.75rem;font-family:var(--mono);color:var(--autofix)}
+  footer{margin-top:80px;color:var(--dim);font-size:.85rem;border-top:1px solid var(--line);padding-top:20px}
+</style>
+</head>
+<body>
+<main>
+
+<div class="kicker">portable-hooks · the book · first edition</div>
+<h1>Engineering tenets, enforced at write time</h1>
+<p class="lead">
+An agent writes code faster than any process built to review humans can absorb.
+This book describes a small system that moves your architecture, conventions, and
+best practices out of documents a model might read and into a gate its writes
+cannot pass — portably, across coding-agent harnesses.
+</p>
+<p class="dim">
+Everything in this book is running code in this repository. Every number was
+measured here, every mechanism has a test that fires it, and the case-history
+chapter reports this system's own construction bugs. Where a harness's behavior
+could not be verified against primary sources, the text says so instead of guessing.
+</p>
+
+<div class="toc">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#ch1">The bottleneck</a></li>
+  <li><a href="#ch2">The loop, and where to stand in it</a></li>
+  <li><a href="#ch3">The gate</a></li>
+  <li><a href="#ch4">Rules are data</a></li>
+  <li><a href="#ch5">The invariants</a></li>
+  <li><a href="#ch6">Shims and dialects</a></li>
+  <li><a href="#ch7">The escalation ladder</a></li>
+  <li><a href="#ch8">A system that evolves</a></li>
+  <li><a href="#ch9">Case history: six bugs, one bug</a></li>
+  <li><a href="#appendix">Appendix: harness matrix, CLI, repo map</a></li>
+</ol>
+<p class="dim" style="margin-bottom:0">Worked example:
+<a href="example/index.html">From a review comment to impossible</a> — one rule,
+born whole, ending with what breaks when a step is skipped.</p>
+</div>
+
+<h2 id="nomenclature">Nomenclature</h2>
+<p>The book uses a fixed vocabulary. When a word below appears, it means exactly this.</p>
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td><b>gate</b></td><td>The code that runs between an agent's proposed write and the disk, and may refuse it.</td></tr>
+<tr><td><b>projection</b></td><td>The file content a tool call <em>would</em> produce, reconstructed without writing it.</td></tr>
+<tr><td><b>verdict</b></td><td>The gate's answer: <span class="verdict-allow">allow</span>, <span class="verdict-deny">deny</span> with a reason the model reads, or <span class="verdict-fix">autofix</span> — allow with rewritten input.</td></tr>
+<tr><td><b>rule</b></td><td>One ast-grep YAML file: a syntax pattern, a message, a tier, and its own test cases.</td></tr>
+<tr><td><b>pack</b></td><td>A self-contained directory of rules (<code>pack.yml</code>, <code>sgconfig.yml</code>, <code>rules/</code>, <code>rule-tests/</code>) that <code>ast-grep test</code> can verify standalone.</td></tr>
+<tr><td><b>tier</b></td><td>What a rule's finding earns: <code>deny</code> (block and teach) or <code>autofix</code> (rewrite in flight).</td></tr>
+<tr><td><b>shim</b></td><td>A thin translator that lets a non-Claude harness speak to the one gate implementation.</td></tr>
+<tr><td><b>canonical audit</b></td><td>The one blessed command whose violation count is <em>the</em> number: <code>engine/audit.py</code>.</td></tr>
+<tr><td><b>the lock</b></td><td><code>.tenets/lock.json</code> — a content hash per vendored file; drift detection and local-edit protection.</td></tr>
+<tr><td><b>golden / broken</b></td><td>Two apps in this repo with the same features: the architecture done right (audits <b>0</b>) and done wrong (audits <b>52</b>). The rules' negative and positive corpora.</td></tr>
+</table>
+
+<h2 id="ch1">1 · The bottleneck</h2>
+<p>Ask one question across twenty years of tooling: <em>where did the standard live?</em></p>
+<p>First it lived in heads. The architecture was whatever the senior engineer said in
+review, and the wiki page nobody read was its tombstone. Then formatters and linters
+arrived — checkstyle, Android Lint, ktlint, detekt — and a whole class of argument
+died: formatting became mechanical, and format-on-save was the peace treaty. But look
+at what got mechanized. Whitespace. Import order. Known bug patterns. Architecture,
+layering, naming conventions — the things that make a codebase legible — stayed in
+heads and review comments. Later, tools like ArchUnit and Konsist made architecture
+itself assertable, which was real progress with a shared ceiling: every one of these
+tools judges code <em>after it exists</em>. Red build, failed test, review comment —
+all of it is reaction.</p>
+<p>That worked because two assumptions held. Code arrived at human speed, and the
+author was a persistent learner — a person who absorbed the standards through
+review, pairing, osmosis, and stopped making the same mistake. Agents break both.
+A coding agent produces hundreds of lines an hour, in parallel sessions, around the
+clock; the review math stops closing. And an agent carries nothing between sessions.
+Every session is an engineer on their first day, with no onboarding, shipping to
+main.</p>
+<p>The economics are worth stating precisely, because they explain why the existing
+tools are the right rules at the wrong time. An agent loop builds a feature for ten
+or twenty minutes. A pre-commit hook, a pre-push gate, or CI discovers the violation
+<em>after the feature exists</em> — and now the loop reworks finished code. The
+feature costs double or triple, and every rework turn burns tokens re-establishing
+context the first pass already had. The same violation caught at write time costs
+one denied tool call and one corrected retry, in the same turn, seconds apart.</p>
+<p>Prompts do not fix this. You can write the standards into the system prompt, and
+the model will follow them — usually. A prompt is a suggestion to a probability
+distribution. Multiply "usually" by every write, every session, every day, and drift
+is guaranteed. The standards did not stop being right; the transmission mechanism —
+a persistent human author absorbing them over time — stopped existing.</p>
+<p>So the rules have to live in the one place every change must pass: the write path
+itself. That is the rest of this book.</p>
+
+<h2 id="ch2">2 · The loop, and where to stand in it</h2>
+<p>Every coding-agent harness — Claude Code, Codex, Antigravity, OpenCode — runs the
+same loop:</p>
+<pre class="diagram">
+ prompt ──▶ model reasons ──▶ model emits a TOOL CALL (Write / Edit / Bash)
+                                        │
+                                        ▼
+                          ┌─────────────────────────────┐
+                          │   the HARNESS executes it   │ ◀── your code can stand here
+                          └─────────────────────────────┘
+                                        │
+                                        ▼
+                          result returns ──▶ model continues
+</pre>
+<p>The load-bearing fact is easy to miss: <strong>the model never touches your disk.</strong>
+It asks the harness to. Every file your agent has ever changed went through a tool
+call the harness executed on its behalf — and every harness above exposes a
+checkpoint between the ask and the write. A hook that runs there can inspect exactly
+what is about to land, refuse it, and hand the model a reason it reads in the same
+turn.</p>
+<p>Hooks come in four verbs, and the taxonomy is worth keeping because every
+harness's event list is a dialect of it:</p>
+<table>
+<tr><th>Verb</th><th>What it does</th><th>Claude Code name</th></tr>
+<tr><td><b>block</b></td><td>Runs before a tool executes; may deny it with a reason, or rewrite its input.</td><td><code>PreToolUse</code></td></tr>
+<tr><td><b>inject</b></td><td>Adds context at session boundaries.</td><td><code>SessionStart</code></td></tr>
+<tr><td><b>judge</b></td><td>Decides whether the agent is actually done, and may refuse to let it stop.</td><td><code>Stop</code></td></tr>
+<tr><td><b>audit</b></td><td>Observes after the fact.</td><td><code>PostToolUse</code></td></tr>
+</table>
+<p>Nearly everything in this book is the first verb. The workhorse is the pre-write
+block: it is where enforcement stops being reactive for the first time in the
+history of this problem.</p>
+<div class="note">One dialect note that saves everyone time: Codex adopted Claude
+Code's hook verdict JSON — the same <code>hookSpecificOutput.permissionDecision</code>
+fields. The convergence is real and this system leans on it (chapter 6). The full
+per-harness matrix, including what could <em>not</em> be verified, is in the
+<a href="#appendix">appendix</a>.</div>
+
+<h2 id="ch3">3 · The gate</h2>
+<p>The gate is five small stages in stdlib Python, run once per intercepted write:</p>
+<pre class="diagram">
+ payload ──▶ config ──▶ projection ──▶ scan ──▶ diff ──▶ verdict
+             (.tenets/    (what the      (ast-grep  (only new   (allow · deny+reason
+              config.toml) file WOULD     on the     findings              · autofix)
+                           become)        projected   block)
+                                          content)
+</pre>
+<p><b>config</b> walks up from the file being written to the nearest
+<code>.tenets/config.toml</code>. No <code>.tenets/</code> means this project never
+opted in: the gate is inert. <b>projection</b> reconstructs the post-edit content —
+a <code>Write</code> supplies it whole; an <code>Edit</code> is replayed against the
+on-disk file. <b>scan</b> hands the projected content to ast-grep with the enabled
+rules, preserving the file's real relative path so path-scoped rules
+(<code>**/domain/**</code>) can see it. <b>diff</b> compares finding multisets of the
+current and projected content, keyed by <code>(rule, matched text)</code> — a finding
+blocks only when its projected count exceeds its current count. <b>verdict</b> speaks
+the harness's JSON.</p>
+<p>A deny is not an error message; it is the review comment, delivered early enough
+to be free:</p>
+<pre><code class="language-json">{"hookSpecificOutput": {
+  "hookEventName": "PreToolUse",
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "[no-force-unwrap] line 3: Force-unwrap (!!) is banned.
+   Handle nullability explicitly — use ?. with a checked fallback,
+   requireNotNull(x) { \"reason\" }, or an early return."
+}}</code></pre>
+<p>The model reads that reason and corrects in the same turn. In practice it usually
+does not attempt the pattern again for the rest of the session — the block message
+is the cheapest code review the agent will ever get, and it only has to be delivered
+once per session instead of once per pull request.</p>
+<p>Equally important is what the gate deliberately does <em>not</em> judge. Unknown
+tools, file types the project does not gate, projects with no <code>.tenets/</code>,
+and edits whose outcome cannot be reconstructed (a stale <code>old_string</code>, a
+missing file) are all silent allows: the harness will reject impossible edits on its
+own, and the gate never double-judges. Every early return in
+<code>engine/events/pretooluse.py</code> is one of these deliberate allows, commented
+as such.</p>
+<h3>The canonical audit</h3>
+<p>One command defines the project's violation count:
+<code>python3 .tenets/engine/audit.py . --json</code>. It resolves configuration
+exactly as the hook does, scans real files at their real paths, and counts only
+authored rules — ast-grep's own built-in diagnostics are excluded, because scanning
+pack-by-pack triple-counts them (this repository learned that the honest way: a
+52-versus-55 discrepancy that turned out to be the built-in
+<code>unused-suppression</code> diagnostic firing once per pack whose scan the legacy
+suppression didn't apply to). CI pins the number: golden must audit 0, broken must
+audit 52, and drift fails the build until the change is made deliberately.</p>
+
+<h2 id="ch4">4 · Rules are data</h2>
+<p>The first version of write-time enforcement everyone builds is a script per rule
+— and each script re-parses the language with regex, carries its own private bugs,
+and has no shared test harness. The failure mode is quiet: string matching cannot
+tell code from a string literal. A five-line hook that blocks <code>!!</code> also
+blocks <code>"the !! operator is banned here"</code>. Strings lie. Syntax doesn't.</p>
+<p>So rules here are <em>data</em>, not code: declarative YAML over a syntax tree,
+executed by <a href="https://ast-grep.github.io">ast-grep</a> — one Rust engine, 25+
+languages, whole-repo scans in seconds. A complete rule is small enough to read on a
+slide:</p>
+<pre><code class="language-yaml">id: no-force-unwrap
+language: kotlin
+severity: error
+message: Force-unwrap (!!) is banned. Handle nullability explicitly — use ?. with
+  a checked fallback, requireNotNull(x) { "reason" }, or an early return.
+metadata:
+  tier: deny
+rule:
+  pattern: $A!!</code></pre>
+<p>Every rule ships with test cases — <code>valid:</code> snippets that must not
+match and <code>invalid:</code> snippets that must — and <code>ast-grep test</code>
+runs them standalone inside any pack directory. A contributor adds a rule and its
+tests without learning anything about the engine.</p>
+<h3>Two corpora, one discipline</h3>
+<p>Rule tests prove a pattern matches what its author imagined. Two full applications
+prove it behaves against reality. The <b>golden</b> app (twelve modules, strict
+MVVM+MVI, pure-JVM domain modules, single-<code>invoke()</code> UseCases) must audit
+<b>zero</b> — it is the false-positive corpus, and when a rule fires on it, the rule
+gets tightened, never the app. The <b>broken</b> app (two modules, ten deliberate
+architectural sins, fully buildable and runnable) is the positive corpus: 52 findings,
+each one placed. The narrowing this forces is where rule quality actually comes from
+— <code>flows-over-suspend-in-repository</code> learned to exempt one-shot mutations
+returning <code>Unit</code> because golden's <code>toggleFavorite</code> can't
+sensibly become a Flow, and that exemption is now permanent, tested knowledge.</p>
+<h3>Packs and opinions</h3>
+<p>Rules group into packs: <code>kotlin-best-practices</code>,
+<code>android-best-practices</code>, <code>android-architecture</code> (the boundary
+rules: no Repository in a ViewModel constructor, no <code>android.*</code> import in
+a domain module, no Context in domain, ViewModels expose <code>state</code> plus
+<code>onAction</code> and nothing else), and <code>android-opinionated</code> — where
+every taste split is its own rule. Prefer flows everywhere? That's a rule. Forbid
+UseCases composing UseCases? That's a rule too, shipped
+<code>default_enabled:&nbsp;false</code> because this house allows composition.
+Disagreement with a rule is a configuration line, not a fork, and not a reason to
+reject the system: install the pack, drop the rule.</p>
+
+<h2 id="ch5">5 · The invariants</h2>
+<p>These are the load-bearing laws. Each is enforced by running code and at least one
+test that fires it; none is aspirational.</p>
+<div class="inv"><b>T1 — Only new violations block.</b> The diff compares finding
+multisets before and after the edit. A ten-year-old codebase with thousands of
+findings stays workable; finding <i>N+1</i> is impossible. Enforced in
+<code>engine/diff.py</code>; proven by e2e cases 03/04.</div>
+<div class="inv"><b>T2 — Everything is an error.</b> There is no warning tier.
+Agents ignore warnings; humans do too, honestly. A finding either blocks, is
+autofixed, or the rule shouldn't exist.</div>
+<div class="inv"><b>T3 — No side doors.</b> The suppression comment ast-grep honors
+is itself a blocked pattern (<code>no-suppression-comments</code>). A legacy
+suppression keeps working one level down — and is visible one level up, where new
+ones cannot land. A gate with a side door isn't a gate.</div>
+<div class="inv"><b>T4 — Missing scanner means deny.</b> If a project has
+<code>.tenets/</code> and the ast-grep binary is gone, Kotlin edits are denied with
+an install remedy — never waved through unchecked. Proven by e2e case 07.</div>
+<div class="inv"><b>T5 — Not installed means inert.</b> No <code>.tenets/</code>, no
+opinions. The gate never judges a project that didn't opt in.</div>
+<div class="inv"><b>T6 — Never double-judge.</b> An edit the harness itself will
+reject (stale anchor, missing file) is not ours to rule on: silent allow.</div>
+<div class="inv"><b>T7 — Deny wins over autofix.</b> When one edit trips both tiers,
+it blocks. The gate never silently fixes alongside a violation it is refusing.</div>
+<div class="inv"><b>T8 — Autofix never touches legacy code.</b> For an Edit, only
+the incoming <code>new_string</code> is rewritten. Surrounding old code is never
+silently modernized.</div>
+<div class="inv"><b>T9 — One canonical number.</b> Violation counts come from
+<code>audit.py</code>, which counts authored rules only. CI pins it.</div>
+<div class="inv"><b>T10 — The engine never parses rule YAML.</b> ast-grep owns rule
+semantics; the engine shuttles text. Rules stay portable to any future engine.</div>
+<div class="inv"><b>T11 — One brain, thin shims.</b> Exactly one gate implementation
+exists. Other harnesses get translators, never forks (chapter 6).</div>
+<div class="inv"><b>T12 — The lock preserves local edits.</b> Every vendored file is
+content-hashed; <code>update</code> refuses to clobber files a team has modified, and
+<code>doctor</code> makes drift visible instead of mysterious.</div>
+
+<h2 id="ch6">6 · Shims and dialects</h2>
+<p>Skills are files, so the multi-agent skills ecosystem solved portability with a
+canonical store and symlinks. Hooks are <em>behavior</em> crossing a protocol —
+a symlink cannot translate a payload. So portability here is one brain and
+translators at the edges:</p>
+<pre class="diagram">
+ Claude Code ── native ─────────────┐
+ Codex ── apply_patch shim ─────────┤──▶  ONE gate engine (.tenets/engine/)
+ OpenCode ── plugin (throw/mutate) ─┤        rules edited once,
+ Antigravity ── pending (honest) ───┘        enforced identically everywhere
+</pre>
+<p><b>Claude Code</b> speaks the gate's native contract. <b>Codex</b> sends file
+edits as an <code>apply_patch</code> envelope — a <code>*** Begin Patch</code> text
+blob — so its shim parses the envelope, projects each touched file's full content,
+runs each through the same gate, and merges verdicts (any deny wins, each reason
+line prefixed with its file). Codex's own verdict JSON is Claude-compatible, so the
+output side needs no translation at all. <b>OpenCode</b> loads a small plugin whose
+<code>tool.execute.before</code> maps the write, shells the engine, throws to deny,
+and mutates <code>output.args</code> to apply the autofix tier. <b>Antigravity</b>
+gets block-only support once its verdict schema can be pinned against a real
+install: its official docs page could not be machine-read at research time, and
+third-party accounts contradict each other on field names. That sentence is the
+whole policy — say what is verified, flag what is not.</p>
+<p>The installer supports both shapes: canonical (one vendored engine, per-harness
+wiring pointing at it — one rule edit enforced identically everywhere) and
+<code>--copy</code> for teams that want fully independent per-harness installs
+(roadmap).</p>
+
+<h2 id="ch7">7 · The escalation ladder</h2>
+<p>Not every mistake deserves a conversation with a language model.</p>
+<table>
+<tr><th>Tier</th><th>Cost</th><th>When</th></tr>
+<tr><td><span class="verdict-fix">autofix</span></td><td>sub-millisecond, zero model round-trips</td><td>Mechanically fixable, judgment-free: <code>assertEquals(true, x)</code> becomes <code>assertTrue(x)</code>. The hook rewrites the input in flight; the write lands clean.</td></tr>
+<tr><td><span class="verdict-deny">deny + teach</span></td><td>one corrected retry, same turn</td><td>Needs the model's judgment: restructure this, route it through a UseCase, name it properly. The reason says what to do instead.</td></tr>
+<tr><td>human</td><td>a conversation</td><td>Rare, and usually means a rule is wrong or a genuine design fork appeared. Rules are 15 lines; fix the rule.</td></tr>
+</table>
+<p>The codemod tier is ordinary ast-grep <code>fix:</code> on the same rule file —
+no second system:</p>
+<pre><code class="language-yaml">rule:
+  pattern: assertEquals(true, $X)
+fix: assertTrue($X)</code></pre>
+<p>One honest limitation, documented where it lives: under Codex, autofix currently
+degrades to a deny-with-reason, because <code>apply_patch</code> has no channel for
+handing back a revised envelope. The model fixes it itself; nothing slips through.</p>
+
+<h2 id="ch8">8 · A system that evolves</h2>
+<p>The gate is not a product you finish; it is a place your standards accumulate.
+The growth loop is the whole method:</p>
+<p class="lead" style="text-align:center">When review catches something twice,<br>
+it becomes a rule with a test.<br>Then it stops recurring.</p>
+<p>A rule is fifteen lines of YAML plus test cases, validated against two standing
+corpora — the marginal cost of making a mistake impossible is under an hour, and it
+is paid once. The engine side mirrors this: one orchestrator per lifecycle event
+dispatching to independently tested stages, so the system grows by adding a module,
+never by editing a monolith. The lock keeps team customization safe: vendored rules
+are content-hashed, local edits are never clobbered by <code>update</code>, and
+<code>doctor</code> reports drift with a remedy instead of a mystery.</p>
+<p>The <a href="example/index.html">worked example</a> walks the loop once, end to
+end, with the real artifacts — including the red run before the green one.</p>
+
+<h2 id="ch9">9 · Case history: six bugs, one bug</h2>
+<p>This system was built largely by coding agents, under exactly the review
+discipline it preaches. Six real defects escaped the builders' green test suites and
+were caught in adversarial review. They are worth a chapter because they are all the
+same defect:</p>
+<table>
+<tr><th>#</th><th>Defect</th><th>Why the tests were green anyway</th></tr>
+<tr><td>1</td><td>The scanner copied projected content to a bare temp file, erasing the real path — path-scoped rules (<code>**/domain/**</code>, <code>**/test/**</code>) could never fire on a live edit.</td><td>Rule tests ran against the rules; unit tests ran against the stages. Nothing scanned a projected file at a path-scoped location through the hook.</td></tr>
+<tr><td>2</td><td>Three phantom findings in a sweep: ast-grep's built-in <code>unused-suppression</code> diagnostic, triple-counted by per-pack scanning.</td><td>Both counts were "correct"; nobody had defined which command owns the number.</td></tr>
+<tr><td>3</td><td>The installer vendored the engine without exec bits and wired a command that needed them — every installed project had a dead gate, and <code>doctor</code> said "wired."</td><td>The integration test asserted file layout and JSON shape. It never <em>fired</em> the installed hook.</td></tr>
+<tr><td>4</td><td>The OpenCode plugin resolved the engine relative to its own file — correct in this repo, a nonexistent path in every vendored install: all writes failed.</td><td>The smoke test ran in the dev layout only.</td></tr>
+<tr><td>5</td><td>The Codex parser dropped bare empty lines inside hunks, making anchors unfindable — valid patches skipped, unchecked. Fail-open.</td><td>No fixture contained the envelope variant reality produces.</td></tr>
+<tr><td>6</td><td>The runtime OpenCode plugin escaped the lock entirely — invisible to drift detection and update.</td><td>Nothing asserted the lock's <em>coverage</em>, only its correctness for what it contained.</td></tr>
+</table>
+<p>Every one of these is a test that admired the artifact instead of firing it in
+its deployed shape. Layout was checked; behavior was assumed. It is the same
+fake-green this whole system exists to prevent in application code, reproduced
+faithfully at the meta level by the tools building it — and the countermeasure is
+the same at both levels. Two laws came out of this history and are now house rules
+for the repository:</p>
+<div class="inv"><b>Law 1 — red before green.</b> A gate-integrity fix lands with a
+regression test written first and observed failing. Defect #1's fix exists as e2e
+case 13, which was watched produce "expected deny, got allow" before the code
+changed.</div>
+<div class="inv"><b>Law 2 — fire the artifact.</b> An install test runs the installed
+thing the way a user's harness will: the CLI's integration test now pipes a violation
+through the exact command it wired and asserts the deny. Green that never executed
+the deployed shape is not green.</div>
+
+<h2 id="appendix">Appendix</h2>
+<h3>A · Harness matrix (verified July 2026, primary sources)</h3>
+<table>
+<tr><th></th><th>Claude Code</th><th>Codex CLI</th><th>Antigravity</th><th>OpenCode</th></tr>
+<tr><td>Config</td><td><code>settings.json</code> hooks (6 scopes)</td><td><code>hooks.json</code> / <code>config.toml</code></td><td><code>hooks.json</code> (<code>.agents/</code>)</td><td>JS/TS plugins</td></tr>
+<tr><td>Pre-write block</td><td>yes — PreToolUse</td><td>yes — PreToolUse</td><td>yes</td><td>yes — <code>tool.execute.before</code></td></tr>
+<tr><td>Deny mechanism</td><td>exit 2, or verdict JSON</td><td>same JSON as Claude Code</td><td class="flag">field names UNVERIFIED</td><td>throw an Error</td></tr>
+<tr><td>Reason reaches model</td><td>yes (documented)</td><td>yes (same fields)</td><td class="flag">plausible, UNVERIFIED</td><td class="flag">UNVERIFIED</td></tr>
+<tr><td>In-flight input rewrite</td><td>yes — <code>updatedInput</code></td><td>yes — documented precisely</td><td><b>no</b> (SDK: Decide hooks cannot modify)</td><td>yes — mutate <code>output.args</code></td></tr>
+</table>
+<p class="dim">Notable trap: in Claude Code, exit code 2 blocks and exit 1 does not.
+Notable convergence: Codex sets <code>CLAUDE_PLUGIN_ROOT</code> for compatibility
+with existing Claude Code hooks. Notable honesty: nothing here relies on
+OpenCode's <code>permission.ask</code>, which is documented but has been broken in
+practice for months.</p>
+<h3>B · CLI</h3>
+<table>
+<tr><td><code>init</code></td><td>Detect harnesses, pick packs (or <code>--packs all</code> / <code>-y</code>), vendor rules + engine into <code>.tenets/</code>, write config + lock, wire every present harness. Idempotent.</td></tr>
+<tr><td><code>doctor [--json]</code></td><td>python3, ast-grep, config structure, lock drift, per-harness wiring — each check with a remedy. Exit 1 on any failure.</td></tr>
+<tr><td><code>audit [--json]</code></td><td>The canonical number, via the vendored engine.</td></tr>
+<tr><td><code>add / remove &lt;pack&gt;</code></td><td>Vendor or unvendor one pack; config and lock updated.</td></tr>
+<tr><td><code>update</code></td><td>Re-sync from source; locally edited files are listed and left alone.</td></tr>
+</table>
+<h3>C · Repository map</h3>
+<pre class="diagram">
+ packages/core/      the gate engine (stdlib Python): events/, projection, scan, diff, verdict, config, audit
+ packages/shims/     codex/ (apply_patch translator) · opencode/ (plugin)
+ packages/cli/       the installer (TypeScript, zero runtime deps)
+ packs/              4 packs · 19 rules · every rule with tests · every pack standalone
+ apps/golden/        the ideal — audits 0, and must stay there (CI-pinned)
+ apps/broken/        the specimen — audits 52, exactly (CI-pinned)
+ e2e/                payload replay: 13 cases through the real entrypoints
+ wiki/               this book
+</pre>
+
+<footer>
+portable-hooks (codename) · first edition, July 2026 · written against running code —
+if the book and the repository disagree, the repository is right and the book has a bug.
+</footer>
+
+</main>
+</body>
+</html>
