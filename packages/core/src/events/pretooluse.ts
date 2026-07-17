@@ -57,11 +57,26 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
     return allow(); // undecidable edit: let the harness decide
   }
 
-  let current: Match[];
-  let projected: Match[];
+  // The scan AND the autofix rewrite both shell out to ast-grep, so both can
+  // raise AstGrepMissing/AstGrepFailed. They share one try/catch: a scanner
+  // that vanishes or times out during the autofix pass must fail closed with
+  // the same specific reason as during scanning, not fall through to main()'s
+  // generic wrapper (which would also deny, but with a vaguer message).
   try {
-    current = await scan(proj.current, proj.path, config);
-    projected = await scan(proj.projected, proj.path, config);
+    const current = await scan(proj.current, proj.path, config);
+    const projected = await scan(proj.projected, proj.path, config);
+
+    const fresh = newViolations(current, projected);
+    if (fresh.length === 0) return allow();
+
+    // Anything not explicitly autofix-tier blocks (fail closed). If any
+    // blocking violation is new, deny wins: we never autofix alongside a block.
+    const blocking = fresh.filter((match) => match.tier !== TIER_AUTOFIX);
+    if (blocking.length > 0) {
+      return deny(denyReason(blocking));
+    }
+
+    return await runAutofix(proj, toolInput, config);
   } catch (error) {
     if (error instanceof AstGrepMissing) {
       // Config is present and gates this file, but the scanner is gone:
@@ -70,23 +85,12 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
     }
     if (error instanceof AstGrepFailed) {
       // The scanner ran but did not complete (timeout/killed/truncated): we
-      // cannot trust an empty or partial result as "no violations".
+      // cannot trust an empty or partial result as "no violations", nor an
+      // unverified autofix rewrite as "fixed".
       return deny(scanFailedReason(error));
     }
     throw error;
   }
-
-  const fresh = newViolations(current, projected);
-  if (fresh.length === 0) return allow();
-
-  // Anything not explicitly autofix-tier blocks (fail closed). If any blocking
-  // violation is new, deny wins: we never autofix alongside a block.
-  const blocking = fresh.filter((match) => match.tier !== TIER_AUTOFIX);
-  if (blocking.length > 0) {
-    return deny(denyReason(blocking));
-  }
-
-  return runAutofix(proj, toolInput, config);
 }
 
 async function runAutofix(proj: Projection, toolInput: ToolInput, config: Config): Promise<Verdict> {

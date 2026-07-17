@@ -117,7 +117,10 @@ test("listSourceFiles: enumerates without copying, skips .gitkeep, forward-slash
 test("looksLikeTestFile: recognizes the real shim naming convention observed in packages/shims", () => {
   expect(looksLikeTestFile("test_claude_compat.py")).toBe(true);
   expect(looksLikeTestFile("smoke-test.js")).toBe(true);
+  expect(looksLikeTestFile("claude_compat.test.ts")).toBe(true); // bun:test infix — the shim's own test
+  expect(looksLikeTestFile("portable-hooks.spec.ts")).toBe(true);
   expect(looksLikeTestFile("claude_compat.py")).toBe(false);
+  expect(looksLikeTestFile("claude_compat.ts")).toBe(false); // the real shim entrypoint, not a test
   expect(looksLikeTestFile("portable-hooks.js")).toBe(false);
   expect(looksLikeTestFile("latest.js")).toBe(false); // contains "test" but no separator before it
   expect(looksLikeTestFile("entry.py")).toBe(false);

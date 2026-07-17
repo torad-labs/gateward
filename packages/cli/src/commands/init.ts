@@ -2,7 +2,7 @@ import { usageError } from "../cli/errors";
 import { isInteractive, promptMultiselect } from "../cli/ui";
 import { buildLock, lockPath, serializeLock } from "../domain/lock";
 import { languagesForPacks, listPacks } from "../domain/packs";
-import { generateConfigToml } from "../domain/tenetsConfig";
+import { generateConfigToml, parseConfigToml } from "../domain/tenetsConfig";
 import { vendorDir, writeIfChanged } from "../domain/vendor";
 import { detectHarnesses, WIRE_ORDER } from "../harnesses";
 import { CORE_SRC, configTomlPath, engineDestDir, PACKS_ROOT, packsDestDir, readCliVersion, tenetsDir } from "../paths";
@@ -121,6 +121,53 @@ async function wireHarnesses(root: string, { note }: InitReporter): Promise<Wire
   return { lockFiles, changed };
 }
 
+/** Same string set regardless of order. */
+function sameEnabledSet(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((id) => set.has(id));
+}
+
+/**
+ * Writes `.tenets/config.toml`, but never clobbers a user's hand-edited rule
+ * overrides on a re-run. `generateConfigToml` regenerates the whole `[rules]`
+ * section from pack defaults, so a blind rewrite would silently discard any
+ * `[rules.<id>]` tier/enabled a user tuned by hand. So: if a config already
+ * exists and its enabled-pack SET is unchanged, leave it exactly as-is
+ * (unchanged). Only a first install, or a genuine change to which packs are
+ * enabled, regenerates — and changing the pack set is what `add`/`remove` are
+ * for if overrides must be preserved across that too.
+ */
+async function writeConfigPreservingEdits(
+  root: string,
+  selectedPacks: PackMeta[],
+  reporter: InitReporter,
+): Promise<WriteResult> {
+  const configPath = configTomlPath(root);
+  const configFile = Bun.file(configPath);
+  if (await configFile.exists()) {
+    const existing = parseConfigToml(await configFile.text());
+    if (
+      sameEnabledSet(
+        existing.packs.enabled,
+        selectedPacks.map((p) => p.id),
+      )
+    ) {
+      reporter.note("  (kept existing .tenets/config.toml — same packs; hand-edited rule overrides preserved)");
+      return "unchanged";
+    }
+  }
+  const configText = generateConfigToml({
+    languages: languagesForPacks(selectedPacks),
+    defaultTier: "deny",
+    packsDir: "packs",
+    enabledPacks: selectedPacks,
+  });
+  const result = await writeIfChanged(configPath, configText);
+  reporter.markChanged(result);
+  return result;
+}
+
 export async function runInit(root: string, opts: InitOptions): Promise<CommandOutcome> {
   const lines: string[] = [];
   let anyChange = false;
@@ -151,15 +198,7 @@ export async function runInit(root: string, opts: InitOptions): Promise<CommandO
   Object.assign(lockFiles, wired.lockFiles);
   if (wired.changed) anyChange = true;
 
-  const languages = languagesForPacks(selectedPacks);
-  const configText = generateConfigToml({
-    languages,
-    defaultTier: "deny",
-    packsDir: "packs",
-    enabledPacks: selectedPacks,
-  });
-  const configResult = await writeIfChanged(configTomlPath(root), configText);
-  reporter.markChanged(configResult);
+  const configResult = await writeConfigPreservingEdits(root, selectedPacks, reporter);
   reporter.note(reportResult(".tenets/config.toml", configResult));
 
   const lock = buildLock(`portable-hooks@${await readCliVersion()}`, lockFiles);

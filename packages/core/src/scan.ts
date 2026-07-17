@@ -18,7 +18,14 @@ import * as path from "node:path";
 import type { Config } from "./config";
 
 export const BINARY = "ast-grep";
-const DEFAULT_TIMEOUT_MS = 30_000;
+// Per-invocation ceiling for one ast-grep run over one file. A single-file
+// scan is normally sub-second; this bounds a pathological hang. It must stay
+// well under the wired hook timeout (30s — see claude.ts/codex.ts): the hook
+// runs up to two scans plus an optional autofix, and on a timeout the engine
+// denies (fail closed). If the *harness* killed the hook first it would treat
+// that as non-blocking (fail open), so this value is a security parameter, not
+// just a convenience. Overridable in tests via PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS.
+const DEFAULT_TIMEOUT_MS = 8_000;
 
 /** Thrown when the ast-grep binary is not on PATH. */
 export class AstGrepMissing extends Error {
