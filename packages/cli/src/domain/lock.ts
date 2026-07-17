@@ -3,8 +3,8 @@ import * as path from "node:path";
 import { LockFileSchema, parseOrNull } from "../boundaries";
 import type { LockFile } from "../types";
 
-export const LOCK_VERSION = 1;
-export const LOCK_FILENAME = "lock.json";
+const LOCK_VERSION = 1;
+const LOCK_FILENAME = "lock.json";
 
 export function sha256(content: Uint8Array | string): string {
   return new Bun.CryptoHasher("sha256").update(content).digest("hex");

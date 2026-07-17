@@ -21,12 +21,12 @@ const CONFIG_SECTION_HEADER_RE = /^\[([^\]]+)\]$/;
 /** Splits config.toml text into lines, tolerating CRLF line endings. */
 const CONFIG_LINE_SPLIT_RE = /\r?\n/;
 
-export interface ConfigTomlCore {
+interface ConfigTomlCore {
   languages: string[];
   defaultTier: string;
 }
 
-export interface ConfigTomlPacks {
+interface ConfigTomlPacks {
   packsDir: string;
   enabled: string[];
 }
@@ -52,7 +52,7 @@ function tomlStringArray(values: string[]): string {
   return `[${values.map(tomlString).join(", ")}]`;
 }
 
-export interface GenerateConfigTomlOptions {
+interface GenerateConfigTomlOptions {
   languages: string[];
   defaultTier: string;
   packsDir: string;

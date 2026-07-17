@@ -24,18 +24,18 @@ import * as path from "node:path";
 import * as v from "valibot";
 import { PackageVersionSchema } from "./boundaries";
 
-export const REPO_ROOT = path.resolve(import.meta.dir, "..", "..", "..");
+const REPO_ROOT = path.resolve(import.meta.dir, "..", "..", "..");
 export const CORE_SRC = path.join(REPO_ROOT, "packages", "core", "src");
 export const PACKS_ROOT = path.join(REPO_ROOT, "packs");
 export const SHIMS_ROOT = path.join(REPO_ROOT, "packages", "shims");
-export const CLI_PACKAGE_JSON = path.join(REPO_ROOT, "packages", "cli", "package.json");
+const CLI_PACKAGE_JSON = path.join(REPO_ROOT, "packages", "cli", "package.json");
 
 /** The project this CLI is being run against: always the current working directory. */
 export function projectRoot(): string {
   return process.cwd();
 }
 
-export const TENETS_DIR = ".tenets";
+const TENETS_DIR = ".tenets";
 
 export function tenetsDir(root: string): string {
   return path.join(root, TENETS_DIR);

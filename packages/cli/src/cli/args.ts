@@ -8,17 +8,17 @@
  */
 import { usageError } from "./errors";
 
-export interface FlagSpec {
+interface FlagSpec {
   type: "string" | "boolean";
   short?: string;
 }
 
-export interface ParseSpec {
+interface ParseSpec {
   flags?: Record<string, FlagSpec>;
   allowPositionals?: boolean;
 }
 
-export interface ParsedFlags {
+interface ParsedFlags {
   values: Record<string, string | boolean | undefined>;
   positionals: string[];
 }

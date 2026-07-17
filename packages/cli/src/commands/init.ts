@@ -8,7 +8,7 @@ import { detectHarnesses, WIRE_ORDER } from "../harnesses";
 import { CORE_SRC, configTomlPath, engineDestDir, PACKS_ROOT, packsDestDir, readCliVersion, tenetsDir } from "../paths";
 import type { CommandOutcome, HarnessDetection, PackMeta, WriteResult } from "../types";
 
-export interface InitOptions {
+interface InitOptions {
   /** Raw `--packs` value: "all" or a comma-separated id list. */
   packsFlag?: string;
   yes: boolean;

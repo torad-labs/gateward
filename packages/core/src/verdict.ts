@@ -6,7 +6,7 @@
  * - autofix -> `permissionDecision: "allow"` plus `updatedInput` carrying the
  *   rewritten content (Write) or new_string (Edit).
  */
-export const EVENT = "PreToolUse";
+const EVENT = "PreToolUse";
 
 export interface Verdict {
   hookSpecificOutput: {
