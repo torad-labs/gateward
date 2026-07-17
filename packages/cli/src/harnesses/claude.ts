@@ -26,7 +26,7 @@ async function wire({ root }: WireContext): Promise<WireReport> {
   try {
     merged = mergeClaudeSettings(existingText);
   } catch (err) {
-    throw new Error(`.claude/settings.json exists but is not valid JSON: ${(err as Error).message}`);
+    throw new Error(`.claude/settings.json exists but is not valid JSON: ${(err as Error).message}`, { cause: err });
   }
   const result = await writeIfChanged(settingsPath, merged.text);
   return {

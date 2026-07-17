@@ -116,7 +116,6 @@ function failClosedOrAllow(cwd: string, detail: string): undefined {
   if (hasTenets(cwd)) {
     throw new Error(`[portable-hooks] ${detail} Refusing to allow an unchecked edit.`);
   }
-  return undefined;
 }
 
 interface PluginContext {
@@ -131,71 +130,98 @@ interface ToolExecuteOutput {
   args?: ToolArgs & Record<string, unknown>;
 }
 
-export async function PortableHooksPlugin(ctx?: PluginContext) {
+interface EngineVerdict {
+  hookSpecificOutput?: Record<string, unknown>;
+}
+
+/** Spawns the gate engine with the given payload and returns its parsed
+ * verdict, or undefined for a silent allow — either a clean write (empty
+ * stdout) or, via failClosedOrAllow, a project with nothing to enforce.
+ * Every failure path (spawn error, non-zero/signal exit, unparseable
+ * stdout) fails closed instead. */
+function runEngine(engine: string, payload: string, cwd: string): EngineVerdict | undefined {
+  let result: ReturnType<typeof Bun.spawnSync>;
+  try {
+    result = Bun.spawnSync({
+      cmd: [process.execPath, engine],
+      stdin: new TextEncoder().encode(payload),
+      timeout: SUBPROCESS_TIMEOUT_MS,
+    });
+  } catch (err) {
+    failClosedOrAllow(
+      cwd,
+      `the gate engine did not respond (${(err as Error).message}). Check that ${engine} runs under bun, then retry.`,
+    );
+    return;
+  }
+
+  if (!result.success) {
+    const why = result.signalCode === null ? `exited ${result.exitCode}` : `exited via signal ${result.signalCode}`;
+    failClosedOrAllow(
+      cwd,
+      `the gate engine did not respond (${why}). Check that ${engine} runs under bun, then retry.`,
+    );
+    return;
+  }
+
+  const out = (result.stdout?.toString() ?? "").trim();
+  if (!out) return; // silent allow: clean write
+
+  try {
+    return JSON.parse(out) as EngineVerdict;
+  } catch (err) {
+    failClosedOrAllow(cwd, `the gate engine printed unparseable output (${(err as Error).message}).`);
+  }
+}
+
+/** Applies one engine verdict to the OpenCode tool call: throws on deny, or
+ * mutates `output.args` in place with the engine's rewritten content/
+ * new_string on an autofix allow. No-op on a plain allow with no rewrite. */
+function applyVerdict(verdict: EngineVerdict, output: ToolExecuteOutput): void {
+  const hookOutput = verdict?.hookSpecificOutput ?? {};
+  if (hookOutput.permissionDecision === "deny") {
+    throw new Error(
+      typeof hookOutput.permissionDecisionReason === "string"
+        ? hookOutput.permissionDecisionReason
+        : "portable-hooks denied this edit",
+    );
+  }
+  if (hookOutput.permissionDecision === "allow" && hookOutput.updatedInput && output.args) {
+    const updated = hookOutput.updatedInput as { content?: unknown; new_string?: unknown };
+    if (typeof updated.content === "string") output.args.content = updated.content;
+    if (typeof updated.new_string === "string") output.args.newString = updated.new_string;
+  }
+}
+
+// Not declared async: every step here (resolveEnginePretooluse, hasTenets,
+// Bun.spawnSync) is deliberately synchronous (see the module doc), and both
+// call sites (OpenCode's loader, this package's smoke-test.ts) already
+// `await` the result, which resolves a plain return value immediately.
+function PortableHooksPlugin(ctx?: PluginContext) {
   const context = ctx ?? {};
   return {
-    "tool.execute.before": async (input: ToolExecuteInput, output: ToolExecuteOutput) => {
+    "tool.execute.before": (input: ToolExecuteInput, output: ToolExecuteOutput) => {
       const mapped = claudeToolInputFor(input?.tool, output?.args ?? {});
       if (mapped === null) return; // not a write/edit call this gate covers
 
       const cwd = context.directory || process.cwd();
       const engine = resolveEnginePretooluse(cwd);
       if (engine === null) {
-        return failClosedOrAllow(
+        failClosedOrAllow(
           cwd,
           "the gate engine was not found — no .tenets/engine/ above the working " +
             "directory and no dev layout. Re-run `portable-hooks init`, then retry.",
         );
+        return;
       }
 
       const payload = JSON.stringify({ tool_name: mapped.name, tool_input: mapped.input });
-      let result: ReturnType<typeof Bun.spawnSync>;
-      try {
-        result = Bun.spawnSync({
-          cmd: [process.execPath, engine],
-          stdin: new TextEncoder().encode(payload),
-          timeout: SUBPROCESS_TIMEOUT_MS,
-        });
-      } catch (err) {
-        return failClosedOrAllow(
-          cwd,
-          `the gate engine did not respond (${(err as Error).message}). Check that ${engine} runs under bun, then retry.`,
-        );
-      }
-
-      if (!result.success) {
-        const why = result.signalCode != null ? `exited via signal ${result.signalCode}` : `exited ${result.exitCode}`;
-        return failClosedOrAllow(
-          cwd,
-          `the gate engine did not respond (${why}). Check that ${engine} runs under bun, then retry.`,
-        );
-      }
-
-      const out = (result.stdout?.toString() ?? "").trim();
-      if (!out) return; // silent allow: clean write
-
-      let verdict: { hookSpecificOutput?: Record<string, unknown> };
-      try {
-        verdict = JSON.parse(out) as typeof verdict;
-      } catch (err) {
-        return failClosedOrAllow(cwd, `the gate engine printed unparseable output (${(err as Error).message}).`);
-      }
-
-      const hookOutput = verdict?.hookSpecificOutput ?? {};
-      if (hookOutput.permissionDecision === "deny") {
-        throw new Error(
-          typeof hookOutput.permissionDecisionReason === "string"
-            ? hookOutput.permissionDecisionReason
-            : "portable-hooks denied this edit",
-        );
-      }
-      if (hookOutput.permissionDecision === "allow" && hookOutput.updatedInput && output.args) {
-        const updated = hookOutput.updatedInput as { content?: unknown; new_string?: unknown };
-        if (typeof updated.content === "string") output.args.content = updated.content;
-        if (typeof updated.new_string === "string") output.args.newString = updated.new_string;
-      }
+      const verdict = runEngine(engine, payload, cwd);
+      if (verdict === undefined) return; // silent allow: clean write, or failClosedOrAllow chose to allow
+      applyVerdict(verdict, output);
     },
   };
 }
 
+// biome-ignore lint/style/noDefaultExport: OpenCode's plugin loader imports the default export
 export default PortableHooksPlugin;

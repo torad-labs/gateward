@@ -2,6 +2,11 @@ import { expect, test } from "bun:test";
 import { parseFlags } from "./args";
 import { CliError } from "./errors";
 
+const MENTIONS_NOPE_FLAG_RE = /--nope/;
+const REQUIRES_A_VALUE_RE = /requires a value/;
+const DOES_NOT_TAKE_A_VALUE_RE = /does not take a value/;
+const UNEXPECTED_ARGUMENT_STRAY_RE = /Unexpected argument 'stray'/;
+
 test("parseFlags: string flag accepts both '--flag value' and '--flag=value'", () => {
   const spaced = parseFlags(["--packs", "all"], { flags: { packs: { type: "string" } } });
   expect(spaced.values.packs).toBe("all");
@@ -23,20 +28,20 @@ test("parseFlags: unknown option is a usage error (exit code 2)", () => {
   } catch (err) {
     if (!(err instanceof CliError)) throw err;
     expect(err.exitCode).toBe(2);
-    expect(err.message).toMatch(/--nope/);
+    expect(err.message).toMatch(MENTIONS_NOPE_FLAG_RE);
   }
 });
 
 test("parseFlags: a string flag with no value is a usage error", () => {
-  expect(() => parseFlags(["--packs"], { flags: { packs: { type: "string" } } })).toThrow(/requires a value/);
+  expect(() => parseFlags(["--packs"], { flags: { packs: { type: "string" } } })).toThrow(REQUIRES_A_VALUE_RE);
 });
 
 test("parseFlags: a value on a boolean flag is a usage error", () => {
-  expect(() => parseFlags(["--yes=1"], { flags: { yes: { type: "boolean" } } })).toThrow(/does not take a value/);
+  expect(() => parseFlags(["--yes=1"], { flags: { yes: { type: "boolean" } } })).toThrow(DOES_NOT_TAKE_A_VALUE_RE);
 });
 
 test("parseFlags: positionals are rejected unless allowed, collected when allowed", () => {
-  expect(() => parseFlags(["stray"], {})).toThrow(/Unexpected argument 'stray'/);
+  expect(() => parseFlags(["stray"], {})).toThrow(UNEXPECTED_ARGUMENT_STRAY_RE);
   const allowed = parseFlags(["one", "two"], { allowPositionals: true });
   expect(allowed.positionals).toEqual(["one", "two"]);
 });

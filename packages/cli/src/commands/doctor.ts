@@ -55,6 +55,7 @@ async function checkLockDrift(root: string): Promise<DoctorCheck> {
   const drifted: string[] = [];
   for (const [key, expectedHash] of Object.entries(lock.files)) {
     const filePath = path.join(tDir, ...key.split("/"));
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so the drifted list stays in lock.json's own key order
     if (!(await Bun.file(filePath).exists())) {
       drifted.push(`${key} (missing)`);
       continue;
@@ -89,6 +90,7 @@ export async function runDoctor(root: string): Promise<DoctorCheck[]> {
   for (const detection of detectHarnesses(root)) {
     if (!detection.detected) continue;
     const adapter = HARNESSES.find((a) => a.id === detection.harness);
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so checks stay in harness-detection order for a stable doctor report
     if (adapter) checks.push(await adapter.check(root));
   }
   return checks;

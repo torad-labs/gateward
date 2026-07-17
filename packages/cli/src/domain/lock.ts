@@ -1,5 +1,6 @@
 /** sha256 content hashing and `.tenets/lock.json` read/write/build. */
 import * as path from "node:path";
+import { LockFileSchema, parseOrNull } from "../boundaries";
 import type { LockFile } from "../types";
 
 export const LOCK_VERSION = 1;
@@ -21,7 +22,11 @@ export function toLockKey(relPath: string): string {
 /** Builds a lock file, hash keys sorted for a deterministic, diff-stable serialization. */
 export function buildLock(source: string, files: Record<string, string>): LockFile {
   const sorted: Record<string, string> = {};
-  for (const key of Object.keys(files).sort()) sorted[key] = files[key];
+  for (const key of Object.keys(files).sort()) {
+    const value = files[key];
+    if (value === undefined) continue;
+    sorted[key] = value;
+  }
   return { version: LOCK_VERSION, source, files: sorted };
 }
 
@@ -36,9 +41,13 @@ export function lockPath(tenetsDir: string): string {
 export async function readLock(tenetsDir: string): Promise<LockFile | null> {
   const file = Bun.file(lockPath(tenetsDir));
   if (!(await file.exists())) return null;
+  let raw: unknown;
   try {
-    return (await file.json()) as LockFile;
+    raw = await file.json();
   } catch {
-    return null;
+    return null; // not JSON at all
   }
+  // A structurally-wrong lock.json is treated as absent, same as corrupt:
+  // the caller (doctor/update/add/remove) rebuilds from the vendored files.
+  return parseOrNull(LockFileSchema, raw);
 }

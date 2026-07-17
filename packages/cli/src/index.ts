@@ -37,8 +37,9 @@ async function handleInit(rest: string[]): Promise<void> {
       yes: { type: "boolean", short: "y" },
     },
   });
+  const packsFlag = values.packs as string | undefined;
   const outcome = await runInit(projectRoot(), {
-    packsFlag: values.packs as string | undefined,
+    ...(packsFlag === undefined ? {} : { packsFlag }),
     yes: Boolean(values.yes),
   });
   console.log(outcome.lines.join("\n"));
@@ -63,7 +64,7 @@ async function handleAudit(rest: string[]): Promise<void> {
 
 async function handleAdd(rest: string[]): Promise<void> {
   const { positionals } = parseFlags(rest, { allowPositionals: true });
-  const packId = positionals[0];
+  const [packId] = positionals;
   if (!packId) usageError("`add` requires a pack id, e.g. `portable-hooks add kotlin-best-practices`.");
   const outcome = await runAdd(projectRoot(), packId);
   console.log(outcome.lines.join("\n"));
@@ -71,7 +72,7 @@ async function handleAdd(rest: string[]): Promise<void> {
 
 async function handleRemove(rest: string[]): Promise<void> {
   const { positionals } = parseFlags(rest, { allowPositionals: true });
-  const packId = positionals[0];
+  const [packId] = positionals;
   if (!packId) usageError("`remove` requires a pack id, e.g. `portable-hooks remove kotlin-best-practices`.");
   const outcome = await runRemove(projectRoot(), packId);
   console.log(outcome.lines.join("\n"));

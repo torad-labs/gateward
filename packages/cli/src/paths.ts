@@ -21,6 +21,8 @@
  * tarball and updates these paths accordingly — tracked on the roadmap.
  */
 import * as path from "node:path";
+import * as v from "valibot";
+import { PackageVersionSchema } from "./boundaries";
 
 export const REPO_ROOT = path.resolve(import.meta.dir, "..", "..", "..");
 export const CORE_SRC = path.join(REPO_ROOT, "packages", "core", "src");
@@ -52,6 +54,6 @@ export function configTomlPath(root: string): string {
 }
 
 export async function readCliVersion(): Promise<string> {
-  const pkg = (await Bun.file(CLI_PACKAGE_JSON).json()) as { version: string };
+  const pkg = v.parse(PackageVersionSchema, await Bun.file(CLI_PACKAGE_JSON).json());
   return pkg.version;
 }

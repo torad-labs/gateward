@@ -23,12 +23,44 @@ export interface ParsedFlags {
   positionals: string[];
 }
 
+/** A dashed token, resolved to its long flag name plus any `=value`. */
+interface FlagToken {
+  name: string;
+  inlineValue?: string;
+}
+
+function resolveFlagToken(arg: string, shortToLong: ReadonlyMap<string, string>): FlagToken {
+  if (arg.startsWith("--")) {
+    const eq = arg.indexOf("=");
+    if (eq === -1) return { name: arg.slice(2) };
+    return { name: arg.slice(2, eq), inlineValue: arg.slice(eq + 1) };
+  }
+  const long = shortToLong.get(arg.slice(1));
+  if (!long) usageError(`Unknown option '${arg}'.`);
+  return { name: long };
+}
+
+/** Applies one resolved flag; returns how many extra args it consumed (0 or 1). */
+function applyFlag(token: FlagToken, flag: FlagSpec, next: string | undefined, values: ParsedFlags["values"]): number {
+  if (flag.type === "boolean") {
+    if (token.inlineValue !== undefined) usageError(`Option '--${token.name}' does not take a value.`);
+    values[token.name] = true;
+    return 0;
+  }
+  if (token.inlineValue !== undefined) {
+    values[token.name] = token.inlineValue;
+    return 0;
+  }
+  if (next === undefined) usageError(`Option '--${token.name}' requires a value.`);
+  values[token.name] = next;
+  return 1;
+}
+
 export function parseFlags(args: string[], spec: ParseSpec = {}): ParsedFlags {
   const flags = spec.flags ?? {};
-  const shortToLong = new Map<string, string>();
-  for (const [name, flag] of Object.entries(flags)) {
-    if (flag.short) shortToLong.set(flag.short, name);
-  }
+  const shortToLong = new Map(
+    Object.entries(flags).flatMap(([name, flag]) => (flag.short ? [[flag.short, name] as const] : [])),
+  );
 
   const values: ParsedFlags["values"] = {};
   const positionals: string[] = [];
@@ -36,6 +68,7 @@ export function parseFlags(args: string[], spec: ParseSpec = {}): ParsedFlags {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
+    if (arg === undefined) break;
     if (onlyPositionals || arg === "-" || !arg.startsWith("-")) {
       positionals.push(arg);
       continue;
@@ -45,33 +78,10 @@ export function parseFlags(args: string[], spec: ParseSpec = {}): ParsedFlags {
       continue;
     }
 
-    let name: string;
-    let inlineValue: string | undefined;
-    if (arg.startsWith("--")) {
-      const eq = arg.indexOf("=");
-      name = eq === -1 ? arg.slice(2) : arg.slice(2, eq);
-      if (eq !== -1) inlineValue = arg.slice(eq + 1);
-    } else {
-      const long = shortToLong.get(arg.slice(1));
-      if (!long) usageError(`Unknown option '${arg}'.`);
-      name = long;
-    }
-
-    const flag = flags[name];
-    if (!flag) usageError(`Unknown option '--${name}'.`);
-    if (flag.type === "boolean") {
-      if (inlineValue !== undefined) usageError(`Option '--${name}' does not take a value.`);
-      values[name] = true;
-      continue;
-    }
-    if (inlineValue !== undefined) {
-      values[name] = inlineValue;
-      continue;
-    }
-    const next = args[i + 1];
-    if (next === undefined) usageError(`Option '--${name}' requires a value.`);
-    values[name] = next;
-    i++;
+    const token = resolveFlagToken(arg, shortToLong);
+    const flag = flags[token.name];
+    if (!flag) usageError(`Unknown option '--${token.name}'.`);
+    i += applyFlag(token, flag, args[i + 1], values);
   }
 
   if (!spec.allowPositionals && positionals.length > 0) {

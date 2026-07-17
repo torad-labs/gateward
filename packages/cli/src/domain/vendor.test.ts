@@ -37,9 +37,13 @@ test("vendorDir: recursively copies files, preserving relative structure and has
     const byPath = Object.fromEntries(results.map((r) => [r.relPath, r]));
 
     expect(Object.keys(byPath).length).toBe(2);
-    expect(byPath["pack.yml"].result).toBe("created");
-    expect(byPath["pack.yml"].hash).toBe(sha256("id: x\n"));
-    expect(byPath["rules/one.yml"].result).toBe("created");
+    const packYml = byPath["pack.yml"];
+    if (packYml === undefined) throw new Error("expected pack.yml in vendor results");
+    expect(packYml.result).toBe("created");
+    expect(packYml.hash).toBe(sha256("id: x\n"));
+    const rulesOneYml = byPath["rules/one.yml"];
+    if (rulesOneYml === undefined) throw new Error("expected rules/one.yml in vendor results");
+    expect(rulesOneYml.result).toBe("created");
     expect(await Bun.file(path.join(dest, "pack.yml")).text()).toBe("id: x\n");
     expect(await Bun.file(path.join(dest, "rules", "one.yml")).text()).toBe("rule: one\n");
   } finally {
@@ -86,7 +90,9 @@ test("vendorInto: a single source file is copied into the destination directory 
     await Bun.write(shimFile, "module.exports = {};\n");
     const results = await vendorInto(shimFile, dest);
     expect(results.length).toBe(1);
-    expect(results[0].relPath).toBe("shim.js");
+    const [first] = results;
+    if (first === undefined) throw new Error("expected one vendored result");
+    expect(first.relPath).toBe("shim.js");
     expect(await Bun.file(path.join(dest, "shim.js")).text()).toBe("module.exports = {};\n");
   } finally {
     await Bun.$`rm -rf ${src}`.quiet();

@@ -1,9 +1,9 @@
 # Architecture
 
-portable-hooks is three cooperating pieces, all TypeScript on Bun, all zero-runtime-dependency:
+portable-hooks is three cooperating pieces, all TypeScript on Bun:
 
-1. **The gate engine** (`packages/core/`) — evaluates every attempted write in a gated project and answers allow/deny. Vendored verbatim into target projects as `.tenets/engine/`; runs there with `bun`, no install step, no node_modules.
-2. **The installer CLI** (`packages/cli/`) — vendors rule packs + engine into a project and wires them into detected harnesses. Runs from TypeScript source; there is no build step anywhere in this repository.
+1. **The gate engine** (`packages/core/`) — evaluates every attempted write in a gated project and answers allow/deny. Vendored verbatim into target projects as `.tenets/engine/`; runs there with `bun`, no install step, no node_modules. **Zero dependencies, structurally**: a vendored copy has nothing to import from.
+2. **The installer CLI** (`packages/cli/`) — vendors rule packs + engine into a project and wires them into detected harnesses. Runs from TypeScript source; there is no build step anywhere in this repository. Carries exactly one runtime dependency — [valibot](https://valibot.dev), used only in `boundaries.ts` to parse the JSON the CLI reads ("parse, don't validate"); everything past that edge is trusted, cast-free types.
 3. **Rule packs** (`packs/`) — declarative ast-grep YAML, each pack self-contained with its own tests.
 
 ## CLI layout and dependency rules
@@ -53,6 +53,7 @@ Prime rule: **if a Bun-native API exists, we use it.** Adopted everywhere:
 | Interactive input | raw-stdin escape-sequence decoder in `cli/ui.ts` (the multiselect needs raw-mode arrow keys, which line-oriented `prompt()` can't deliver; no `node:readline`) |
 | Scripts + test fixtures | `Bun.$` (rm -rf, mkdir -p) |
 | Arg parsing | hand-rolled `cli/args.ts` (house rule: narrow inputs get narrow, auditable parsers — same as pack.yml and config.toml) |
+| JSON boundary validation (CLI only) | valibot schemas in `boundaries.ts` (kernel) — the CLI's single runtime dependency; the engine's boundaries stay hand-narrowed because a vendored engine cannot import anything |
 | Test runner | `bun:test` with `expect()` |
 
 The **irreducible remainder** — `node:` builtins with no Bun-native equivalent, running on Bun's own native implementations of those modules. Frozen by `architecture.test.ts`; growing the list requires a row here with a justification:

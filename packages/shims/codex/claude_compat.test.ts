@@ -37,7 +37,9 @@ async function writeTenets(projectRoot: string): Promise<void> {
   await Bun.write(path.join(projectRoot, ".tenets", "config.toml"), CONFIG_TOML);
 }
 
-type Verdict = { hookSpecificOutput: { permissionDecision: string; permissionDecisionReason: string } };
+interface Verdict {
+  hookSpecificOutput: { permissionDecision: string; permissionDecisionReason: string };
+}
 
 const reasonOf = (result: Record<string, unknown> | null) =>
   (result as Verdict | null)?.hookSpecificOutput.permissionDecisionReason;

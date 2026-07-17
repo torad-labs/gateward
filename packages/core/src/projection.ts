@@ -35,7 +35,7 @@ export async function project(toolName: string, toolInput: ToolInput): Promise<P
   if (!path) return null;
 
   if (toolName === WRITE) {
-    const content = toolInput.content;
+    const { content } = toolInput;
     if (content === undefined || content === null) return null;
     const current = await read(path);
     return { path, toolName: WRITE, current: current ?? "", projected: content };

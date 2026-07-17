@@ -36,6 +36,7 @@ export function mergeCodexHooks(existingText: string | null, relEntrypoint: stri
 async function findShimEntrypoint(shimDestDir: string): Promise<string> {
   for (const candidate of ["entry.ts", "entry.py", "entry.js"]) {
     const candidatePath = path.join(shimDestDir, candidate);
+    // biome-ignore lint/performance/noAwaitInLoops: short-circuits on the first existing candidate, in preference order
     if (await Bun.file(candidatePath).exists()) return candidatePath;
   }
   const allFiles = fs
@@ -70,7 +71,7 @@ async function wire({ root }: WireContext): Promise<WireReport> {
   try {
     merged = mergeCodexHooks(existing, relEntry);
   } catch (err) {
-    throw new Error(`.codex/hooks.json exists but is not valid JSON: ${(err as Error).message}`);
+    throw new Error(`.codex/hooks.json exists but is not valid JSON: ${(err as Error).message}`, { cause: err });
   }
   const result = await writeIfChanged(hooksPath, merged.text);
   if (result !== "unchanged") changed = true;

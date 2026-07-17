@@ -28,7 +28,7 @@ export interface HarnessAdapter {
   readonly signals: string[];
   /** Vendors whatever this harness needs and wires its hook config. Called
    * unconditionally by `init` (wiring is idempotent and merge-not-clobber). */
-  wire(ctx: WireContext): Promise<WireReport>;
+  wire: (ctx: WireContext) => Promise<WireReport>;
   /** Doctor's wiring check, run only when this harness was detected. */
-  check(root: string): Promise<DoctorCheck>;
+  check: (root: string) => Promise<DoctorCheck>;
 }

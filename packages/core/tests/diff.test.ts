@@ -31,7 +31,9 @@ test("multiset counts: a repeated identical text is new", () => {
   const projected = [match("no-force-unwrap", "x!!"), match("no-force-unwrap", "x!!")];
   const fresh = newViolations(current, projected);
   expect(fresh.length).toBe(1);
-  expect(fresh[0].text).toBe("x!!");
+  const [first] = fresh;
+  if (first === undefined) throw new Error("expected a finding");
+  expect(first.text).toBe("x!!");
 });
 
 test("removing a legacy violation yields nothing new", () => {

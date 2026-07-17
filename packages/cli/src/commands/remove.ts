@@ -26,11 +26,10 @@ export async function runRemove(root: string, packId: string): Promise<CommandOu
 
   const tDir = tenetsDir(root);
   const existingLock = await readLock(tDir);
-  const files = existingLock ? { ...existingLock.files } : {};
   const prefix = `packs/${packId}/`;
-  for (const key of Object.keys(files)) {
-    if (key.startsWith(prefix)) delete files[key];
-  }
+  const files = existingLock
+    ? Object.fromEntries(Object.entries(existingLock.files).filter(([key]) => !key.startsWith(prefix)))
+    : {};
   const source = existingLock?.source ?? `portable-hooks@${await readCliVersion()}`;
   await writeIfChanged(lockPath(tDir), serializeLock(buildLock(source, files)));
 

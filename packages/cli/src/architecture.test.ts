@@ -11,6 +11,15 @@ import * as path from "node:path";
 
 const SRC = import.meta.dir;
 
+/** Captures an ES import/export statement's module specifier. */
+const IMPORT_EXPORT_SPECIFIER_RE = /^\s*(?:import|export)\b[^"']*["']([^"']+)["']/;
+/** A relative import path that resolves into cli/, commands/, or harnesses/. */
+const FORBIDDEN_DOMAIN_IMPORT_RE = /(^|\/)(cli|commands|harnesses)\//;
+/** Any reference to process.exit or process.exitCode. */
+const PROCESS_EXIT_RE = /process\.(exit|exitCode)\b/;
+/** Any direct stdout/stderr write, via console.* or process.std{out,err}.write. */
+const STDOUT_WRITE_RE = /console\.(log|error|warn|info)\(|process\.(stdout|stderr)\.write\(/;
+
 interface SourceModule {
   /** Forward-slash path relative to src/, e.g. "domain/vendor.ts". */
   rel: string;
@@ -26,8 +35,9 @@ async function loadModules(): Promise<SourceModule[]> {
     const text = await Bun.file(path.join(SRC, rel)).text();
     const imports: string[] = [];
     for (const line of text.split("\n")) {
-      const match = /^\s*(?:import|export)\b[^"']*["']([^"']+)["']/.exec(line);
-      if (match) imports.push(match[1]);
+      const match = IMPORT_EXPORT_SPECIFIER_RE.exec(line);
+      const specifier = match?.[1];
+      if (specifier !== undefined) imports.push(specifier);
     }
     modules.push({ rel: normalized, imports, text });
   }
@@ -83,7 +93,7 @@ test("architecture: domain/ is pure — it imports nothing from cli/, commands/,
     for (const spec of mod.imports) {
       const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(mod.rel), spec));
       expect(
-        spec.startsWith(".") && /(^|\/)(cli|commands|harnesses)\//.test(resolved),
+        spec.startsWith(".") && FORBIDDEN_DOMAIN_IMPORT_RE.test(resolved),
         `${mod.rel} imports ${spec} — domain/ must not depend on cli/, commands/, or harnesses/`,
       ).toBeFalsy();
     }
@@ -95,7 +105,7 @@ test("architecture: only index.ts owns the process exit code", async () => {
   for (const mod of modules) {
     if (mod.rel === "index.ts" || isTest(mod.rel)) continue;
     expect(
-      /process\.(exit|exitCode)\b/.test(mod.text),
+      PROCESS_EXIT_RE.test(mod.text),
       `${mod.rel} references process.exit/exitCode — commands return status; index.ts applies it`,
     ).toBeFalsy();
   }
@@ -107,7 +117,7 @@ test("architecture: only index.ts and cli/ui.ts write to stdout/stderr", async (
   for (const mod of modules) {
     if (allowed.has(mod.rel) || isTest(mod.rel)) continue;
     expect(
-      /console\.(log|error|warn|info)\(|process\.(stdout|stderr)\.write\(/.test(mod.text),
+      STDOUT_WRITE_RE.test(mod.text),
       `${mod.rel} writes to stdout/stderr — commands and domain return lines; index.ts prints`,
     ).toBeFalsy();
   }

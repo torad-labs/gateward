@@ -1,0 +1,138 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    // .claude/workflows/*.mjs are workflow DSL scripts executed by a custom
+    // runner that injects phase/pipeline/agent/parallel/log as ambient
+    // bindings (and allows a top-level `return`) — not standalone ES
+    // modules, so they aren't part of the linted TypeScript codebase.
+    // talk/ is conference-talk prep (deck.html, storyboards, notes) — not
+    // product source, same category as apps/demos/packs/wiki below.
+    "includes": ["**", "!bun.lock", "!wiki", "!apps", "!demos", "!packs", "!.claude/workflows", "!talk"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    },
+    // Bun runtime globals; crypto is the WebCrypto global (randomUUID/subtle).
+    "globals": ["Bun", "crypto"]
+  },
+  "linter": {
+    "enabled": true,
+    // No UI framework in this repo; group-wide "on" would otherwise enable
+    // React/Qwik/Solid/Vue-specific rules on plain TypeScript.
+    "domains": {
+      "react": "none",
+      "next": "none",
+      "qwik": "none",
+      "solid": "none",
+      "vue": "none"
+    },
+    // Every group fully on. Rules turned off below are documented house
+    // decisions, not silence — each carries its reason.
+    "rules": {
+      "correctness": "on",
+      "suspicious": "on",
+      "complexity": "on",
+      "style": "on",
+      "performance": "on",
+      "security": "on",
+      "nursery": "off"
+    }
+  },
+  "overrides": [
+    {
+      // House-decision rule disables, applied everywhere.
+      "includes": ["**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            // node: imports are governed by the frozen allowlist in
+            // packages/cli/src/architecture.test.ts + the ARCHITECTURE.md
+            // ledger — a per-file, per-specifier gate this blanket rule
+            // cannot express.
+            "noNodejsModules": "off",
+            // process.exitCode/cwd/platform/isTTY/execPath have no Bun
+            // equivalents (see the ledger); ownership of exit codes is
+            // enforced by architecture.test.ts instead.
+            "noProcessGlobal": "off"
+          },
+          "style": {
+            // The hook wire contract (tool_input, file_path, per_rule,
+            // hookSpecificOutput...) and TOML keys (default_tier, packs_dir)
+            // are external formats with fixed snake_case names; a naming
+            // rule cannot distinguish them from our own identifiers.
+            "useNamingConvention": "off",
+            // Constructor parameter properties (see core's Config class)
+            // are the concise idiom for immutable value holders.
+            "noParameterProperties": "off",
+            // House style: single-line guard clauses (`if (!x) return null;`).
+            "useBlockStatements": "off",
+            // Simple ternaries are house style; complex ones don't survive
+            // review anyway.
+            "noTernary": "off",
+            // The cursor-based parsers (pack.yml, args, apply_patch) use
+            // continue deliberately — state-machine scanning reads better
+            // with early continues than nested conditionals.
+            "noContinue": "off",
+            // i++ in the deliberate indexed loops (byte decoding, parser
+            // cursors) — see the loop decision tree in CONTRIBUTING.
+            "noIncrementDecrement": "off",
+            // Byte values, permission masks, and exit codes carry their
+            // meaning in context; a BYTE_ESC constant is not clearer than
+            // 0x1b next to its comment.
+            "noMagicNumbers": "off",
+            // Exports interleave with their doc comments by design.
+            "useExportsLast": "off"
+          },
+          "performance": {
+            // `import * as path from "node:path"` on builtins has no
+            // tree-shaking cost; the namespace form is the house idiom.
+            "noNamespaceImport": "off"
+          }
+        }
+      }
+    },
+    {
+      // index.ts and ui.ts own stdout by architecture; tests, scripts, and
+      // engine entrypoints print by design.
+      "includes": [
+        "packages/cli/src/index.ts",
+        "packages/cli/src/cli/ui.ts",
+        "**/*.test.ts",
+        "packages/shims/opencode/smoke-test.ts",
+        "scripts/**",
+        "e2e/**",
+        "packages/core/src/audit.ts",
+        "packages/core/src/events/pretooluse.ts",
+        "packages/shims/codex/claude_compat.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ],
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
