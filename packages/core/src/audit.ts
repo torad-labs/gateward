@@ -16,14 +16,18 @@
  * the stage quotes it verbatim, so the count must be stable, reproducible, and
  * actually correct — not an approximation.
  *
- * Why this does not call `scan()` directly: `scan()` is built for the hook's
- * job — judging *hypothetical* content that may not match anything on disk —
- * so it copies content into a temp path first. That copy keeps only the
- * file's project-relative shape, never its real location. This audit's
- * content is never hypothetical: every file already exists at its real path,
- * and several authored rules depend on that path (`files: ['**\/domain\/**']`
- * and friends). `scanFile` below reuses scan's rule-loading and subprocess
- * plumbing but invokes ast-grep directly against each file's real path.
+ * Why this does not call `scan()` directly: not because path-scoped rules
+ * would fail to fire through it — they wouldn't. `scan()`'s temp copy mirrors
+ * each file's project-relative path shape (see scan.ts's withTempFile), so a
+ * rule like `files: ['**\/domain\/**']` matches identically whether ast-grep
+ * is pointed at the temp mirror or the real file: the `domain/` segment
+ * survives the copy either way. The actual reason is simpler: this audit's
+ * content is never hypothetical — every file already exists, unchanged, at
+ * its real path — so scanning it through `scan()` would mean reading each
+ * file's bytes into memory just to rewrite them, byte-for-byte, into a fresh
+ * temp copy before ast-grep ever sees them. `scanFile` below reuses scan's
+ * rule-loading and subprocess plumbing but invokes ast-grep directly against
+ * each file's real path, skipping that pointless read-and-rewrite.
  *
  * Excluding ast-grep's own built-in diagnostics: ast-grep ships diagnostics
  * that are not authored rules — e.g. `unused-suppression` — which must never
@@ -121,8 +125,20 @@ export async function runAudit(
   options: { scanFile?: typeof scanFile } = {},
 ): Promise<AuditResult> {
   const scanOne = options.scanFile ?? scanFile;
-  const config = await find(projectRoot);
   const perRule = new Map<string, number>();
+
+  // This is a report, not a gate (see module doc): a config-load error (e.g.
+  // a malformed .tenets/config.toml) must not crash the audit with a
+  // stack trace. Report it to stderr and return the all-zero result, the
+  // same shape as "no .tenets/ here".
+  let config: Config | null;
+  try {
+    config = await find(projectRoot);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[audit] failed to load .tenets/config.toml: ${message}`);
+    return { perRule, total: 0, filesScanned: 0 };
+  }
   if (config === null) {
     return { perRule, total: 0, filesScanned: 0 };
   }

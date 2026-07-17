@@ -37,6 +37,14 @@
  * Note on caching: the native TOML import caches per absolute path for the
  * process lifetime. The hook and the audit are one-shot processes, so this is
  * irrelevant at runtime; tests must use a fresh path per distinct content.
+ *
+ * Note on a Bun/tomllib divergence: Bun's native TOML parser rejects
+ * digit-leading bare keys (e.g. `[rules.123-x]`) that Python's tomllib would
+ * accept. This is not worked around here — the CLI's rule-id allowlist
+ * (`^[a-z][a-z0-9-]*$`) already prevents any digit-leading id from being
+ * generated in practice, and a hand-crafted config with one simply throws,
+ * which the hook's caller turns into a fail-closed deny (see
+ * events/pretooluse.ts's top-level error handling).
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -159,6 +167,14 @@ async function load(configPath: string): Promise<Config> {
 
   const core = data.core ?? {};
   const languages = core.languages ?? [];
+  if (!Array.isArray(languages)) {
+    // e.g. `languages = "kotlin"` — a bracket-typo that TOML accepts as a
+    // valid string scalar. Left unchecked, gatedExtensions would iterate the
+    // string's characters and gate nothing, so the whole gate goes silently
+    // inert instead of failing loudly. Throw instead: the caller's fail-closed
+    // wrapper turns this into a deny.
+    throw new Error(`.tenets/config.toml: [core].languages must be an array of strings, got ${typeof languages}`);
+  }
   const defaultTier = core.default_tier ?? TIER_DENY;
 
   const packs = data.packs ?? {};
@@ -167,6 +183,9 @@ async function load(configPath: string): Promise<Config> {
     packsDir = path.resolve(configDir, packsDir);
   }
   const enabledPacks = packs.enabled ?? [];
+  if (!Array.isArray(enabledPacks)) {
+    throw new Error(`.tenets/config.toml: [packs].enabled must be an array of strings, got ${typeof enabledPacks}`);
+  }
 
   const packRuleDefaults: Record<string, boolean> = {};
   for (const pack of enabledPacks) {

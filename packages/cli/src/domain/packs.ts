@@ -16,6 +16,23 @@ const LEADING_WHITESPACE_RE = /^[ \t]*/;
 /** Splits pack.yml text into lines, tolerating CRLF line endings. */
 const PACK_YAML_LINE_SPLIT_RE = /\r?\n/;
 
+/** The only shape a pack id or rule id may take: lowercase, letter-leading,
+ * kebab-case. Both `id:` (a pack.yml value that becomes a path segment via
+ * packsDestDir()) and every rule id (interpolated into config.toml section
+ * headers) are validated against this before use — a value like
+ * `../../../.ssh` must never reach the filesystem as a path segment. Letter-
+ * leading also sidesteps a Bun-TOML digit-key limitation. */
+const SAFE_ID_RE = /^[a-z][a-z0-9-]*$/;
+
+/** Throws a clear, actionable error if `id` doesn't match {@link SAFE_ID_RE}. */
+function assertSafeId(id: string, kind: "pack id" | "rule id", dir: string): void {
+  if (!SAFE_ID_RE.test(id)) {
+    throw new Error(
+      `pack.yml at ${dir} has an invalid ${kind} "${id}": must match ${SAFE_ID_RE} (lowercase, letter-leading, kebab-case).`,
+    );
+  }
+}
+
 function leadingWhitespace(line: string): string {
   return LEADING_WHITESPACE_RE.exec(line)?.[0] ?? "";
 }
@@ -181,6 +198,8 @@ export function parsePackYaml(text: string, dir: string): PackMeta {
   if (!header.language) {
     throw new Error(`pack.yml at ${dir} has no top-level "language:"`);
   }
+  assertSafeId(header.id, "pack id", dir);
+  for (const rule of rules) assertSafeId(rule.id, "rule id", dir);
   return { id: header.id, title: header.title ?? header.id, language: header.language, dir, rules };
 }
 

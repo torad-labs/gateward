@@ -48,3 +48,30 @@ test("same text under a different rule is a distinct key", () => {
   const fresh = newViolations(current, projected);
   expect(fresh.map((m) => [m.ruleId, m.text])).toEqual([["rule-b", "token"]]);
 });
+
+/** Pins the deliberate trade-off documented in diff.ts's module doc:
+ * per-instance identity is not recoverable from ast-grep's (rule, text,
+ * line) output, so identity is defined by the (rule, text) content-multiset
+ * only — never by location. This test locks in the "swap" case: removing one
+ * instance and introducing a distinct new one at a different line nets to
+ * "one new finding", indistinguishable from the instance itself having moved. */
+function matchAt(ruleId: string, text: string, line: number): Match {
+  return { ruleId, message: "m", text, severity: "error", line, tier: "deny" };
+}
+
+test("a violation removed here and a distinct one introduced there nets to one new finding (documented trade-off)", () => {
+  const current = [matchAt("no-force-unwrap", "a!!", 10)];
+  const projected = [matchAt("no-force-unwrap", "b!!", 40)];
+  const fresh = newViolations(current, projected);
+  expect(fresh.map((m) => [m.text, m.line])).toEqual([["b!!", 40]]);
+});
+
+test("an unrelated line-shift of an unchanged violation does NOT block (location is intentionally not part of identity)", () => {
+  // Same (rule, text) — only the line moved, as an unrelated edit above it
+  // would cause. A location-aware key would see this as "old instance gone,
+  // new instance appeared" and block; the content-multiset key correctly
+  // sees it as the same pre-existing finding.
+  const current = [matchAt("no-force-unwrap", "a!!", 5)];
+  const projected = [matchAt("no-force-unwrap", "a!!", 25)];
+  expect(newViolations(current, projected)).toEqual([]);
+});

@@ -75,6 +75,31 @@ test("parsePackYaml: missing top-level id throws", () => {
   expect(() => parsePackYaml("title: No Id\nrules:\n", "/fake/dir")).toThrow();
 });
 
+test("parsePackYaml: a path-traversal pack id throws instead of being accepted", () => {
+  expect(() => parsePackYaml("id: ../../../.ssh\nlanguage: kotlin\nrules:\n", "/fake/dir")).toThrow(/invalid pack id/);
+});
+
+test("parsePackYaml: a digit-leading pack id throws", () => {
+  expect(() => parsePackYaml("id: 1nvalid\nlanguage: kotlin\nrules:\n", "/fake/dir")).toThrow(/invalid pack id/);
+});
+
+test("parsePackYaml: a path-traversal rule id throws instead of being accepted", () => {
+  const yaml = "id: sample-pack\nlanguage: kotlin\nrules:\n  - id: ../../etc/passwd\n    tier: deny\n";
+  expect(() => parsePackYaml(yaml, "/fake/dir")).toThrow(/invalid rule id/);
+});
+
+test("parsePackYaml: a digit-leading rule id throws", () => {
+  const yaml = "id: sample-pack\nlanguage: kotlin\nrules:\n  - id: 1bad-rule\n    tier: deny\n";
+  expect(() => parsePackYaml(yaml, "/fake/dir")).toThrow(/invalid rule id/);
+});
+
+test("parsePackYaml: valid lowercase kebab pack and rule ids pass", () => {
+  const yaml = "id: sample-pack-2\nlanguage: kotlin\nrules:\n  - id: rule-2\n    tier: deny\n";
+  const meta = parsePackYaml(yaml, "/fake/dir");
+  expect(meta.id).toBe("sample-pack-2");
+  expect(meta.rules.map((r) => r.id)).toEqual(["rule-2"]);
+});
+
 test("listPacks: enumerates only directories containing a pack.yml, sorted by directory name", async () => {
   const root = path.join(os.tmpdir(), `packyaml-test-${crypto.randomUUID()}`);
   await Bun.$`mkdir -p ${root}`.quiet();

@@ -3,22 +3,39 @@
  *
  * The core never parses rule YAML: it hands the enabled rule files to the
  * ast-grep binary and reads back compact JSON. `ast-grep scan` exits non-zero
- * when it finds matches, so the exit code is ignored and stdout is parsed
- * instead. Rule *tier* is not present in that JSON (ast-grep does not surface
- * rule metadata), so tier is resolved from config — see `Config.tierFor`.
+ * when it *finds matches* — that is a normal, successful invocation, so a
+ * nonzero exit code alone is never treated as failure and stdout is parsed
+ * regardless. What IS a failure is the process not completing at all: killed
+ * by the configured timeout, killed by any other signal, or truncated because
+ * it exceeded the output buffer. `exec()` distinguishes these (see its doc)
+ * and throws `AstGrepFailed` rather than let empty/partial stdout be read as
+ * "zero matches" — a killed scan must never look like a clean one. Rule
+ * *tier* is not present in that JSON (ast-grep does not surface rule
+ * metadata), so tier is resolved from config — see `Config.tierFor`.
  */
 import * as os from "node:os";
 import * as path from "node:path";
 import type { Config } from "./config";
 
 export const BINARY = "ast-grep";
-const TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** Thrown when the ast-grep binary is not on PATH. */
 export class AstGrepMissing extends Error {
   constructor(options?: ErrorOptions) {
     super("ast-grep binary not found on PATH", options);
     this.name = "AstGrepMissing";
+  }
+}
+
+/** Thrown when an ast-grep invocation did not run to completion — timed out,
+ * was killed by a signal, or had its output truncated. Deliberately distinct
+ * from "found matches" (see module doc): callers must fail closed on this,
+ * never treat it as "no matches". */
+export class AstGrepFailed extends Error {
+  constructor(reason: string, options?: ErrorOptions) {
+    super(`ast-grep invocation failed: ${reason}`, options);
+    this.name = "AstGrepFailed";
   }
 }
 
@@ -43,7 +60,8 @@ interface RawMatch {
 
 /**
  * Scan `content` with the project's enabled rules and return the enabled
- * Match list. Throws AstGrepMissing when the binary is absent.
+ * Match list. Throws AstGrepMissing when the binary is absent, or
+ * AstGrepFailed when it ran but did not complete (see exec()).
  */
 export async function scan(content: string, filePath: string, config: Config): Promise<Match[]> {
   const rules = await inlineRules(config);
@@ -58,7 +76,11 @@ export async function scan(content: string, filePath: string, config: Config): P
  * Return `content` with every fixable rule applied via `--update-all`.
  *
  * Rules without a `fix:` change nothing, so this rewrites only autofix-tier
- * matches. Throws AstGrepMissing when the binary is absent.
+ * matches. Throws AstGrepMissing when the binary is absent, or AstGrepFailed
+ * when the `--update-all` invocation did not complete — in that case the temp
+ * file's content is unverified (it may be untouched, or partially rewritten),
+ * so it is never read back as "the fixed content"; exec() throwing before we
+ * reach the read is what guarantees that.
  */
 export async function applyFix(content: string, filePath: string, config: Config): Promise<string> {
   const rules = await inlineRules(config);
@@ -99,18 +121,50 @@ export async function inlineRules(config: Config): Promise<string> {
   return docs.join("\n---\n");
 }
 
-/** Run the ast-grep binary; exit code deliberately ignored (see module doc).
- * `PORTABLE_HOOKS_AST_GREP` overrides the binary name — an escape hatch for
- * nonstandard installs, and how tests simulate a missing scanner. */
+/** Reads `PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS` if set (a positive number),
+ * else the default. Same escape-hatch style as `PORTABLE_HOOKS_AST_GREP`
+ * below — exists so tests can force a fast, real timeout-kill instead of
+ * waiting on the production timeout. */
+function timeoutMs(): number {
+  const raw = Bun.env.PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS;
+  if (raw === undefined) return DEFAULT_TIMEOUT_MS;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
+}
+
+/** Run the ast-grep binary and return its result, having verified the
+ * invocation actually completed (see module doc for why nonzero exit alone
+ * is not failure). `PORTABLE_HOOKS_AST_GREP` overrides the binary name — an
+ * escape hatch for nonstandard installs, and how tests simulate a missing
+ * scanner. Throws `AstGrepMissing` when the binary isn't found, and
+ * `AstGrepFailed` when it started but didn't run to completion. */
 export function exec(args: string[]): ReturnType<typeof Bun.spawnSync> {
   const binary = Bun.env.PORTABLE_HOOKS_AST_GREP ?? BINARY;
+  let result: ReturnType<typeof Bun.spawnSync>;
   try {
-    return Bun.spawnSync({ cmd: [binary, ...args], timeout: TIMEOUT_MS });
+    result = Bun.spawnSync({ cmd: [binary, ...args], timeout: timeoutMs() });
   } catch (error) {
     // biome-ignore lint/style/useErrorCause: cause IS threaded through — AstGrepMissing's constructor forwards { cause } to super() — biome's heuristic wants a two-arg new Error(msg, opts) shape and doesn't recognize this single-arg options-only subclass constructor
     if ((error as { code?: string }).code === "ENOENT") throw new AstGrepMissing({ cause: error });
     throw error;
   }
+  // Empirically verified (Bun 1.3.14): a timeout-kill sets exitedDueToTimeout
+  // true with exitCode null; a normal completion — even the nonzero exit
+  // ast-grep uses to report matches found — always has exitedDueToTimeout
+  // false and a numeric exitCode. exitCode is only ever null when the
+  // process didn't exit normally (timeout or any other signal), so checking
+  // it alone would suffice, but the explicit flags make the intent (and the
+  // distinct failure reasons) legible.
+  if (result.exitedDueToTimeout) {
+    throw new AstGrepFailed(`timed out after ${timeoutMs()}ms`);
+  }
+  if (result.exitedDueToMaxBuffer) {
+    throw new AstGrepFailed("output exceeded the buffer limit (stdout may be truncated)");
+  }
+  if (result.exitCode === null) {
+    throw new AstGrepFailed(`process was killed (signal ${result.signalCode ?? "unknown"})`);
+  }
+  return result;
 }
 
 /**

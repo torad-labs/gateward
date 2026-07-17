@@ -183,10 +183,11 @@ test("matches outside the authored set are dropped (unused-suppression shape)", 
   expect(filesScanned).toBe(1);
 });
 
-/** Locks in the fix at the heart of this module: scan()'s temp-file
- * invocation drops a file's real path (keeping only its project-relative
- * shape), so a rule's `files: ['**\/domain\/**']` matches only through the
- * audit's real-path scanning. */
+/** Confirms the audit's real-path scanning respects rule-level `files:`
+ * scoping. (This is not the *only* way such a rule could fire — scan()'s
+ * temp-mirrored path preserves the same project-relative shape and would
+ * match too, see audit.ts's module doc — but the audit never goes through
+ * scan(), so this is what actually protects it in practice.) */
 test("files: globs are respected via real paths — domain dir counted, sibling not", async () => {
   const root = await freshRoot();
   const project = await writeProject(root, await writeDomainPack(root), "domain-pack");
@@ -218,6 +219,27 @@ test("a missing ast-grep binary stops scanning without throwing", async () => {
     if (previous === undefined) delete Bun.env.PORTABLE_HOOKS_AST_GREP;
     else Bun.env.PORTABLE_HOOKS_AST_GREP = previous;
   }
+});
+
+test("a malformed config.toml is reported to stderr, not crashed on (report, not a gate)", async () => {
+  const root = await freshRoot();
+  const project = path.join(root, "project");
+  // `languages = "kotlin"` — a bracket-typo valid TOML scalar, invalid
+  // schema (finding #7); config.find() throws. Unlike the hook, the audit
+  // must not let that propagate into a stack-trace crash: it is a report.
+  await Bun.write(
+    path.join(project, ".tenets", "config.toml"),
+    `[core]
+languages = "kotlin"
+default_tier = "deny"
+`,
+  );
+
+  const { perRule, total, filesScanned } = await runAudit(project);
+
+  expect(perRule.size).toBe(0);
+  expect(total).toBe(0);
+  expect(filesScanned).toBe(0);
 });
 
 test("render_json has exactly three keys", () => {

@@ -21,9 +21,13 @@
  * call so core's projection module can do its normal on-disk-vs-projected
  * diff. `Add File` = the full new content; `Delete File` = empty content;
  * `Update File` = hunks located as contiguous context+removed blocks in the
- * on-disk file and replaced in order — a hunk whose anchor cannot be found
- * makes the file undecidable and it is skipped (the same "can't decide, let
- * the harness reject it" stance projection takes for a bad `old_string`).
+ * on-disk file and replaced in order — a hunk with no context/removed lines
+ * (a pure insertion) cannot be positioned from the data available, and a
+ * hunk whose anchor is missing *or* not unique in the file cannot be
+ * confidently placed either; any of these makes the file undecidable. An
+ * undecidable file is NOT silently skipped: the whole apply_patch is denied
+ * (see the fail-closed note below) rather than let the judged bytes diverge
+ * from what Codex would actually land.
  * `*** Move to:` (rename-with-content-change) is out of scope.
  *
  * Per-file judging and merge: each projected file is handed to core's real
@@ -31,8 +35,10 @@
  * is spawned via `process.execPath`). Any file's deny denies the whole patch,
  * reasons prefixed per file. An autofix-tier verdict degrades to deny: Codex
  * v1's apply_patch protocol has no channel to hand back a revised envelope
- * (documented product limitation, not a TODO). Every file allowing = silent
- * allow.
+ * (documented product limitation, not a TODO). A file whose projection is
+ * undecidable (null — see above) is treated the same as an explicit deny:
+ * "can't decide" fails closed here, it does not fall through to allow. Every
+ * file allowing (and none undecidable) = silent allow.
  *
  * Engine resolution is layout-aware: vendored installs live at
  * `.tenets/engine/shims/codex/` with the engine two levels up; the monorepo
@@ -137,7 +143,18 @@ export async function evaluate(
   for (const patchFile of patchFiles) {
     // biome-ignore lint/performance/noAwaitInLoops: sequential so per-file deny reasons in the merged verdict stay in patch-file order
     const writeInput = await projectWriteInput(patchFile, cwd);
-    if (writeInput === null) continue; // undecidable projection: let the harness reject it itself
+    if (writeInput === null) {
+      // Undecidable projection: fail CLOSED rather than silently skipping the
+      // file. A skip here would let merge() see zero verdicts for a real
+      // edit — if every touched file skipped this way, merge() would return
+      // its "no verdicts" allow, letting an unjudged apply_patch through.
+      fileVerdicts.push([
+        patchFile.path,
+        "deny",
+        `portable-hooks could not confidently determine what this apply_patch would write to ${patchFile.path}; refusing rather than allowing an unjudged edit`,
+      ]);
+      continue;
+    }
     const [kind, detail] = await invoke(writeInput);
     fileVerdicts.push([patchFile.path, kind, detail]);
   }
@@ -248,16 +265,38 @@ export function parseApplyPatch(text: string): PatchFile[] {
   return files;
 }
 
+/** Counts non-overlapping occurrences of `needle` in `haystack`. */
+function countOccurrences(haystack: string, needle: string): number {
+  let count = 0;
+  let idx = 0;
+  for (;;) {
+    idx = haystack.indexOf(needle, idx);
+    if (idx === -1) return count;
+    count++;
+    idx += needle.length;
+  }
+}
+
 /** Apply `hunks` against on-disk `content` in order. Returns the resulting
- * text, or null if a hunk's anchor (its context+removed block) cannot be
- * located — a stale patch, left undecidable rather than guessed at. */
+ * text, or null if the hunk cannot be confidently positioned:
+ * - a hunk with no context/removed lines (a pure insertion) carries no
+ *   anchor at all, so there is nothing to locate it against — the *whole*
+ *   file's projection is undecidable, not a silent no-op (a dropped
+ *   insertion would make the judged content match the on-disk file exactly,
+ *   hiding the change from the engine entirely);
+ * - a hunk whose anchor (its context+removed block) is missing from the
+ *   file is a stale patch;
+ * - a hunk whose anchor appears more than once is ambiguous — replacing the
+ *   first occurrence could patch the wrong site, so the judged bytes could
+ *   diverge from what Codex actually lands.
+ * All three are left undecidable (null) rather than guessed at. */
 export function applyHunks(content: string, hunks: PatchHunk[]): string | null {
   let result = content;
   for (const h of hunks) {
-    if (h.oldLines.length === 0) continue;
+    if (h.oldLines.length === 0) return null;
     const anchor = h.oldLines.join("\n");
     const replacement = h.newLines.join("\n");
-    if (!result.includes(anchor)) return null;
+    if (anchor.length === 0 || countOccurrences(result, anchor) !== 1) return null;
     result = result.replace(anchor, replacement);
   }
   return result;

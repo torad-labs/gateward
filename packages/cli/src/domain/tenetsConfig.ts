@@ -36,6 +36,14 @@ export interface ParsedConfigToml {
   packs: ConfigTomlPacks;
 }
 
+/** The only shape a pack id or rule id may take — mirrors packs.ts's
+ * SAFE_ID_RE. Enforced there at parse time already, but emitRuleSection
+ * interpolates raw ids into `[rules.<id>]` headers/comments without
+ * escaping (only the tier value is escaped), so this is defense in depth:
+ * if that upstream guarantee were ever weakened, config.toml generation
+ * itself still refuses to interpolate an unsafe id. */
+const SAFE_ID_RE = /^[a-z][a-z0-9-]*$/;
+
 function tomlString(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
@@ -57,6 +65,11 @@ export interface GenerateConfigTomlOptions {
  * enabled but its tier differs from the project default. Rules that are both
  * enabled and at the default tier need no block at all. */
 function emitRuleSection(lines: string[], pack: PackMeta, rule: RuleMeta, defaultTier: string): void {
+  if (!(SAFE_ID_RE.test(rule.id) && SAFE_ID_RE.test(pack.id))) {
+    throw new Error(
+      `refusing to emit config.toml section for unsafe id (pack "${pack.id}", rule "${rule.id}"): must match ${SAFE_ID_RE}.`,
+    );
+  }
   if (!rule.defaultEnabled) {
     lines.push("");
     const context = rule.summary ? ` ${rule.summary}` : "";

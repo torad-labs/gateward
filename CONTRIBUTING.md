@@ -57,7 +57,7 @@ replay, and the three audit pins (golden=0, broken=52, repo self-audit=0).
 
 ## Pull requests
 
-Branch from `main`, keep `bun run verify` green, and fill in the PR template.
+Branch from `master`, keep `bun run verify` green, and fill in the PR template.
 The `checks` workflow (lint + engine on Linux and macOS + the Android apps
 build) must pass; if a pin breaks, the failing step prints which number
 moved.

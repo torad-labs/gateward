@@ -118,6 +118,42 @@ test("parseConfigToml: reads back languages, default_tier, packs_dir, and enable
   expect(parsed.packs.enabled).toEqual(["kotlin-best-practices", "android-opinionated"]);
 });
 
+test("generateConfigToml: throws instead of interpolating an unsafe rule id (defense in depth)", () => {
+  const packWithUnsafeRule: PackMeta = {
+    id: "kotlin-best-practices",
+    title: "Kotlin Best Practices",
+    language: "kotlin",
+    dir: "/fake/packs/kotlin-best-practices",
+    rules: [{ id: "../../../etc", tier: "deny", defaultEnabled: true, summary: "Traversal id." }],
+  };
+  expect(() =>
+    generateConfigToml({
+      languages: ["kotlin"],
+      defaultTier: "deny",
+      packsDir: "packs",
+      enabledPacks: [packWithUnsafeRule],
+    }),
+  ).toThrow(/unsafe id/);
+});
+
+test("generateConfigToml: throws instead of interpolating an unsafe pack id (defense in depth)", () => {
+  const unsafePack: PackMeta = {
+    id: "../../evil",
+    title: "Evil",
+    language: "kotlin",
+    dir: "/fake/packs/evil",
+    rules: [{ id: "some-rule", tier: "autofix", defaultEnabled: true, summary: "Tier differs from default." }],
+  };
+  expect(() =>
+    generateConfigToml({
+      languages: ["kotlin"],
+      defaultTier: "deny",
+      packsDir: "packs",
+      enabledPacks: [unsafePack],
+    }),
+  ).toThrow(/unsafe id/);
+});
+
 test("hasCoreAndPacksSections: true for a generated file, false for a file missing a section", () => {
   const full = generateConfigToml({ languages: ["kotlin"], defaultTier: "deny", packsDir: "packs", enabledPacks: [] });
   expect(hasCoreAndPacksSections(full)).toBe(true);
