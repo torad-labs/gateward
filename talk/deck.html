@@ -47,7 +47,7 @@
   .red{color:var(--red)}
   em{font-style:normal;color:var(--red);font-weight:700}
   strong{font-weight:800}
-  .sub{font-size:24px;color:var(--ink-2);margin-top:20px;line-height:1.45;max-width:30ch}
+  .sub{font-size:24px;color:var(--ink-2);margin-top:20px;line-height:1.45;max-width:40ch}
   .mono{font-family:var(--mono)}
 
   /* title slide ------------------------------------------------------------- */
@@ -63,15 +63,18 @@
 
   /* section divider --------------------------------------------------------- */
   .slide--section{background:var(--red);color:#fff;justify-content:center}
-  .slide--section .n{font-size:150px;font-weight:800;line-height:.9;opacity:.35}
-  .slide--section h2{font-size:66px;margin-top:8px}
-  .slide--section .spine{margin-top:40px;display:flex;flex-direction:column;gap:10px;
-    font-size:23px;opacity:.8}
-  .slide--section .spine b{opacity:1;color:#fff}
+  .slide--section .n{position:absolute;right:64px;top:50%;transform:translateY(-54%);
+    font-size:460px;font-weight:800;line-height:1;opacity:.18;pointer-events:none}
+  .slide--section h2{font-size:76px;max-width:13ch;position:relative}
+  .slide--section .spine{position:absolute;left:104px;right:104px;bottom:56px;
+    display:flex;gap:48px;font-size:17px;letter-spacing:.08em;text-transform:uppercase;
+    opacity:.7;font-weight:600}
+  .slide--section .spine b{opacity:1;color:#fff;font-weight:800;border-bottom:3px solid #fff;
+    padding-bottom:6px}
 
   /* refrain ----------------------------------------------------------------- */
-  .slide--refrain{background:var(--ink);color:#fff;align-items:flex-start;justify-content:center}
-  .slide--refrain .r{font-size:66px;line-height:1.12;font-weight:800;letter-spacing:-.02em;max-width:20ch}
+  .slide--refrain{background:var(--ink);color:#fff;align-items:center;justify-content:center}
+  .slide--refrain .r{font-size:70px;line-height:1.12;font-weight:800;letter-spacing:-.02em;max-width:20ch}
   .slide--refrain .r .a{color:#FF9CA4}
   .slide--refrain .r .b{color:#fff}
   .slide--refrain .tag{margin-top:34px;font-size:20px;letter-spacing:.12em;
@@ -129,7 +132,7 @@
   .term .agent{color:#9FB4D6}
   .term .block{color:#FF9CA4}
   .term .u{color:#8A929E}
-  .quote-big{font-size:38px;line-height:1.3;font-weight:600;max-width:24ch}
+  .quote-big{font-size:38px;line-height:1.3;font-weight:600;max-width:30ch}
   .quote-big .src{display:block;margin-top:22px;font-size:20px;color:var(--ink-3);font-weight:400}
 
   /* stat / numbers ---------------------------------------------------------- */
