@@ -18,6 +18,8 @@ import * as path from "node:path";
 import type { Config } from "./config";
 
 export const BINARY = "ast-grep";
+/** Splits a rule file into lines, tolerating CRLF. */
+const RULE_FILE_LINE_SPLIT_RE = /\r?\n/;
 // Per-invocation ceiling for one ast-grep run over one file. A single-file
 // scan is normally sub-second; this bounds a pathological hang. It must stay
 // well under the wired hook timeout (30s — see claude.ts/codex.ts): the hook
@@ -25,7 +27,7 @@ export const BINARY = "ast-grep";
 // denies (fail closed). If the *harness* killed the hook first it would treat
 // that as non-blocking (fail open), so this value is a security parameter, not
 // just a convenience. Overridable in tests via PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS.
-const DEFAULT_TIMEOUT_MS = 8_000;
+const DEFAULT_TIMEOUT_MS = 8000;
 
 /** Thrown when the ast-grep binary is not on PATH. */
 export class AstGrepMissing extends Error {
@@ -72,11 +74,41 @@ interface RawMatch {
  */
 export async function scan(content: string, filePath: string, config: Config): Promise<Match[]> {
   const rules = await inlineRules(config);
+  // No enabled rules apply to this project: nothing to check, and invoking
+  // ast-grep with an empty --inline-rules would error (nonzero + blank stdout),
+  // which parseScanJson would — correctly — treat as a failed run. Short-
+  // circuit to a clean result so an empty pack set is an allow, not a deny.
+  if (rules.trim() === "") return [];
   const raw = await withTempFile(content, filePath, config, (tmp) => {
     const result = exec(["scan", "--inline-rules", rules, "--json=compact", tmp]);
-    return JSON.parse(result.stdout?.toString() || "[]") as RawMatch[];
+    return parseScanJson(result);
   });
   return toMatches(raw, config);
+}
+
+/**
+ * Parse ast-grep's `--json=compact` stdout, distinguishing "no matches" from a
+ * failed run. ast-grep prints a JSON array on success (matches, or empty). A
+ * blank stdout paired with a nonzero exit is a failed invocation — unparseable
+ * or invalid rules print their error to stderr and nothing to stdout, and
+ * `--inline-rules ""` does the same — so it must fail closed, never read as
+ * zero matches. (A nonzero exit *with* JSON on stdout is the normal
+ * matches-found case; that is handled by the non-blank branch.)
+ */
+function parseScanJson(result: ReturnType<typeof Bun.spawnSync>): RawMatch[] {
+  const out = (result.stdout?.toString() ?? "").trim();
+  if (out === "") {
+    if (result.exitCode !== 0) {
+      const err = (result.stderr?.toString() ?? "").trim().split("\n")[0] ?? "";
+      throw new AstGrepFailed(`no output, exit ${result.exitCode}${err ? `: ${err}` : ""}`);
+    }
+    return [];
+  }
+  try {
+    return JSON.parse(out) as RawMatch[];
+  } catch {
+    throw new AstGrepFailed(`unparseable JSON output (rules may be invalid): ${out.slice(0, 200)}`);
+  }
 }
 
 /**
@@ -91,6 +123,12 @@ export async function scan(content: string, filePath: string, config: Config): P
  */
 export async function applyFix(content: string, filePath: string, config: Config): Promise<string> {
   const rules = await inlineRules(config);
+  // No enabled rules → nothing to rewrite; return content untouched rather
+  // than invoke ast-grep with an empty rule set. (In practice applyFix is
+  // only reached when a fresh autofix-tier match exists, so this is a guard,
+  // not a common path.) `inlineRules` already dropped disabled rules, so
+  // `--update-all` can never apply a default-off rule's fix — see #3.
+  if (rules.trim() === "") return content;
   return withTempFile(content, filePath, config, async (tmp) => {
     exec(["scan", "--inline-rules", rules, "--update-all", tmp]);
     return await Bun.file(tmp).text();
@@ -116,13 +154,32 @@ export function toMatches(raw: RawMatch[], config: Config): Match[] {
   return matches;
 }
 
-/** Concatenate the enabled rule files verbatim into one --inline-rules
- * document. Reading the bytes is not parsing them: ast-grep owns rule
- * semantics; the core only shuttles the text. */
+/** A rule file's top-level `id:` (the first column-0 `id:` line), or null.
+ * The same narrow line read the audit uses — not a YAML parse — needed to
+ * drop disabled rules before they reach ast-grep. */
+async function ruleFileId(rulePath: string): Promise<string | null> {
+  const text = await Bun.file(rulePath).text();
+  for (const line of text.split(RULE_FILE_LINE_SPLIT_RE)) {
+    if (line.startsWith("id:")) return line.slice("id:".length).trim();
+  }
+  return null;
+}
+
+/** Concatenate the ENABLED rule files into one --inline-rules document.
+ * Disabled rules (a pack's `default_enabled: false` without an enabling
+ * override) are dropped HERE, before ast-grep runs — so a default-off rule
+ * can neither surface a match under `--json` nor apply its `fix:` under
+ * `--update-all` (#3: `toMatches` post-filters the scan path, but
+ * `--update-all` has no post-filter, so the drop must happen pre-invocation).
+ * Reading each file's `id:` is the same narrow read the audit does, not a
+ * YAML parse; ast-grep still owns rule semantics. */
 export async function inlineRules(config: Config): Promise<string> {
   const docs: string[] = [];
   for (const rulePath of config.ruleFiles()) {
     // biome-ignore lint/performance/noAwaitInLoops: sequential so the inline-rules document's rule order matches ruleFiles()'s sorted order
+    const id = await ruleFileId(rulePath);
+    if (id !== null && !config.ruleEnabled(id)) continue;
+    // biome-ignore lint/performance/noAwaitInLoops: sequential for the same rule-order reason as above
     docs.push(await Bun.file(rulePath).text());
   }
   return docs.join("\n---\n");
@@ -189,8 +246,17 @@ async function withTempFile<T>(
   const resolved = path.resolve(filePath);
   const relative = path.relative(root, resolved);
   const rel = relative.startsWith("..") || path.isAbsolute(relative) ? path.basename(filePath) : relative;
+  // Canonicalize the extension to lowercase for the temp file. `config.gates`
+  // matches extensions case-insensitively (a `.KT` write IS gated as Kotlin —
+  // finding #7), but ast-grep's own language detection is case-SENSITIVE:
+  // given `Foo.KT` it parses nothing and returns zero matches, silently
+  // letting the edit through. Lowercasing only the extension keeps the
+  // directory shape (so files:/ignores: globs still match) while letting the
+  // scanner detect the language the gate already committed to.
+  const ext = path.extname(rel);
+  const canonicalRel = ext === "" ? rel : rel.slice(0, -ext.length) + ext.toLowerCase();
   const tmpDir = path.join(os.tmpdir(), `portable-hooks-${crypto.randomUUID()}`);
-  const tmp = path.join(tmpDir, rel);
+  const tmp = path.join(tmpDir, canonicalRel);
   try {
     await Bun.write(tmp, content);
     return await fn(tmp);

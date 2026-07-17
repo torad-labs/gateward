@@ -23,6 +23,19 @@ async function freshRoot(): Promise<string> {
 }
 
 async function writeValidProject(root: string): Promise<string> {
+  // One enabled pack with one rule, so the scan path actually invokes the
+  // (faked) scanner. An empty enabled set is a legitimate early allow that
+  // never calls ast-grep — no scanner to time out — so the timeout test needs
+  // a real enabled rule to reach it.
+  const packs = path.join(root, "packs");
+  await Bun.write(
+    path.join(packs, "test-pack", "pack.yml"),
+    "id: test-pack\nlanguage: kotlin\ntitle: Test Pack\nrules:\n  - id: no-bang-bang\n",
+  );
+  await Bun.write(
+    path.join(packs, "test-pack", "rules", "no-bang-bang.yml"),
+    "id: no-bang-bang\nlanguage: kotlin\nseverity: error\nmessage: banned\nrule:\n  pattern: $A!!\n",
+  );
   const project = path.join(root, "project");
   await Bun.write(
     path.join(project, ".tenets", "config.toml"),
@@ -31,8 +44,8 @@ languages = ["kotlin"]
 default_tier = "deny"
 
 [packs]
-packs_dir = "${path.join(root, "packs")}"
-enabled = []
+packs_dir = "${packs}"
+enabled = ["test-pack"]
 `,
   );
   return project;
@@ -88,6 +101,61 @@ test("Write with an absent file_path still allows (not actionable, unchanged beh
 test("Write with an empty-string file_path still allows (unchanged behavior)", async () => {
   const payload = payloadFrom(JSON.stringify({ tool_name: "Write", tool_input: { file_path: "", content: "x" } }));
   expect(await evaluate(payload)).toBeNull();
+});
+
+test("Write with a non-string content denies (malformed payload, fail closed)", async () => {
+  const payload = payloadFrom(
+    JSON.stringify({ tool_name: "Write", tool_input: { file_path: "/tmp/x.kt", content: 123 } }),
+  );
+  const result = await evaluate(payload);
+  expect(result?.hookSpecificOutput.permissionDecision).toBe("deny");
+});
+
+/** A project enabling one real rule, whose tier can be overridden. Uses the
+ * real ast-grep binary (installed in CI/dev), not a fake. */
+async function projectWithRule(root: string, ruleTierOverride = ""): Promise<string> {
+  const packs = path.join(root, "packs");
+  await Bun.write(
+    path.join(packs, "kt", "pack.yml"),
+    "id: kt\nlanguage: kotlin\ntitle: KT\nrules:\n  - id: no-bang-bang\n",
+  );
+  // no-bang-bang has NO `fix:` — forcing it to autofix tier exercises the
+  // "autofix rule that can't actually fix" path.
+  await Bun.write(
+    path.join(packs, "kt", "rules", "no-bang-bang.yml"),
+    "id: no-bang-bang\nlanguage: kotlin\nseverity: error\nmessage: banned\nrule:\n  pattern: $A!!\n",
+  );
+  const project = path.join(root, "project");
+  await Bun.write(
+    path.join(project, ".tenets", "config.toml"),
+    `[core]\nlanguages = ["kotlin"]\ndefault_tier = "deny"\n\n[packs]\npacks_dir = "${packs}"\nenabled = ["kt"]\n${ruleTierOverride}`,
+  );
+  return project;
+}
+
+test("autofix-tier rule with no fix: denies (does not allow the violation unchanged)", async () => {
+  // Finding #2: a rule marked autofix but lacking a fix: rewrites nothing.
+  // Re-scanning the "fixed" content still finds the violation → deny, never
+  // an allow carrying the still-dirty content.
+  const root = await freshRoot();
+  const project = await projectWithRule(root, '[rules.no-bang-bang]\ntier = "autofix"\n');
+  const payload = {
+    tool_name: "Write",
+    tool_input: { file_path: path.join(project, "A.kt"), content: "fun f() { val x = y!! }\n" },
+  };
+  const result = await evaluate(payloadFrom(JSON.stringify(payload)));
+  expect(result?.hookSpecificOutput.permissionDecision).toBe("deny");
+});
+
+test("extension gating is case-insensitive: a violating .KT write denies (finding #7)", async () => {
+  const root = await freshRoot();
+  const project = await projectWithRule(root);
+  const payload = {
+    tool_name: "Write",
+    tool_input: { file_path: path.join(project, "Upper.KT"), content: "fun f() { val x = y!! }\n" },
+  };
+  const result = await evaluate(payloadFrom(JSON.stringify(payload)));
+  expect(result?.hookSpecificOutput.permissionDecision).toBe("deny");
 });
 
 /** Spawns the real hook script and feeds it `payload` on stdin, optionally
