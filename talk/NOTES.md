@@ -77,9 +77,13 @@ Beats to lift:
 - "We" builds, "I" testifies. Every claim truth-coupled to runnable code or a real measurement.
 - Close on ONE actionable habit / behavior change, not a recap. Undercut hype on exit.
 
-## Open questions (asked 2026-07-17, answers pending)
+## Decisions (answered 2026-07-17)
 
-- Accepted title/abstract — does one exist to align to?
-- Demo strategy: live / recorded / slides-only
-- Company case-study clearance: named / anonymized / open-source recreation only
-- What must exist at the end of the 5 hours
+- **Abstract:** accepted + binding — see `sources/abstract.md`. Title: "Portable Hooks:
+  Enforcing Engineering Tenets Across Claude Code, Codex, Antigravity, and OpenCode".
+  The finale IS the open-source release of this repo.
+- **Demo:** none live — code on slides as single-delta builds (storyboarded like a demo).
+- **Company material:** open-source recreation only (portable-hooks + OpenHouse golden
+  app), plus the abstract's one already-public line: "implemented at Realtor — slop-free."
+- **5-hour deliverable:** locked plan + deck skeleton + code-build storyboards, all rough.
+- Plan lives in `talk/PLAN.md`.
