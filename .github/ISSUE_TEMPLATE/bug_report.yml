@@ -36,6 +36,6 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: "`bun --version`, `ast-grep --version`, OS, and `portable-hooks doctor` output."
+      description: "`bun --version`, `ast-grep --version`, OS, and `gateward doctor` output."
     validations:
       required: true

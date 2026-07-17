@@ -118,10 +118,10 @@ test("looksLikeTestFile: recognizes the real shim naming convention observed in 
   expect(looksLikeTestFile("test_claude_compat.py")).toBe(true);
   expect(looksLikeTestFile("smoke-test.js")).toBe(true);
   expect(looksLikeTestFile("claude_compat.test.ts")).toBe(true); // bun:test infix — the shim's own test
-  expect(looksLikeTestFile("portable-hooks.spec.ts")).toBe(true);
+  expect(looksLikeTestFile("gateward.spec.ts")).toBe(true);
   expect(looksLikeTestFile("claude_compat.py")).toBe(false);
   expect(looksLikeTestFile("claude_compat.ts")).toBe(false); // the real shim entrypoint, not a test
-  expect(looksLikeTestFile("portable-hooks.js")).toBe(false);
+  expect(looksLikeTestFile("gateward.js")).toBe(false);
   expect(looksLikeTestFile("latest.js")).toBe(false); // contains "test" but no separator before it
   expect(looksLikeTestFile("entry.py")).toBe(false);
 });
@@ -130,10 +130,10 @@ test("vendorInto with exclude: a test-shaped file in a shim directory is skipped
   const src = await tmpdir("vendor-src-");
   const dest = await tmpdir("vendor-dest-");
   try {
-    await Bun.write(path.join(src, "portable-hooks.js"), "module.exports = {};\n");
+    await Bun.write(path.join(src, "gateward.js"), "module.exports = {};\n");
     await Bun.write(path.join(src, "smoke-test.js"), "assert(true);\n");
     const results = await vendorInto(src, dest, { exclude: looksLikeTestFile });
-    expect(results.map((r) => r.relPath).sort()).toEqual(["portable-hooks.js"]);
+    expect(results.map((r) => r.relPath).sort()).toEqual(["gateward.js"]);
     expect(fs.existsSync(path.join(dest, "smoke-test.js"))).toBe(false);
   } finally {
     await Bun.$`rm -rf ${src}`.quiet();

@@ -1,11 +1,12 @@
-# portable-hooks (codename)
+# gateward
 
-[![checks](https://github.com/torad-labs/portable-hooks/actions/workflows/checks.yml/badge.svg)](https://github.com/torad-labs/portable-hooks/actions/workflows/checks.yml)
+[![checks](https://github.com/torad-labs/gateward/actions/workflows/checks.yml/badge.svg)](https://github.com/torad-labs/gateward/actions/workflows/checks.yml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![runtime](https://img.shields.io/badge/runtime-bun-black)](https://bun.com)
 
-Engineering tenets enforced at write time, portably across coding-agent
-harnesses. When an agent tries to write code that breaks your architecture,
+The keeper of the write gate: engineering tenets enforced at write time,
+portably across coding-agent harnesses. When an agent tries to write code
+that breaks your architecture,
 your conventions, or your taste, the write is denied before it lands on disk —
 with a reason the model reads and corrects from in the same turn. Four
 harnesses are wired today: Claude Code natively, and GitHub Copilot, Codex,
@@ -77,11 +78,11 @@ covers setup, the test layers, and how to add a rule, a pack, or a harness.
 
 ## Status and roadmap
 
-Pre-release; the name is a codename. Kotlin/Android packs shipped first, and
+Pre-release. Kotlin/Android packs shipped first, and
 the `bun-best-practices` pack gates this repo's own TypeScript; ast-grep
 speaks 25+ languages, so nothing in the engine is language-specific.
 
-Harness notes: the Copilot wiring (`.github/hooks/portable-hooks.json`)
+Harness notes: the Copilot wiring (`.github/hooks/gateward.json`)
 covers the Copilot CLI, the cloud coding agent, and VS Code agent mode, and
 supports the autofix tier through `modifiedArgs` — but Copilot's hook
 reference does not pin the arg names inside its `create`/`edit` tools, so the

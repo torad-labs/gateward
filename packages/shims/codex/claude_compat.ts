@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // biome-ignore-all lint/style/noExcessiveLinesPerFile: one cohesive shim, vendored as a standalone file
 /**
- * Run the portable-hooks PreToolUse gate against Codex's `apply_patch` tool.
+ * Run the gateward PreToolUse gate against Codex's `apply_patch` tool.
  *
  * Ported from the author's personal Codex translator, simplified to this
  * product's scope: we only need to gate file edits, not every Claude
@@ -151,7 +151,7 @@ export async function evaluate(
       fileVerdicts.push([
         patchFile.path,
         "deny",
-        `portable-hooks could not confidently determine what this apply_patch would write to ${patchFile.path}; refusing rather than allowing an unjudged edit`,
+        `gateward could not confidently determine what this apply_patch would write to ${patchFile.path}; refusing rather than allowing an unjudged edit`,
       ]);
       continue;
     }
@@ -341,7 +341,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
   const out = stdout.trim();
   if (!out) {
     if (exitCode !== 0) {
-      return ["deny", `portable-hooks core exited ${exitCode} with no verdict`];
+      return ["deny", `gateward core exited ${exitCode} with no verdict`];
     }
     return ["allow", null];
   }
@@ -350,7 +350,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
   try {
     data = JSON.parse(out);
   } catch {
-    return ["deny", `portable-hooks core printed unparseable output: ${JSON.stringify(out)}`];
+    return ["deny", `gateward core printed unparseable output: ${JSON.stringify(out)}`];
   }
 
   const hookOutput =
@@ -375,7 +375,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
 async function invokeCore(writeInput: { file_path: string; content: string }): Promise<[string, unknown]> {
   const engine = await resolveEnginePretooluse();
   if (engine === null) {
-    return ["deny", "portable-hooks core could not run: engine entrypoint not found in any known layout"];
+    return ["deny", "gateward core could not run: engine entrypoint not found in any known layout"];
   }
   const stdinPayload = JSON.stringify({ tool_name: "Write", tool_input: writeInput });
   let result: ReturnType<typeof Bun.spawnSync>;
@@ -386,7 +386,7 @@ async function invokeCore(writeInput: { file_path: string; content: string }): P
       timeout: SUBPROCESS_TIMEOUT_MS,
     });
   } catch (exc) {
-    return ["deny", `portable-hooks core could not run: ${(exc as Error).message}`];
+    return ["deny", `gateward core could not run: ${(exc as Error).message}`];
   }
 
   return classifyCoreOutput(result.stdout?.toString() ?? "", result.exitCode);

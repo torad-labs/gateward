@@ -1,4 +1,4 @@
-# Portable Hooks — full talk script
+# Gateward — full talk script
 
 Spoken script for the 46-slide deck (`talk/deck.html`). Target: ~33 minutes of
 content, 5–10 minutes of questions inside a 40-minute slot. Slide markers show
@@ -438,7 +438,7 @@ your teammates' agents are already committing to the codebase you maintain.
 
 Which brings me to the part I submitted this abstract for.
 
-The project is called portable-hooks. I've been running it on my own projects
+The project is called gateward. I've been running it on my own projects
 for months, and as of right now, the repo is public. Two commands. Pick the
 packs you want, or take everything.
 

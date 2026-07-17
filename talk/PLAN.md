@@ -1,13 +1,13 @@
-# Portable Hooks — Talk Plan v1
+# Gateward — Talk Plan v1
 
-**Talk:** Portable Hooks: Enforcing Engineering Tenets Across Claude Code, Codex, Antigravity, and OpenCode
+**Talk:** Gateward: Enforcing Engineering Tenets Across Claude Code, Codex, Antigravity, and OpenCode
 **Format:** 40-min slot — 30–35 min of content + 5–10 min Q&A (target ~33 min of content).
 **Demo strategy:** no live demo — all code shown as single-delta slide builds
 (code authored in a real IDE first, pasted, then mutated one line per frame).
 **Company reference (clearance expanded 2026-07-17):** the abstract's "slop-free" line,
 the **19,000 legacy findings** number at Realtor, and the safe-migration story (old code
 progressively migrating to the target architecture behind the ratchet). Everything else
-demonstrated through portable-hooks + the OpenHouse golden app.
+demonstrated through gateward + the OpenHouse golden app.
 **Adversarial additions:** all locked (see ADVERSARIAL.md) — woven into beats below,
 not bolted on as sections.
 
@@ -142,7 +142,7 @@ hardest skeptics, right after design decision #2 pays it off):
   reason gates exist, and why they're code you evolve, not a config you set once.
 - (Skeptics love watching AI fail. Give them AI failing *contained*.)
 
-Numbers beat (truth-coupled, measured on the golden app / portable-hooks CI):
+Numbers beat (truth-coupled, measured on the golden app / gateward CI):
 
 - a blocked violation costs ~80 ms; the CI-caught version costs a full lint run,
   a red build, a context switch
@@ -177,14 +177,14 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 - **Portability** (the title's promise): every harness ships hooks, every harness
   speaks a slightly different protocol. One rule set, thin shims per harness —
   write your tenets once, enforce them under Claude Code, Codex, Antigravity, and
-  OpenCode. (Architecture slide of portable-hooks: engine + packs + shims.)
+  OpenCode. (Architecture slide of gateward: engine + packs + shims.)
 - One rule, four places (converts the "I don't use agents" holdout): the same
   15-line rule runs at agent write-time, in your pre-commit, in CI, and as a
   whole-repo audit. One source of truth per tenet — executable architecture
   documentation. And even if *you* never touch an agent, your teammates' agents
   are already committing to the codebase you maintain.
 - **THE RELEASE** (the finale the abstract promises):
-  - portable-hooks goes public — repo on screen
+  - gateward goes public — repo on screen
   - install: a few commands, pick your packs (or take everything)
   - the golden app before/after: same agent, same prompts, gated vs ungated
   - the Realtor proof (clearance expanded): 19,000 legacy findings that never block

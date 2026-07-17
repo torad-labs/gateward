@@ -1,4 +1,4 @@
-# Deck Skeleton — Portable Hooks (Droidcon USA 2026)
+# Deck Skeleton — Gateward (Droidcon USA 2026)
 
 v1 skeleton. ~33 min content + 7 min Q&A. Slide numbers are logical slides;
 `[BUILD ×n]` = single-delta frames within the slide (one mutation per frame,
@@ -183,7 +183,7 @@ per tenet — executable architecture documentation. "And even if you never touc
 agent: your teammates' agents are already committing to the codebase you maintain."
 
 **S35 — THE RELEASE.** {move: release-on-stage}
-Repo on screen. "This is portable-hooks. As of right now, it's public."
+Repo on screen. "This is gateward. As of right now, it's public."
 
 **S36 [BUILD ×2] — Install.** The few commands. Pick your packs — or take everything.
 

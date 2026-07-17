@@ -65,7 +65,7 @@ async function handleAudit(rest: string[]): Promise<void> {
 async function handleAdd(rest: string[]): Promise<void> {
   const { positionals } = parseFlags(rest, { allowPositionals: true });
   const [packId] = positionals;
-  if (!packId) usageError("`add` requires a pack id, e.g. `portable-hooks add kotlin-best-practices`.");
+  if (!packId) usageError("`add` requires a pack id, e.g. `gateward add kotlin-best-practices`.");
   const outcome = await runAdd(projectRoot(), packId);
   console.log(outcome.lines.join("\n"));
 }
@@ -73,7 +73,7 @@ async function handleAdd(rest: string[]): Promise<void> {
 async function handleRemove(rest: string[]): Promise<void> {
   const { positionals } = parseFlags(rest, { allowPositionals: true });
   const [packId] = positionals;
-  if (!packId) usageError("`remove` requires a pack id, e.g. `portable-hooks remove kotlin-best-practices`.");
+  if (!packId) usageError("`remove` requires a pack id, e.g. `gateward remove kotlin-best-practices`.");
   const outcome = await runRemove(projectRoot(), packId);
   console.log(outcome.lines.join("\n"));
 }
@@ -115,7 +115,7 @@ async function main(): Promise<void> {
     case "update":
       return handleUpdate(rest);
     default:
-      console.error(`portable-hooks: unknown command "${command}"\n`);
+      console.error(`gateward: unknown command "${command}"\n`);
       console.log(HELP_TEXT);
       process.exitCode = 2;
   }
@@ -123,10 +123,10 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   if (err instanceof CliError) {
-    console.error(`portable-hooks: ${err.message}`);
+    console.error(`gateward: ${err.message}`);
     process.exitCode = err.exitCode;
     return;
   }
-  console.error(`portable-hooks: unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`);
+  console.error(`gateward: unexpected error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`);
   process.exitCode = 1;
 });

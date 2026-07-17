@@ -207,8 +207,8 @@ test("a missing ast-grep binary stops scanning without throwing", async () => {
   const project = await writeProject(root, await writePack(root));
   await Bun.write(path.join(project, "A.kt"), "val a = x!!\n");
 
-  const previous = Bun.env.PORTABLE_HOOKS_AST_GREP;
-  Bun.env.PORTABLE_HOOKS_AST_GREP = "definitely-not-a-real-ast-grep-binary";
+  const previous = Bun.env.GATEWARD_AST_GREP;
+  Bun.env.GATEWARD_AST_GREP = "definitely-not-a-real-ast-grep-binary";
   try {
     const { perRule, total, filesScanned } = await runAudit(project);
     expect(perRule.size).toBe(0);
@@ -216,8 +216,8 @@ test("a missing ast-grep binary stops scanning without throwing", async () => {
     expect(filesScanned).toBe(0);
   } finally {
     // biome-ignore lint/performance/noDelete: Bun.env stringifies assignments (`= undefined` would set the literal string "undefined", not unset the var); delete is the only way to actually remove it
-    if (previous === undefined) delete Bun.env.PORTABLE_HOOKS_AST_GREP;
-    else Bun.env.PORTABLE_HOOKS_AST_GREP = previous;
+    if (previous === undefined) delete Bun.env.GATEWARD_AST_GREP;
+    else Bun.env.GATEWARD_AST_GREP = previous;
   }
 });
 

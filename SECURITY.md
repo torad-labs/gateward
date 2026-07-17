@@ -10,7 +10,7 @@ Please do not open public issues for suspected vulnerabilities.
 
 ## Scope
 
-portable-hooks executes as a PreToolUse hook inside coding-agent harnesses
+gateward executes as a PreToolUse hook inside coding-agent harnesses
 and vendors an engine into target projects. Reports of these classes matter
 most:
 

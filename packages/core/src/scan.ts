@@ -26,7 +26,7 @@ const RULE_FILE_LINE_SPLIT_RE = /\r?\n/;
 // runs up to two scans plus an optional autofix, and on a timeout the engine
 // denies (fail closed). If the *harness* killed the hook first it would treat
 // that as non-blocking (fail open), so this value is a security parameter, not
-// just a convenience. Overridable in tests via PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS.
+// just a convenience. Overridable in tests via GATEWARD_AST_GREP_TIMEOUT_MS.
 const DEFAULT_TIMEOUT_MS = 8000;
 
 /** Thrown when the ast-grep binary is not on PATH. */
@@ -185,12 +185,12 @@ export async function inlineRules(config: Config): Promise<string> {
   return docs.join("\n---\n");
 }
 
-/** Reads `PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS` if set (a positive number),
- * else the default. Same escape-hatch style as `PORTABLE_HOOKS_AST_GREP`
+/** Reads `GATEWARD_AST_GREP_TIMEOUT_MS` if set (a positive number),
+ * else the default. Same escape-hatch style as `GATEWARD_AST_GREP`
  * below — exists so tests can force a fast, real timeout-kill instead of
  * waiting on the production timeout. */
 function timeoutMs(): number {
-  const raw = Bun.env.PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS;
+  const raw = Bun.env.GATEWARD_AST_GREP_TIMEOUT_MS;
   if (raw === undefined) return DEFAULT_TIMEOUT_MS;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
@@ -198,12 +198,12 @@ function timeoutMs(): number {
 
 /** Run the ast-grep binary and return its result, having verified the
  * invocation actually completed (see module doc for why nonzero exit alone
- * is not failure). `PORTABLE_HOOKS_AST_GREP` overrides the binary name — an
+ * is not failure). `GATEWARD_AST_GREP` overrides the binary name — an
  * escape hatch for nonstandard installs, and how tests simulate a missing
  * scanner. Throws `AstGrepMissing` when the binary isn't found, and
  * `AstGrepFailed` when it started but didn't run to completion. */
 export function exec(args: string[]): ReturnType<typeof Bun.spawnSync> {
-  const binary = Bun.env.PORTABLE_HOOKS_AST_GREP ?? BINARY;
+  const binary = Bun.env.GATEWARD_AST_GREP ?? BINARY;
   let result: ReturnType<typeof Bun.spawnSync>;
   try {
     result = Bun.spawnSync({ cmd: [binary, ...args], timeout: timeoutMs() });
@@ -255,7 +255,7 @@ async function withTempFile<T>(
   // scanner detect the language the gate already committed to.
   const ext = path.extname(rel);
   const canonicalRel = ext === "" ? rel : rel.slice(0, -ext.length) + ext.toLowerCase();
-  const tmpDir = path.join(os.tmpdir(), `portable-hooks-${crypto.randomUUID()}`);
+  const tmpDir = path.join(os.tmpdir(), `gateward-${crypto.randomUUID()}`);
   const tmp = path.join(tmpDir, canonicalRel);
   try {
     await Bun.write(tmp, content);

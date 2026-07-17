@@ -3,16 +3,16 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "portable-hooks-monorepo",
+      "name": "gateward-monorepo",
       "devDependencies": {
         "@biomejs/biome": "^2.5.4",
       },
     },
     "packages/cli": {
-      "name": "portable-hooks",
+      "name": "gateward",
       "version": "0.1.0",
       "bin": {
-        "portable-hooks": "./src/index.ts",
+        "gateward": "./src/index.ts",
       },
       "dependencies": {
         "valibot": "^1.4.2",
@@ -23,7 +23,7 @@
       },
     },
     "packages/core": {
-      "name": "portable-hooks-core",
+      "name": "gateward-core",
       "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "^1.3.14",
@@ -56,9 +56,9 @@
 
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
-    "portable-hooks": ["portable-hooks@workspace:packages/cli"],
+    "gateward": ["gateward@workspace:packages/cli"],
 
-    "portable-hooks-core": ["portable-hooks-core@workspace:packages/core"],
+    "gateward-core": ["gateward-core@workspace:packages/core"],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

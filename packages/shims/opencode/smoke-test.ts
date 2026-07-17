@@ -11,7 +11,7 @@
  */
 import * as os from "node:os";
 import * as path from "node:path";
-import PortableHooksPlugin from "./portable-hooks";
+import GatewardPlugin from "./gateward";
 
 const PACKS_DIR = path.join(import.meta.dir, "..", "..", "..", "packs");
 const CONFIG_TOML = `[core]
@@ -24,10 +24,10 @@ enabled = ["kotlin-best-practices"]
 `;
 
 async function main(): Promise<void> {
-  const project = path.join(os.tmpdir(), `portable-hooks-opencode-smoke-${crypto.randomUUID()}`);
+  const project = path.join(os.tmpdir(), `gateward-opencode-smoke-${crypto.randomUUID()}`);
   await Bun.write(path.join(project, ".tenets", "config.toml"), CONFIG_TOML);
 
-  const hooks = await PortableHooksPlugin({ directory: project });
+  const hooks = await GatewardPlugin({ directory: project });
   const before = hooks["tool.execute.before"];
 
   const badOutput = { args: { filePath: path.join(project, "Bad.kt"), content: "val x = y!!\n" } };

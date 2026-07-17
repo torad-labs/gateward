@@ -1,7 +1,7 @@
 /**
  * Source-side path resolution.
  *
- * This package lives inside the portable-hooks monorepo at
+ * This package lives inside the gateward monorepo at
  * `packages/cli/`. It vendors two sibling trees that it does NOT own or
  * publish itself: the engine (`packages/core/src/`) and the rule
  * packs (`packs/`), plus optional per-harness shims (`packages/shims/`).

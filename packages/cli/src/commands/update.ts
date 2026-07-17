@@ -119,11 +119,11 @@ export async function runUpdate(root: string): Promise<CommandOutcome> {
   const configPath = configTomlPath(root);
   const configFile = Bun.file(configPath);
   if (!(await configFile.exists())) {
-    runtimeError(`${configPath} not found; run \`portable-hooks init\` first.`);
+    runtimeError(`${configPath} not found; run \`gateward init\` first.`);
   }
   const existingLock = await readLock(tDir);
   if (!existingLock) {
-    runtimeError(`${lockPath(tDir)} not found; run \`portable-hooks init\` first.`);
+    runtimeError(`${lockPath(tDir)} not found; run \`gateward init\` first.`);
   }
 
   const parsed = parseConfigToml(await configFile.text());

@@ -208,8 +208,8 @@ test("a scanner that times out denies instead of returning an empty (allow) scan
   };
 
   const { stdout, exitCode } = runHook(payload, {
-    PORTABLE_HOOKS_AST_GREP: slowBinary,
-    PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS: "100",
+    GATEWARD_AST_GREP: slowBinary,
+    GATEWARD_AST_GREP_TIMEOUT_MS: "100",
   });
 
   expect(exitCode).toBe(0); // never crashes the process

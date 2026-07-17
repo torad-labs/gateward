@@ -1,7 +1,7 @@
 {
-  "name": "portable-hooks-core",
+  "name": "gateward-core",
   "version": "0.1.0",
-  "description": "The portable-hooks gate engine: zero-dependency TypeScript on Bun, vendored verbatim into gated projects as .tenets/engine/.",
+  "description": "The gateward gate engine: zero-dependency TypeScript on Bun, vendored verbatim into gated projects as .tenets/engine/.",
   "private": true,
   "license": "Apache-2.0",
   "engines": {

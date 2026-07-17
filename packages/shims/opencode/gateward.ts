@@ -1,5 +1,5 @@
 /**
- * OpenCode plugin: gate write/edit tool calls through the portable-hooks core
+ * OpenCode plugin: gate write/edit tool calls through the gateward core
  * engine — the same PreToolUse judgment Claude Code's hook and the Codex
  * shim invoke, applied via OpenCode's own extension point.
  *
@@ -122,7 +122,7 @@ function hasTenets(startDir: string): boolean {
  * otherwise there is nothing installed here to enforce, so allow silently. */
 function failClosedOrAllow(cwd: string, detail: string): undefined {
   if (hasTenets(cwd)) {
-    throw new Error(`[portable-hooks] ${detail} Refusing to allow an unchecked edit.`);
+    throw new Error(`[gateward] ${detail} Refusing to allow an unchecked edit.`);
   }
 }
 
@@ -191,7 +191,7 @@ function applyVerdict(verdict: EngineVerdict, output: ToolExecuteOutput): void {
     throw new Error(
       typeof hookOutput.permissionDecisionReason === "string"
         ? hookOutput.permissionDecisionReason
-        : "portable-hooks denied this edit",
+        : "gateward denied this edit",
     );
   }
   if (hookOutput.permissionDecision === "allow" && hookOutput.updatedInput && output.args) {
@@ -205,7 +205,7 @@ function applyVerdict(verdict: EngineVerdict, output: ToolExecuteOutput): void {
 // Bun.spawnSync) is deliberately synchronous (see the module doc), and both
 // call sites (OpenCode's loader, this package's smoke-test.ts) already
 // `await` the result, which resolves a plain return value immediately.
-function PortableHooksPlugin(ctx?: PluginContext) {
+function GatewardPlugin(ctx?: PluginContext) {
   const context = ctx ?? {};
   return {
     "tool.execute.before": (input: ToolExecuteInput, output: ToolExecuteOutput) => {
@@ -232,7 +232,7 @@ function PortableHooksPlugin(ctx?: PluginContext) {
         failClosedOrAllow(
           cwd,
           "the gate engine was not found — no .tenets/engine/ above the working " +
-            "directory and no dev layout. Re-run `portable-hooks init`, then retry.",
+            "directory and no dev layout. Re-run `gateward init`, then retry.",
         );
         return;
       }
@@ -246,4 +246,4 @@ function PortableHooksPlugin(ctx?: PluginContext) {
 }
 
 // biome-ignore lint/style/noDefaultExport: OpenCode's plugin loader imports the default export
-export default PortableHooksPlugin;
+export default GatewardPlugin;

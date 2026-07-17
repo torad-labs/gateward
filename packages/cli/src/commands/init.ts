@@ -201,13 +201,13 @@ export async function runInit(root: string, opts: InitOptions): Promise<CommandO
   const configResult = await writeConfigPreservingEdits(root, selectedPacks, reporter);
   reporter.note(reportResult(".tenets/config.toml", configResult));
 
-  const lock = buildLock(`portable-hooks@${await readCliVersion()}`, lockFiles);
+  const lock = buildLock(`gateward@${await readCliVersion()}`, lockFiles);
   const lockResult = await writeIfChanged(lockPath(tenetsDir(root)), serializeLock(lock));
   reporter.markChanged(lockResult);
   reporter.note(reportResult(`.tenets/lock.json (${Object.keys(lockFiles).length} files)`, lockResult));
 
   reporter.note("");
-  reporter.note(anyChange ? "portable-hooks: init complete." : "portable-hooks: no changes. Already up to date.");
+  reporter.note(anyChange ? "gateward: init complete." : "gateward: no changes. Already up to date.");
 
   return { changed: anyChange, lines };
 }

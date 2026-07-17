@@ -9,7 +9,7 @@ test("sha256: matches the NIST FIPS 180-4 known-answer test vector for 'abc'", (
 });
 
 test("sha256: agrees with WebCrypto computed independently for arbitrary content", async () => {
-  const content = "portable-hooks vendored file content\nwith multiple lines\n";
+  const content = "gateward vendored file content\nwith multiple lines\n";
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
   const expected = Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -39,7 +39,7 @@ test("toLockKey: identity on POSIX-style relative paths", () => {
 });
 
 test("buildLock: sorts file keys deterministically regardless of insertion order", () => {
-  const lock = buildLock("portable-hooks@0.1.0", {
+  const lock = buildLock("gateward@0.1.0", {
     "engine/config.ts": sha256("config"),
     "engine/audit.ts": sha256("audit"),
     "packs/kotlin-best-practices/pack.yml": sha256("pack"),
@@ -50,14 +50,14 @@ test("buildLock: sorts file keys deterministically regardless of insertion order
     "packs/kotlin-best-practices/pack.yml",
   ]);
   expect(lock.version).toBe(1);
-  expect(lock.source).toBe("portable-hooks@0.1.0");
+  expect(lock.source).toBe("gateward@0.1.0");
 });
 
 test("serializeLock + readLock round-trips through disk", async () => {
   const dir = path.join(os.tmpdir(), `lock-test-${crypto.randomUUID()}`);
   await Bun.$`mkdir -p ${dir}`.quiet();
   try {
-    const lock = buildLock("portable-hooks@0.1.0", { "engine/config.ts": sha256("x") });
+    const lock = buildLock("gateward@0.1.0", { "engine/config.ts": sha256("x") });
     await Bun.write(path.join(dir, "lock.json"), serializeLock(lock));
     const reread = await readLock(dir);
     expect(reread).toEqual(lock);

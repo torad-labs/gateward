@@ -37,9 +37,7 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
   // — deny rather than let it reach path.resolve/path.extname downstream and
   // crash (which the harness would treat as non-blocking, i.e. fail open).
   if (path !== undefined && typeof path !== "string") {
-    return deny(
-      "[portable-hooks] malformed tool_input: file_path must be a string. Refusing to allow unchecked edits.",
-    );
+    return deny("[gateward] malformed tool_input: file_path must be a string. Refusing to allow unchecked edits.");
   }
   if (!path) return allow();
 
@@ -50,7 +48,7 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
   const malformedField = firstMalformedContentField(toolName, toolInput);
   if (malformedField !== null) {
     return deny(
-      `[portable-hooks] malformed tool_input: ${malformedField} must be a string. Refusing to allow unchecked edits.`,
+      `[gateward] malformed tool_input: ${malformedField} must be a string. Refusing to allow unchecked edits.`,
     );
   }
 
@@ -151,7 +149,7 @@ async function runAutofix(proj: Projection, toolInput: ToolInput, config: Config
 
 function autofixFailedReason(): string {
   return (
-    "[portable-hooks] an autofix-tier rule matched but its rewrite did not remove the violation " +
+    "[gateward] an autofix-tier rule matched but its rewrite did not remove the violation " +
     "(the rule likely has no `fix:`). Refusing to allow the edit unchanged — fix it by hand, or give " +
     "the rule a real fix."
   );
@@ -164,14 +162,14 @@ function denyReason(matches: Match[]): string {
 function missingBinaryReason(config: Config): string {
   const languages = config.languages.join(", ") || "configured";
   return (
-    `[portable-hooks] ast-grep is not installed, but this project's .tenets/ enables ${languages} rules. ` +
+    `[gateward] ast-grep is not installed, but this project's .tenets/ enables ${languages} rules. ` +
     "Install it (bun add -g @ast-grep/cli, npm i -g @ast-grep/cli, or brew install ast-grep), then retry. " +
     "Refusing to allow unchecked edits."
   );
 }
 
 function scanFailedReason(error: AstGrepFailed): string {
-  return `[portable-hooks] ${error.message}. Refusing to allow unchecked edits.`;
+  return `[gateward] ${error.message}. Refusing to allow unchecked edits.`;
 }
 
 /** Any error not otherwise handled — a malformed .tenets/config.toml
@@ -182,7 +180,7 @@ function scanFailedReason(error: AstGrepFailed): string {
  * So main() never lets an exception escape; it converts it to a deny. */
 function unexpectedErrorReason(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  return `[portable-hooks] internal error while evaluating this edit: ${message}. Refusing to allow unchecked edits.`;
+  return `[gateward] internal error while evaluating this edit: ${message}. Refusing to allow unchecked edits.`;
 }
 
 async function main(): Promise<void> {

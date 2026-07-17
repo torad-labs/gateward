@@ -1,5 +1,5 @@
 /** GitHub Copilot adapter: vendors the Copilot shim next to the engine and
- * writes `.github/hooks/portable-hooks.json`. Copilot (the CLI, the cloud
+ * writes `.github/hooks/gateward.json`. Copilot (the CLI, the cloud
  * coding agent, and VS Code agent mode) reads `preToolUse` command hooks from
  * `.github/hooks/*.json` — a directory of per-purpose files, so unlike
  * Claude's shared settings.json there is nothing to merge into: the file is
@@ -17,7 +17,7 @@ import type { HarnessAdapter, WireContext, WireReport } from "./adapter";
 export const COPILOT_HOOK_MARKER = ".tenets/engine/shims/copilot/entry.ts";
 
 /**
- * The full `.github/hooks/portable-hooks.json` this adapter writes.
+ * The full `.github/hooks/gateward.json` this adapter writes.
  *
  * The matcher covers Copilot CLI's native file tools (`create`, `edit`) AND
  * the Claude-compat names (`Write`, `Edit`) VS Code's hook bridge may emit —
@@ -69,12 +69,12 @@ async function wire({ root }: WireContext): Promise<WireReport> {
     lockEntries[`engine/shims/copilot/${r.relPath}`] = r.hash;
     if (r.result !== "unchanged") changed = true;
   }
-  const hooksPath = path.join(root, ".github", "hooks", "portable-hooks.json");
+  const hooksPath = path.join(root, ".github", "hooks", "gateward.json");
   const result = await writeIfChanged(hooksPath, copilotHooksFileText());
   if (result !== "unchanged") changed = true;
   return {
     lines: [
-      `Copilot wired -> .github/hooks/portable-hooks.json (${result === "unchanged" ? "already wired" : "added hook"})`,
+      `Copilot wired -> .github/hooks/gateward.json (${result === "unchanged" ? "already wired" : "added hook"})`,
     ],
     lockEntries,
     changed,
@@ -86,18 +86,18 @@ async function check(root: string): Promise<DoctorCheck> {
     return {
       name: "harness:copilot",
       status: "warn",
-      message: "Copilot detected, but portable-hooks has no Copilot shim yet.",
-      remedy: "upgrade portable-hooks once the Copilot shim ships; not fixable today",
+      message: "Copilot detected, but gateward has no Copilot shim yet.",
+      remedy: "upgrade gateward once the Copilot shim ships; not fixable today",
     };
   }
-  const hooksFile = Bun.file(path.join(root, ".github", "hooks", "portable-hooks.json"));
+  const hooksFile = Bun.file(path.join(root, ".github", "hooks", "gateward.json"));
   const wired = (await hooksFile.exists()) && (await hooksFile.text()).includes(COPILOT_HOOK_MARKER);
   if (!wired) {
     return {
       name: "harness:copilot",
       status: "fail",
       message: "Copilot detected but not wired.",
-      remedy: "run `portable-hooks init`",
+      remedy: "run `gateward init`",
     };
   }
   return { name: "harness:copilot", status: "pass", message: "Copilot preToolUse hook wired." };
