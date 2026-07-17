@@ -25,8 +25,6 @@ export const LockFileSchema = v.object({
   files: v.record(v.string(), v.string()),
 });
 
-export type LockFileShape = v.InferOutput<typeof LockFileSchema>;
-
 /** The one field the CLI reads from its own package.json (to stamp
  * lock.json's source). A missing/blank version means a corrupt install. */
 export const PackageVersionSchema = v.object({

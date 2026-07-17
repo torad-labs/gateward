@@ -30,7 +30,7 @@ export function looksLikeTestFile(name: string): boolean {
   return TEST_PREFIX_RE.test(name) || TEST_SUFFIX_RE.test(name) || TEST_INFIX_RE.test(name);
 }
 
-export interface VendorOptions {
+interface VendorOptions {
   /** Filenames for which this returns true are skipped entirely. */
   exclude?: (name: string) => boolean;
 }
@@ -57,7 +57,7 @@ export async function writeIfChanged(filePath: string, content: string | Uint8Ar
   return prev === null ? "created" : "updated";
 }
 
-export interface VendoredFile {
+interface VendoredFile {
   /** Path relative to the destination root passed in, forward-slash normalized. */
   relPath: string;
   result: WriteResult;
@@ -116,7 +116,7 @@ export async function removeVendored(destDir: string): Promise<void> {
   await Bun.$`rm -rf ${destDir}`.quiet();
 }
 
-export interface SourceFile {
+interface SourceFile {
   /** Forward-slash path relative to `srcDir`. */
   relPath: string;
   absPath: string;
