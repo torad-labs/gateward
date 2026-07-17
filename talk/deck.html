@@ -160,6 +160,47 @@
   #notes b{color:#FF9CA4}
   #help{position:fixed;bottom:16px;left:20px;z-index:40;font-family:var(--mono);font-size:12px;
     color:#5C636D}
+
+  /* ---- concept animations (mechanism, not decoration) --------------------- */
+  .anim{position:relative;overflow:hidden}
+  .anim .axis{position:absolute;left:0;right:0;bottom:0;display:flex;
+    justify-content:space-between;font-family:var(--mono);font-size:15px;color:var(--ink-3)}
+  /* context decay */
+  .ctx-strip{position:absolute;left:0;right:0;bottom:34px;display:flex;gap:5px;align-items:flex-end}
+  .ctx-block{width:34px;height:56px;border-radius:6px;background:#E4DCD8;flex:0 0 auto;
+    transition:opacity .5s ease,transform .5s ease,background .5s ease}
+  .ctx-block.rules{background:var(--red);position:relative}
+  .ctx-block.rules::after{content:"your rules";position:absolute;top:-26px;left:0;
+    font-family:var(--mono);font-size:14px;color:var(--red);white-space:nowrap}
+  .ctx-cursor{position:absolute;bottom:34px;width:34px;height:76px;border-radius:6px;
+    border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;color:var(--ink);background:#fff;
+    transition:left .28s linear}
+  /* cost curve */
+  .cc-lane{position:absolute;left:0;right:0;bottom:30px;height:2px;background:var(--line)}
+  .cc-stop{position:absolute;bottom:8px;font-family:var(--mono);font-size:15px;color:var(--ink-2);
+    transform:translateX(-50%)}
+  .cc-bar{position:absolute;bottom:30px;width:52px;border-radius:6px 6px 0 0;background:var(--red-soft);
+    transform:translateX(-50%);transition:height .6s cubic-bezier(.2,.7,.2,1);
+    display:flex;align-items:flex-start;justify-content:center}
+  .cc-bar span{font-family:var(--mono);font-size:14px;color:var(--red-deep);margin-top:6px;white-space:nowrap;
+    opacity:0;transition:opacity .3s ease .3s}
+  .cc-bar.up span{opacity:1}
+  .cc-dot{position:absolute;bottom:22px;width:18px;height:18px;border-radius:50%;background:var(--red);
+    transform:translateX(-50%);transition:left .7s cubic-bezier(.4,0,.6,1)}
+  /* hook gate */
+  .hg-node{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);
+    font-size:16px;color:var(--ink-2);text-align:center}
+  .hg-node .box{width:120px;height:64px;border:2px solid var(--line);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:8px}
+  .hg-gate .box{border-color:var(--ink);border-width:3px}
+  .hg-gate .box.pass{border-color:var(--allow);background:rgba(18,137,76,.08)}
+  .hg-gate .box.block{border-color:var(--red);background:var(--red-soft)}
+  .hg-card{position:absolute;top:50%;margin-top:-46px;width:56px;height:40px;border-radius:7px;
+    background:#fff;border:2px solid var(--ink-2);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;transition:left .8s ease,opacity .3s ease,transform .3s ease}
+  .hg-card.bad{border-color:var(--red);color:var(--red)}
+  .hg-card.ok{border-color:var(--allow);color:var(--allow)}
 </style>
 </head>
 <body>
@@ -218,13 +259,21 @@
   </section>
 
   <!-- 5 · not carelessness + wrong room -->
-  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it.">
+  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it. Then set up the next slide: and there's a concrete mechanical reason the rules lose.">
     <div class="kicker">Why it happens</div>
     <h2>The agent will happily use a banned pattern.</h2>
     <div class="sub" style="margin-top:26px;max-width:42ch">Not because it's careless, but because it generates from probability, not from our rules. Multiply that by every session, every day, and the codebase slowly stops looking like its own architecture.</div>
   </section>
 
-  <!-- 6 · REFRAIN 1 -->
+  <!-- 6 · context attention decay -->
+  <section class="slide" data-notes="The mechanical reason, and it isn't mysterious. Say: models pay attention unevenly. Text near where they're working pulls hard, and text from an hour ago barely pulls at all. Your CLAUDE.md was minute-one text. By the time the agent is deep in the feature, those rules are competing with fifty files of fresher context, and when the window compacts to make room, they can drop out entirely. Watch the strip: the rules never change. They just get far away. That's why the fix can't be a better prompt. Distance wins.">
+    <div class="kicker">The mechanics of forgetting</div>
+    <h2>Your rules are minute-one text in an hour-long context.</h2>
+    <div class="anim" data-anim="contextDecay" style="height:190px;margin-top:26px"></div>
+    <div class="sub" style="margin-top:18px;max-width:44ch">Attention concentrates where the model is working. The farther your CLAUDE.md drifts, the weaker its pull, and a compaction can drop it entirely.</div>
+  </section>
+
+  <!-- 7 · REFRAIN 1 -->
   <section class="slide slide--refrain" data-notes="Land the refrain for the first time and then be quiet for a beat. This sentence comes back three more times, always in the same words.">
     <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
     <div class="tag">Refrain · 1 of 4</div>
@@ -272,9 +321,10 @@
   </section>
 
   <!-- 11 · cost curve -->
-  <section class="slide" data-notes="Walk one violation through the four rows, revealing as you go. Say: the same mistake gets more expensive the longer it lives. And the last row is the one that actually hurts: if the agent ignored an architecture rule from the first file, you're not fixing a line, you're re-architecting the feature it built on top of it. We've paid that one.">
+  <section class="slide" data-notes="Let the animation run a loop while you talk, then reveal the rows. Say: the same mistake gets more expensive the longer it lives, and not linearly. At write time it costs milliseconds. By pre-commit it's a red build and a context switch. By CI it's a rework loop through review. And the last bar is the one that actually hurts: if the agent ignored an architecture rule from the first file, you're not fixing a line, you're re-architecting the feature it built on top of it. We've paid that one.">
     <div class="kicker">The same violation, caught later and later</div>
-    <div class="rows" style="margin-top:10px">
+    <div class="anim" data-anim="costCurve" style="height:200px;margin-top:8px"></div>
+    <div class="rows" style="margin-top:14px">
       <div class="row frag"><div class="k red">Write time</div><div class="v">milliseconds; the agent self-corrects in the same turn</div></div>
       <div class="row frag"><div class="k">Pre-commit</div><div class="v">a red build, a context switch</div></div>
       <div class="row frag"><div class="k">CI</div><div class="v">a rework loop through review: same fix, 10× the cost</div></div>
@@ -316,11 +366,12 @@
   </section>
 
   <!-- 16 · what a hook is -->
-  <section class="slide" data-notes="Define the one concept everything else builds on, slowly. Say: every coding harness now has lifecycle hooks. Before the agent writes a file, your script runs, and its verdict decides whether the write happens. That's the whole trick. Claude Code, Codex, Antigravity, OpenCode, they all have some version of this, which matters later.">
+  <section class="slide" data-notes="Define the one concept everything else builds on, slowly, and let the animation carry it: a clean write passes the gate and lands, a violating write gets stopped and sent back. Say: every coding harness now has lifecycle hooks. Before the agent writes a file, your script runs, and its verdict decides whether the write happens. That's the whole trick. Claude Code, Codex, Antigravity, OpenCode, they all have some version of this, which matters later.">
     <div class="kicker">What a lifecycle hook is</div>
     <h2>A checkpoint between<br>"the agent decided to write this"<br>and "this landed on <em>disk</em>."</h2>
-    <div class="sub" style="margin-top:28px">Your script runs first, and its verdict decides whether the file changes.</div>
-    <div class="mono dim" style="margin-top:30px;font-size:20px">Claude&nbsp;Code · Codex · Antigravity · OpenCode all ship these.</div>
+    <div class="sub" style="margin-top:22px">Your script runs first, and its verdict decides whether the file changes.</div>
+    <div class="anim" data-anim="hookGate" style="height:170px;margin-top:16px"></div>
+    <div class="mono dim" style="margin-top:14px;font-size:20px">Claude&nbsp;Code · Codex · Antigravity · OpenCode all ship these.</div>
   </section>
 
   <!-- 17 · step 1 intercept -->
@@ -647,6 +698,144 @@ bunx portable-hooks add android-architecture</pre>
 
   function frags(slide){ return Array.from(slide.querySelectorAll('.frag')); }
 
+  // ---- concept animations: start on slide entry, clean up on exit ---------
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let animStop = null;
+
+  const ANIMS = {
+    // The rules don't change; they get far away. Blocks of fresh context push
+    // in from the right, the rules block decays with distance, and a
+    // compaction sweep drops the middle of the window entirely.
+    contextDecay(el){
+      const strip = document.createElement('div'); strip.className='ctx-strip';
+      const cursor = document.createElement('div'); cursor.className='ctx-cursor'; cursor.textContent='now';
+      const axis = document.createElement('div'); axis.className='axis';
+      axis.innerHTML = '<span>minute 1</span><span>an hour in</span>';
+      el.append(strip, cursor, axis);
+      const rules = document.createElement('div'); rules.className='ctx-block rules';
+      strip.appendChild(rules);
+      const W = el.clientWidth, BLOCK = 39, MAX = Math.floor((W - 60) / BLOCK) - 1;
+      let n = 0, timer = null, phase = 'fill';
+      function place(){ cursor.style.left = Math.min(30 + (n+1)*BLOCK, W-40) + 'px'; }
+      function tick(){
+        if(phase === 'fill'){
+          if(n >= MAX){ phase = 'compact'; timer = setTimeout(tick, 1200); return; }
+          const b = document.createElement('div'); b.className='ctx-block';
+          b.style.height = (40 + Math.random()*34) + 'px';
+          strip.appendChild(b); n++;
+          const fade = Math.max(.12, 1 - n/(MAX*.85));
+          rules.style.opacity = fade; rules.style.transform = `scaleY(${.4 + fade*.6})`;
+          place();
+          timer = setTimeout(tick, 260);
+        } else if(phase === 'compact'){
+          // compaction: the middle of the window (rules included) drops out
+          Array.from(strip.children).slice(0, Math.floor(n*.6)).forEach(b => b.style.opacity = 0);
+          phase = 'reset'; timer = setTimeout(tick, 2000);
+        } else {
+          strip.innerHTML = ''; strip.appendChild(rules);
+          rules.style.opacity = 1; rules.style.transform = 'none';
+          n = 0; phase = 'fill'; place();
+          timer = setTimeout(tick, 700);
+        }
+      }
+      if(REDUCED){
+        for(let k=0;k<10;k++){ const b=document.createElement('div'); b.className='ctx-block'; b.style.height='52px'; strip.appendChild(b); }
+        rules.style.opacity = .18; cursor.style.left = (30+11*BLOCK)+'px';
+        return null;
+      }
+      place(); timer = setTimeout(tick, 500);
+      return () => clearTimeout(timer);
+    },
+
+    // The same violation, caught later: the dot travels the pipeline and the
+    // cost bar at each stop grows out of proportion to the last.
+    costCurve(el){
+      const lane = document.createElement('div'); lane.className='cc-lane'; el.appendChild(lane);
+      const stops = [
+        {x:.10, label:'write time', bar:26,  tag:'~80 ms'},
+        {x:.37, label:'pre-commit', bar:52,  tag:'red build'},
+        {x:.64, label:'CI',         bar:86,  tag:'10×'},
+        {x:.90, label:'review',     bar:150, tag:'re-architect'},
+      ];
+      const W = el.clientWidth, bars = [];
+      for(const s of stops){
+        const lb = document.createElement('div'); lb.className='cc-stop';
+        lb.style.left = (s.x*W)+'px'; lb.textContent = s.label; el.appendChild(lb);
+        const bar = document.createElement('div'); bar.className='cc-bar';
+        bar.style.left = (s.x*W)+'px'; bar.style.height = '0px';
+        bar.innerHTML = `<span>${s.tag}</span>`; el.appendChild(bar); bars.push(bar);
+      }
+      const dot = document.createElement('div'); dot.className='cc-dot';
+      dot.style.left = (stops[0].x*W)+'px'; el.appendChild(dot);
+      if(REDUCED){ bars.forEach((b,k)=> { b.style.height = stops[k].bar+'px'; b.classList.add('up'); }); return null; }
+      let k = 0, timer = null;
+      function step(){
+        dot.style.left = (stops[k].x*W)+'px';
+        timer = setTimeout(() => {
+          bars[k].style.height = stops[k].bar+'px'; bars[k].classList.add('up');
+          k++;
+          if(k < stops.length){ timer = setTimeout(step, 650); }
+          else { timer = setTimeout(() => {
+            bars.forEach(b => { b.style.height='0px'; b.classList.remove('up'); });
+            k = 0; timer = setTimeout(step, 900);
+          }, 2600); }
+        }, 750);
+      }
+      step();
+      return () => clearTimeout(timer);
+    },
+
+    // The checkpoint: a clean write passes the gate and lands on disk; a
+    // violating write is stopped at the gate and goes back with instructions.
+    hookGate(el){
+      const W = el.clientWidth;
+      const mk = (cls, label, x) => { const d=document.createElement('div'); d.className=cls;
+        d.style.left=x+'px'; d.innerHTML=`<div class="box"></div>${label}`; el.appendChild(d); return d; };
+      const agent = mk('hg-node', 'agent', 20);
+      const gate  = mk('hg-node hg-gate', 'the gate', W/2 - 60);
+      const disk  = mk('hg-node', 'disk', W - 140);
+      const gbox = gate.querySelector('.box'); gbox.textContent = 'rules run';
+      agent.querySelector('.box').textContent = 'writes'; disk.querySelector('.box').textContent = 'file lands';
+      if(REDUCED) return null;
+      let timer = null, alive = true;
+      function run(card, verdict, done){
+        card.style.left = '40px'; el.appendChild(card);
+        setTimeout(() => { card.style.left = (W/2 - 28)+'px'; }, 60);
+        timer = setTimeout(() => {
+          gbox.className = 'box ' + (verdict==='ok' ? 'pass' : 'block');
+          if(verdict==='ok'){
+            timer = setTimeout(() => { card.style.left = (W - 175)+'px';
+              timer = setTimeout(() => { card.style.opacity=0; gbox.className='box'; done(); }, 450);
+            }, 500);
+          } else {
+            timer = setTimeout(() => { card.style.left = '40px'; card.style.transform='scale(.92)';
+              timer = setTimeout(() => { card.style.opacity=0; gbox.className='box'; done(); }, 900);
+            }, 600);
+          }
+        }, 950);
+      }
+      function loop(){
+        if(!alive) return;
+        const good = document.createElement('div'); good.className='hg-card ok'; good.textContent='.kt';
+        run(good, 'ok', () => { if(!alive) return;
+          const bad = document.createElement('div'); bad.className='hg-card bad'; bad.textContent='!!';
+          timer = setTimeout(() => run(bad, 'bad', () => { timer = setTimeout(loop, 800); }), 400);
+        });
+      }
+      loop();
+      return () => { alive = false; clearTimeout(timer); };
+    },
+  };
+
+  function startAnim(){
+    if(animStop){ animStop(); animStop = null; }
+    const holder = slides[i].querySelector('[data-anim]');
+    if(!holder) return;
+    holder.innerHTML = '';
+    const fn = ANIMS[holder.dataset.anim];
+    if(fn) animStop = fn(holder);
+  }
+
   function render(){
     slides.forEach((s,n)=> s.classList.toggle('on', n===i));
     const fr = frags(slides[i]);
@@ -655,7 +844,9 @@ bunx portable-hooks add android-architecture</pre>
     hud.textContent = (i+1)+' / '+slides.length;
     notes.innerHTML = slides[i].dataset.notes ? '<b>Notes · '+(i+1)+'</b> &nbsp; '+slides[i].dataset.notes : '';
     location.hash = i+1;
+    if(renderedSlide !== i){ renderedSlide = i; startAnim(); } // don't restart on fragment steps
   }
+  let renderedSlide = -1;
   function show(n){ i=Math.max(0,Math.min(slides.length-1,n)); f=0; render(); }
 
   function next(){
