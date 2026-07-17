@@ -1,7 +1,7 @@
 # Portable Hooks — Talk Plan v1
 
 **Talk:** Portable Hooks: Enforcing Engineering Tenets Across Claude Code, Codex, Antigravity, and OpenCode
-**Format assumption:** ~40 min slot (modular — each section trims independently to fit 30).
+**Format:** 40-min slot — 30–35 min of content + 5–10 min Q&A (target ~33 min of content).
 **Demo strategy:** no live demo — all code shown as single-delta slide builds
 (code authored in a real IDE first, pasted, then mutated one line per frame).
 **Company reference:** only the abstract's own line ("implemented at Realtor — slop-free").
@@ -36,7 +36,7 @@ final line of the close.
   it's careless — because it generates from probability, not from your rules.
 - **Refrain lands (first time):** "A prompt is a suggestion. A gate is a rule."
 
-### 1 · Agents don't read your docs (2:30–9:00)
+### 1 · Agents don't read your docs (2:30–8:30)
 
 Foundation to lock: *drift is structural, not a model-quality bug.*
 
@@ -58,7 +58,7 @@ Foundation to lock: *drift is structural, not a model-quality bug.*
   each, fast, laughs of recognition.
 - Part-boundary refrain repeat.
 
-### 2 · Gates, not guidelines (9:00–22:00) — the core build
+### 2 · Gates, not guidelines (8:30–20:30) — the core build
 
 Foundation to lock first: *what a lifecycle hook is* (one diagram, one sentence):
 a checkpoint between "the agent decided to write this" and "this landed on disk."
@@ -102,7 +102,7 @@ Numbers beat (truth-coupled, measured on the golden app / portable-hooks CI):
 
 Part-boundary refrain repeat.
 
-### 3 · Tenets that travel (22:00–33:00)
+### 3 · Tenets that travel (20:30–30:30)
 
 Two moves: widen from *files* to *decisions*, then from *one harness* to *all of them*.
 
@@ -123,7 +123,7 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
   - the golden app before/after: same agent, same prompts, gated vs ungated
   - the one permitted company line: "we run this at Realtor — we're slop-free."
 
-### 4 · Close (33:00–36:00)
+### 4 · Close (30:30–33:00)
 
 - Restate the spine verbatim (1/2/3, same words as min 4).
 - ONE actionable habit (style DNA: behavior change, not recap): *"Tonight: write one
@@ -133,7 +133,7 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
   prediction to debate, it's a staffing change to prepare for. The codebases that
   survive it are the ones that turned their conventions into gates.
 - **Final line = refrain.** "A prompt is a suggestion. A gate is a rule."
-- (Q&A buffer 36:00–40:00)
+- (Q&A 33:00–40:00 — the accepted format's 5–10 min)
 
 ---
 

@@ -9,3 +9,6 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+
+# talk research downloads (transcripts, video metadata) — local only
+talk/research/
