@@ -45,6 +45,32 @@ It drives a real `claude` session (in a throwaway worktree) told to do only the
 easy backlog item and stop. The Stop hook catches it with the boring item still
 open and sends it back to work. Captures land in `out/` (git-ignored).
 
+## Stage mode (live, for the talk)
+
+```sh
+demos/steer-feature/harvest-steer.sh --live
+```
+
+`--live` (or `HARVEST_LIVE=1`) pops a real Terminal window attached to the
+driven tmux session, so the room watches the agent hit the stop gate as it
+happens. At the end the script pauses — the window stays up until you press
+Enter in the driving terminal, then everything is cleaned up.
+
+- macOS will ask once for permission to control Terminal — approve it during
+  rehearsal, not on stage.
+- iTerm user? `HARVEST_TERM_APP=iTerm`.
+- Cmd+Plus in the opened window to zoom for the projector.
+
+## Colors
+
+Output is colored when a human is looking (TTY, or `FORCE_COLOR=1`) and plain
+when a program is — the agent and the hook JSON always get clean text, and
+`NO_COLOR` wins everywhere. `bun backlog.ts list` shows status-colored badges
+plus an open-count summary; `set-status` prints how many tasks remain the
+moment one advances; a bare `bun stop-hook.ts` at a TTY (or `--pretty`) renders
+the panel: red **⛔ STOP BLOCKED — N task(s) remaining** with the list, or green
+**✓ STOP ALLOWED — backlog clear**.
+
 ## Tests
 
 ```sh

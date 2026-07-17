@@ -16,6 +16,10 @@
 #   HARVEST_MODEL   (default: sonnet)   model for the driven agent
 #   HARVEST_OUT     (default: demos/remediation-loop/out)
 #   HARVEST_TIMEOUT (default: 300)      seconds per scenario
+#   HARVEST_LIVE=1  (or --live)         stage mode: open a Terminal window
+#                                       attached to the driven session, and
+#                                       pause for Enter before cleaning up
+#   HARVEST_TERM_APP (default: Terminal) Terminal | iTerm
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -24,7 +28,14 @@ MODEL="${HARVEST_MODEL:-sonnet}"
 TIMEOUT="${HARVEST_TIMEOUT:-300}"
 SESSION="ph-harvest-$$"
 WORKTREE="${TMPDIR:-/tmp}/ph-harvest-wt-$$"
-ONLY="${1:-}"
+LIVE="${HARVEST_LIVE:-0}"
+ONLY=""
+for arg in "$@"; do
+  case "$arg" in
+    --live) LIVE=1 ;;
+    *) ONLY="$arg" ;;
+  esac
+done
 
 # ---------------------------------------------------------------- scenarios --
 # Each scenario names a rule, a golden-app target file, and the change to
@@ -46,6 +57,33 @@ mkdir -p "$OUT"
 
 pane() { tmux capture-pane -pt "$SESSION" 2>/dev/null || true; }
 kill_session() { tmux kill-session -t "$SESSION" 2>/dev/null || true; }
+
+# Stage mode: pop a real terminal window attached to the driven tmux session so
+# the audience watches the agent hit the gate live. First run may trigger a
+# macOS permission prompt ("control Terminal") — approve it once, before the talk.
+open_live_window() {
+  [ "$LIVE" = "1" ] || return 0
+  local app="${HARVEST_TERM_APP:-Terminal}"
+  if [ "$app" = "iTerm" ]; then
+    osascript >/dev/null <<OSA || echo "  (live window failed — attach manually: tmux attach -t $SESSION)"
+tell application "iTerm"
+  activate
+  create window with default profile command "tmux attach -t $SESSION"
+end tell
+OSA
+  else
+    osascript >/dev/null \
+      -e 'tell application "Terminal" to activate' \
+      -e "tell application \"Terminal\" to do script \"tmux attach -t $SESSION\"" \
+      || echo "  (live window failed — attach manually: tmux attach -t $SESSION)"
+  fi
+}
+
+live_pause() {
+  [ "$LIVE" = "1" ] || return 0
+  printf '\n[live] the session window is still up — press Enter here to close it and clean up… '
+  read -r _ </dev/tty || true
+}
 remove_worktree() { [ -d "$WORKTREE" ] && git -C "$REPO" worktree remove --force "$WORKTREE" 2>/dev/null || true; }
 trap 'kill_session; remove_worktree' EXIT
 
@@ -61,6 +99,7 @@ run_scenario() {
   # --include-hook-events records every hook fire in the session transcript,
   # so the block + its message are captured precisely rather than scraped.
   tmux new-session -d -s "$SESSION" -x 220 -y 50 -c "$GOLDEN"
+  open_live_window
   tmux send-keys -t "$SESSION" \
     "claude --model $MODEL --permission-mode acceptEdits --include-hook-events" Enter
 
@@ -97,6 +136,7 @@ run_scenario() {
   [ "$elapsed" -ge "$TIMEOUT" ] && echo "  warning: hit ${TIMEOUT}s timeout, capturing anyway"
 
   tmux capture-pane -pt "$SESSION" -S -2000 > "$OUT/$name.pane.txt"
+  live_pause
   tmux send-keys -t "$SESSION" -l "/exit"; tmux send-keys -t "$SESSION" Enter; sleep 2
   kill_session
 

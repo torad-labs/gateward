@@ -7,8 +7,11 @@
 #
 # Isolation: runs in a throwaway git worktree; deleted on exit.
 # Requirements: tmux, claude (logged in), bun, git.
-# Usage: demos/steer-feature/harvest-steer.sh
-# Knobs: HARVEST_MODEL (default sonnet), HARVEST_TIMEOUT (default 300)
+# Usage: demos/steer-feature/harvest-steer.sh [--live]
+# Knobs: HARVEST_MODEL (default sonnet), HARVEST_TIMEOUT (default 300),
+#        HARVEST_LIVE=1 / --live (stage mode: open a Terminal window attached
+#        to the driven session; pause for Enter before cleanup),
+#        HARVEST_TERM_APP (Terminal | iTerm, default Terminal)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -17,6 +20,12 @@ MODEL="${HARVEST_MODEL:-sonnet}"
 TIMEOUT="${HARVEST_TIMEOUT:-300}"
 SESSION="ph-steer-$$"
 WORKTREE="${TMPDIR:-/tmp}/ph-steer-wt-$$"
+LIVE="${HARVEST_LIVE:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --live) LIVE=1 ;;
+  esac
+done
 
 for tool in tmux claude bun git; do
   command -v "$tool" >/dev/null || { echo "missing required tool: $tool" >&2; exit 1; }
@@ -25,6 +34,33 @@ mkdir -p "$OUT"
 
 pane() { tmux capture-pane -pt "$SESSION" 2>/dev/null || true; }
 kill_session() { tmux kill-session -t "$SESSION" 2>/dev/null || true; }
+
+# Stage mode: pop a real terminal window attached to the driven tmux session so
+# the audience watches the stop hook catch the agent live. First run may trigger
+# a macOS permission prompt ("control Terminal") — approve it once, before the talk.
+open_live_window() {
+  [ "$LIVE" = "1" ] || return 0
+  local app="${HARVEST_TERM_APP:-Terminal}"
+  if [ "$app" = "iTerm" ]; then
+    osascript >/dev/null <<OSA || echo "  (live window failed — attach manually: tmux attach -t $SESSION)"
+tell application "iTerm"
+  activate
+  create window with default profile command "tmux attach -t $SESSION"
+end tell
+OSA
+  else
+    osascript >/dev/null \
+      -e 'tell application "Terminal" to activate' \
+      -e "tell application \"Terminal\" to do script \"tmux attach -t $SESSION\"" \
+      || echo "  (live window failed — attach manually: tmux attach -t $SESSION)"
+  fi
+}
+
+live_pause() {
+  [ "$LIVE" = "1" ] || return 0
+  printf '\n[live] the session window is still up — press Enter here to close it and clean up… '
+  read -r _ </dev/tty || true
+}
 remove_worktree() { [ -d "$WORKTREE" ] && git -C "$REPO" worktree remove --force "$WORKTREE" 2>/dev/null || true; }
 trap 'kill_session; remove_worktree' EXIT
 
@@ -38,6 +74,7 @@ PROMPT="Do backlog item F1 only: add a ToggleFavoriteUseCase reference and a tog
 
 echo "── driving agent (model: $MODEL) in $STEER"
 tmux new-session -d -s "$SESSION" -x 220 -y 50 -c "$STEER"
+open_live_window
 tmux send-keys -t "$SESSION" \
   "claude --model $MODEL --permission-mode acceptEdits --include-hook-events" Enter
 
@@ -73,6 +110,7 @@ done
 [ "$elapsed" -ge "$TIMEOUT" ] && echo "  warning: hit ${TIMEOUT}s timeout, capturing anyway"
 
 tmux capture-pane -pt "$SESSION" -S -2000 > "$OUT/steer.pane.txt"
+live_pause
 tmux send-keys -t "$SESSION" -l "/exit"; tmux send-keys -t "$SESSION" Enter; sleep 2
 kill_session
 

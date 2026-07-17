@@ -248,6 +248,11 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 - [ ] GRADUATION NOW UNBLOCKED: core is TS/Bun, so the steer-feature Stop hook can
       move into packages/core/src/events/stop.ts beside pretooluse.ts (post-talk;
       demo stays as the runnable example).
+- [x] STAGE-READY DEMOS: both harvest scripts take --live (opens a Terminal window
+      attached to the driven session; pauses before cleanup) — run them live in the
+      talk. Backlog CLI + stop hook are colored for humans (status badges, remaining
+      counts, ⛔/✓ panel) and plain for agents/pipes; hook JSON contract untouched.
+      Rehearsal note: approve the macOS "control Terminal" prompt BEFORE stage.
 - [ ] Verify release readiness claims: install commands actually work as shown
 - [ ] Build the gated-vs-ungated mini-benchmark on the golden app (`e2e/` is the
       natural home) — feeds the numbers slide with honest small-N data

@@ -19,6 +19,9 @@
  * locked critical section are synchronous Buffer reads by design (the lock must
  * be held start-to-finish); async Bun.file().text() would open a write window.
  *
+ * Output is colored when a human is looking (TTY, or FORCE_COLOR=1) and plain
+ * when a program is — agents and pipes get clean text; NO_COLOR always wins.
+ *
  * Status ladder (declare-then-earn): todo -> in_flight -> done -> verified.
  * "done" is the agent's claim; "verified" is earned by proof. Open work =
  * todo | in_flight; the stop hook blocks a stop while any item is open.
@@ -44,6 +47,40 @@ const DEFAULT_HEADER =
   "# Open items (todo|in_flight) block a stop — you cannot declare done with work left.\n" +
   "# Notes are dated lines carrying decisions + resume pointers: an agent killed\n" +
   "# mid-task is resumable from this file alone.\n";
+
+// ------------------------------------------------------------------- color --
+
+const COLORS_ON =
+  !process.env.NO_COLOR && (process.env.FORCE_COLOR === "1" || process.stdout.isTTY === true);
+
+/** Wrap `text` in an ANSI style when a human is looking; plain otherwise. */
+export function paint(code: string, text: string): string {
+  return COLORS_ON ? `\x1b[${code}m${text}\x1b[0m` : text;
+}
+
+const STATUS_STYLE: Record<Status, string> = {
+  todo: "1;33", // bold yellow — needs doing
+  in_flight: "1;36", // bold cyan — someone is on it
+  done: "32", // green — claimed
+  verified: "1;32", // bold green — earned
+};
+
+const BADGE_WIDTH = Math.max(...STATUSES.map((status) => status.length)) + 2;
+
+/** `[todo]` colored by status, padded so columns line up. */
+export function statusBadge(status: Status): string {
+  return paint(STATUS_STYLE[status], `[${status}]`.padEnd(BADGE_WIDTH));
+}
+
+/** "1 todo · 1 in_flight" — breakdown of the given items, ladder order. */
+export function countSummary(items: Item[]): string {
+  const parts: string[] = [];
+  for (const status of STATUSES) {
+    const n = items.filter((item) => item.status === status).length;
+    if (n > 0) parts.push(`${n} ${status}`);
+  }
+  return parts.join(" · ");
+}
 
 // ----------------------------------------------------------------- parsing --
 
@@ -181,22 +218,37 @@ function requireItem(items: Item[], id: string): Item {
 }
 
 function renderItem(item: Item): string {
-  const head = `${item.id}  [${item.status}]  ${item.title}`;
-  const files = item.files.length ? `\n  files: ${item.files.join(", ")}` : "";
-  const verify = item.verify ? `\n  verify: ${item.verify}` : "";
-  const notes = item.notes.length ? `\n  notes:\n${item.notes.map((n) => `    - ${n}`).join("\n")}` : "";
+  const head = `${paint("1", item.id)}  ${statusBadge(item.status)} ${item.title}`;
+  const files = item.files.length ? `\n  ${paint("2", `files: ${item.files.join(", ")}`)}` : "";
+  const verify = item.verify ? `\n  ${paint("2", `verify: ${item.verify}`)}` : "";
+  const notes = item.notes.length
+    ? `\n  notes:\n${item.notes.map((n) => paint("2", `    - ${n}`)).join("\n")}`
+    : "";
   return head + files + verify + notes;
+}
+
+function renderSummaryLine(items: Item[]): string {
+  const open = openItems(items);
+  const openPart =
+    open.length > 0
+      ? paint("1;33", `${open.length} open`) + paint("2", ` (${countSummary(open)})`)
+      : paint("1;32", "0 open");
+  const rest = items.filter((item) => !OPEN_STATUSES.includes(item.status));
+  const restPart = rest.length ? paint("2", ` · ${countSummary(rest)}`) : "";
+  return `${paint("2", "──")} ${items.length} task(s) — ${openPart}${restPart}`;
 }
 
 const USAGE = `backlog — the one channel for the feature ledger
 
-  backlog list [--status <s>]        compact table (optionally filtered)
+  backlog list [--status <s>]        compact table + remaining-count summary
   backlog get <id>                   one item, notes and all (~10 lines)
   backlog next                       the next open item (todo|in_flight)
   backlog add --id <id> --title <t> [--files a,b] [--verify <t>]
   backlog set-status <id> <status>   status in: ${STATUSES.join(" | ")}
   backlog note <id> "<text>"         append a dated note (decisions live here)
   backlog selftest                   parse/serialize round-trip check
+
+  Colors appear on a TTY (or FORCE_COLOR=1); NO_COLOR disables them.
 `;
 
 function parseFlags(args: string[]): Record<string, string> {
@@ -237,9 +289,12 @@ export function main(argv: string[]): number {
   switch (command) {
     case "list": {
       const flags = parseFlags(rest);
-      let items = readBacklog(file);
-      if (flags.status) items = items.filter((item) => item.status === flags.status);
-      for (const item of items) console.log(`${item.id}  [${item.status}]  ${item.title}`);
+      const all = readBacklog(file);
+      const items = flags.status ? all.filter((item) => item.status === flags.status) : all;
+      for (const item of items) {
+        console.log(`${paint("1", item.id)}  ${statusBadge(item.status)} ${item.title}`);
+      }
+      console.log(renderSummaryLine(all));
       return 0;
     }
     case "get": {
@@ -249,10 +304,11 @@ export function main(argv: string[]): number {
     case "next": {
       const open = openItems(readBacklog(file));
       if (open.length === 0) {
-        console.log("(no open items)");
+        console.log(paint("1;32", "✓ no open tasks — backlog clear"));
         return 0;
       }
       console.log(renderItem(open[0]));
+      console.log(paint("2", `(${open.length} open in total)`));
       return 0;
     }
     case "add": {
@@ -276,7 +332,8 @@ export function main(argv: string[]): number {
         });
         return items;
       });
-      console.log(`added ${flags.id}`);
+      console.log(`added ${paint("1", flags.id)}`);
+      console.log(renderSummaryLine(readBacklog(file)));
       return 0;
     }
     case "set-status": {
@@ -292,11 +349,16 @@ export function main(argv: string[]): number {
         return items;
       });
       // The nudge rides the write itself (substrate, not instruction): the CLI
-      // reminds the agent what's still open at the exact moment it advances one.
+      // shows the remaining count at the exact moment one task advances.
       const stillOpen = openItems(readBacklog(file));
-      console.log(`${id} -> ${status}`);
+      console.log(`${paint("1", id)} ${paint("2", "→")} ${statusBadge(status as Status).trim()}`);
       if (stillOpen.length) {
-        console.log(`still open: ${stillOpen.map((item) => item.id).join(", ")}`);
+        console.log(
+          paint("1;33", `⚠ ${stillOpen.length} task(s) remaining`) +
+            paint("2", ` (${countSummary(stillOpen)}) — ${stillOpen.map((item) => item.id).join(", ")}`),
+        );
+      } else {
+        console.log(paint("1;32", "✓ backlog clear — nothing open, a stop now passes the gate"));
       }
       return 0;
     }
@@ -311,7 +373,7 @@ export function main(argv: string[]): number {
         requireItem(items, id).notes.push(`${today()} ${text}`);
         return items;
       });
-      console.log(`noted on ${id}`);
+      console.log(`noted on ${paint("1", id)}`);
       return 0;
     }
     default:
