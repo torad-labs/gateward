@@ -241,10 +241,13 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
       against the golden app (worktree-isolated) and captures three live gate blocks
       (context-in-domain, event-bus, logic-in-composable) + the agent self-correcting.
       Reproducible by anyone who checks out the repo.
-- [ ] GIT HYGIENE: commit 996b65f accidentally swept pre-staged Bun-migration file
-      moves into a talk commit (harmless, WIP intact). Going forward, stage talk/demo
-      files by explicit path only. Optional cleanup (needs Marcos + rewrites pushed
-      master): soft-reset, unstage packages/, re-commit talk-only.
+- [x] GIT HYGIENE: moot — Marcos landed the full Bun migration as a clean commit
+      (5755e4c "Bun-native rewrite… the repo now gates itself"), superseding the
+      earlier stray file-moves. Repo verify green (15/15 e2e, audit pins 0/52/0).
+      Going forward: stage talk/demo files by explicit path (now standard practice).
+- [ ] GRADUATION NOW UNBLOCKED: core is TS/Bun, so the steer-feature Stop hook can
+      move into packages/core/src/events/stop.ts beside pretooluse.ts (post-talk;
+      demo stays as the runnable example).
 - [ ] Verify release readiness claims: install commands actually work as shown
 - [ ] Build the gated-vs-ungated mini-benchmark on the golden app (`e2e/` is the
       natural home) — feeds the numbers slide with honest small-N data
