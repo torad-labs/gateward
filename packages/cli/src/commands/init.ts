@@ -6,12 +6,20 @@ import { generateConfigToml } from "../domain/tenetsConfig";
 import { vendorDir, writeIfChanged } from "../domain/vendor";
 import { detectHarnesses, WIRE_ORDER } from "../harnesses";
 import { CORE_SRC, configTomlPath, engineDestDir, PACKS_ROOT, packsDestDir, readCliVersion, tenetsDir } from "../paths";
-import type { CommandOutcome, PackMeta, WriteResult } from "../types";
+import type { CommandOutcome, HarnessDetection, PackMeta, WriteResult } from "../types";
 
 export interface InitOptions {
   /** Raw `--packs` value: "all" or a comma-separated id list. */
   packsFlag?: string;
   yes: boolean;
+}
+
+/** A running transcript (`note`) plus a changed-anything tracker (`markChanged`),
+ * threaded through every phase helper below so they all report into the same
+ * `runInit` outcome instead of each building their own partial one. */
+interface InitReporter {
+  note: (line: string) => void;
+  markChanged: (result: WriteResult) => void;
 }
 
 async function resolvePackSelection(opts: InitOptions, available: PackMeta[]): Promise<string[]> {
@@ -35,7 +43,7 @@ async function resolvePackSelection(opts: InitOptions, available: PackMeta[]): P
     return available.map((p) => p.id);
   }
   if (isInteractive()) {
-    return promptMultiselect(
+    return await promptMultiselect(
       available.map((p) => ({ id: p.id, label: p.title })),
       "Select rule packs to install:",
     );
@@ -47,20 +55,83 @@ function reportResult(label: string, result: WriteResult): string {
   return `  ${result === "unchanged" ? "unchanged" : result.padEnd(9)} ${label}`;
 }
 
-export async function runInit(root: string, opts: InitOptions): Promise<CommandOutcome> {
-  const lines: string[] = [];
-  let anyChange = false;
-  const note = (line: string) => lines.push(line);
-  const markChanged = (result: WriteResult) => {
-    if (result !== "unchanged") anyChange = true;
-  };
-
-  const detections = detectHarnesses(root);
+/** Phase: logs which harnesses were detected in `root`, one line each. */
+function reportDetections(note: InitReporter["note"], detections: HarnessDetection[]): void {
   note("Detected harnesses:");
   for (const d of detections) {
     note(`  ${d.harness.padEnd(9)} ${d.detected ? `yes (${d.signals.join(", ")})` : "no"}`);
   }
   note("");
+}
+
+/** Phase: vendors every selected pack into `.tenets/packs/<id>/` and returns
+ * its slice of the lock file (keyed `packs/<id>/<relPath>`). */
+async function vendorSelectedPacks(
+  root: string,
+  selectedPacks: PackMeta[],
+  { note, markChanged }: InitReporter,
+): Promise<Record<string, string>> {
+  const lockFiles: Record<string, string> = {};
+  note(`Packs (${selectedPacks.length}):`);
+  for (const pack of selectedPacks) {
+    const dest = packsDestDir(root, pack.id);
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so each pack's note line follows its own vendor results, in selection order
+    const results = await vendorDir(pack.dir, dest);
+    for (const r of results) {
+      lockFiles[`packs/${pack.id}/${r.relPath}`] = r.hash;
+      markChanged(r.result);
+    }
+    note(`  ${pack.id} -> .tenets/packs/${pack.id}/ (${results.length} files)`);
+  }
+  return lockFiles;
+}
+
+/** Phase: vendors the core engine into `.tenets/engine/` and returns its
+ * slice of the lock file (keyed `engine/<relPath>`). */
+async function vendorEngine(root: string, { note, markChanged }: InitReporter): Promise<Record<string, string>> {
+  const lockFiles: Record<string, string> = {};
+  const engineResults = await vendorDir(CORE_SRC, engineDestDir(root));
+  for (const r of engineResults) {
+    lockFiles[`engine/${r.relPath}`] = r.hash;
+    markChanged(r.result);
+  }
+  note(`Engine vendored -> .tenets/engine/ (${engineResults.length} files)`);
+  return lockFiles;
+}
+
+interface WireHarnessesResult {
+  lockFiles: Record<string, string>;
+  changed: boolean;
+}
+
+/** Phase: wires every harness adapter unconditionally (wiring is idempotent)
+ * and merges their lock entries. */
+async function wireHarnesses(root: string, { note }: InitReporter): Promise<WireHarnessesResult> {
+  const lockFiles: Record<string, string> = {};
+  let changed = false;
+  // Every harness wires unconditionally (wiring is idempotent); shim-vendoring
+  // adapters run first so their lock entries exist before lock.json is built.
+  for (const adapter of WIRE_ORDER) {
+    // biome-ignore lint/performance/noAwaitInLoops: WIRE_ORDER is a dependency order — shim-vendoring adapters must wire before lock.json is built from their entries
+    const report = await adapter.wire({ root });
+    Object.assign(lockFiles, report.lockEntries);
+    if (report.changed) changed = true;
+    for (const line of report.lines) note(line);
+  }
+  return { lockFiles, changed };
+}
+
+export async function runInit(root: string, opts: InitOptions): Promise<CommandOutcome> {
+  const lines: string[] = [];
+  let anyChange = false;
+  const reporter: InitReporter = {
+    note: (line: string) => lines.push(line),
+    markChanged: (result: WriteResult) => {
+      if (result !== "unchanged") anyChange = true;
+    },
+  };
+
+  reportDetections(reporter.note, detectHarnesses(root));
 
   const available = await listPacks(PACKS_ROOT);
   if (available.length === 0) {
@@ -73,33 +144,12 @@ export async function runInit(root: string, opts: InitOptions): Promise<CommandO
     .filter((p): p is PackMeta => Boolean(p));
 
   const lockFiles: Record<string, string> = {};
+  Object.assign(lockFiles, await vendorSelectedPacks(root, selectedPacks, reporter));
+  Object.assign(lockFiles, await vendorEngine(root, reporter));
 
-  note(`Packs (${selectedPacks.length}):`);
-  for (const pack of selectedPacks) {
-    const dest = packsDestDir(root, pack.id);
-    const results = await vendorDir(pack.dir, dest);
-    for (const r of results) {
-      lockFiles[`packs/${pack.id}/${r.relPath}`] = r.hash;
-      markChanged(r.result);
-    }
-    note(`  ${pack.id} -> .tenets/packs/${pack.id}/ (${results.length} files)`);
-  }
-
-  const engineResults = await vendorDir(CORE_SRC, engineDestDir(root));
-  for (const r of engineResults) {
-    lockFiles[`engine/${r.relPath}`] = r.hash;
-    markChanged(r.result);
-  }
-  note(`Engine vendored -> .tenets/engine/ (${engineResults.length} files)`);
-
-  // Every harness wires unconditionally (wiring is idempotent); shim-vendoring
-  // adapters run first so their lock entries exist before lock.json is built.
-  for (const adapter of WIRE_ORDER) {
-    const report = await adapter.wire({ root });
-    Object.assign(lockFiles, report.lockEntries);
-    if (report.changed) anyChange = true;
-    for (const line of report.lines) note(line);
-  }
+  const wired = await wireHarnesses(root, reporter);
+  Object.assign(lockFiles, wired.lockFiles);
+  if (wired.changed) anyChange = true;
 
   const languages = languagesForPacks(selectedPacks);
   const configText = generateConfigToml({
@@ -109,16 +159,16 @@ export async function runInit(root: string, opts: InitOptions): Promise<CommandO
     enabledPacks: selectedPacks,
   });
   const configResult = await writeIfChanged(configTomlPath(root), configText);
-  markChanged(configResult);
-  note(reportResult(".tenets/config.toml", configResult));
+  reporter.markChanged(configResult);
+  reporter.note(reportResult(".tenets/config.toml", configResult));
 
   const lock = buildLock(`portable-hooks@${await readCliVersion()}`, lockFiles);
   const lockResult = await writeIfChanged(lockPath(tenetsDir(root)), serializeLock(lock));
-  markChanged(lockResult);
-  note(reportResult(`.tenets/lock.json (${Object.keys(lockFiles).length} files)`, lockResult));
+  reporter.markChanged(lockResult);
+  reporter.note(reportResult(`.tenets/lock.json (${Object.keys(lockFiles).length} files)`, lockResult));
 
-  note("");
-  note(anyChange ? "portable-hooks: init complete." : "portable-hooks: no changes. Already up to date.");
+  reporter.note("");
+  reporter.note(anyChange ? "portable-hooks: init complete." : "portable-hooks: no changes. Already up to date.");
 
   return { changed: anyChange, lines };
 }

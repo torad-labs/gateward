@@ -4,6 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { runInit } from "./init";
 
+const NO_CHANGES_RE = /no changes/i;
+
 async function tmpdir(): Promise<string> {
   const dir = path.join(os.tmpdir(), `init-idempotent-test-${crypto.randomUUID()}`);
   await Bun.$`mkdir -p ${dir}`.quiet();
@@ -27,7 +29,7 @@ test("runInit: a second run with the same options changes nothing and says so", 
     const second = await runInit(root, { packsFlag: "all", yes: false });
     expect(second.changed).toBe(false);
     expect(
-      second.lines.some((l) => /no changes/i.test(l)),
+      second.lines.some((l) => NO_CHANGES_RE.test(l)),
       second.lines.join("\n"),
     ).toBeTruthy();
 
@@ -77,6 +79,7 @@ async function snapshotTenets(root: string): Promise<Record<string, string>> {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const abs = path.join(dir, entry.name);
       const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+      // biome-ignore lint/performance/noAwaitInLoops: recursive directory walk over a small test fixture tree; sequential recursion is the simplest correct shape
       if (entry.isDirectory()) await walk(abs, relPath);
       else snapshot[relPath] = await Bun.file(abs).text();
     }

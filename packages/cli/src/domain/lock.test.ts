@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { buildLock, readLock, serializeLock, sha256, sha256File, toLockKey } from "./lock";
 
 test("sha256: matches the NIST FIPS 180-4 known-answer test vector for 'abc'", () => {
+  // biome-ignore lint/security/noSecrets: false positive — a published SHA-256 known-answer test vector, not a secret
   expect(sha256("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 });
 

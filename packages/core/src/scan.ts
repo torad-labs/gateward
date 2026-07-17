@@ -16,8 +16,8 @@ const TIMEOUT_MS = 30_000;
 
 /** Thrown when the ast-grep binary is not on PATH. */
 export class AstGrepMissing extends Error {
-  constructor() {
-    super("ast-grep binary not found on PATH");
+  constructor(options?: ErrorOptions) {
+    super("ast-grep binary not found on PATH", options);
     this.name = "AstGrepMissing";
   }
 }
@@ -93,6 +93,7 @@ export function toMatches(raw: RawMatch[], config: Config): Match[] {
 export async function inlineRules(config: Config): Promise<string> {
   const docs: string[] = [];
   for (const rulePath of config.ruleFiles()) {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so the inline-rules document's rule order matches ruleFiles()'s sorted order
     docs.push(await Bun.file(rulePath).text());
   }
   return docs.join("\n---\n");
@@ -106,7 +107,8 @@ export function exec(args: string[]): ReturnType<typeof Bun.spawnSync> {
   try {
     return Bun.spawnSync({ cmd: [binary, ...args], timeout: TIMEOUT_MS });
   } catch (error) {
-    if ((error as { code?: string }).code === "ENOENT") throw new AstGrepMissing();
+    // biome-ignore lint/style/useErrorCause: cause IS threaded through — AstGrepMissing's constructor forwards { cause } to super() — biome's heuristic wants a two-arg new Error(msg, opts) shape and doesn't recognize this single-arg options-only subclass constructor
+    if ((error as { code?: string }).code === "ENOENT") throw new AstGrepMissing({ cause: error });
     throw error;
   }
 }

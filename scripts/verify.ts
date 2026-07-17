@@ -9,7 +9,7 @@ import * as path from "node:path";
 const REPO = path.resolve(import.meta.dir, "..");
 const $ = Bun.$.cwd(REPO);
 
-const steps: Array<[string, () => Promise<unknown>]> = [
+const steps: [string, () => Promise<unknown>][] = [
   ["typecheck: packages/cli", () => Bun.$`bunx tsc --noEmit`.cwd(path.join(REPO, "packages", "cli"))],
   ["typecheck: packages/core", () => Bun.$`bunx tsc --noEmit`.cwd(path.join(REPO, "packages", "core"))],
   ["biome: format + lint", () => $`bunx biome ci .`],
@@ -33,7 +33,7 @@ const steps: Array<[string, () => Promise<unknown>]> = [
     async () => {
       const pin = async (target: string, expected: number) => {
         const out = await $`bun packages/core/src/audit.ts ${target} --json`.text();
-        const total = (JSON.parse(out) as { total: number }).total;
+        const { total } = JSON.parse(out) as { total: number };
         if (total !== expected) {
           throw new Error(`${target} audit is ${total}, pinned at ${expected}`);
         }
@@ -49,6 +49,7 @@ let failed = false;
 for (const [name, run] of steps) {
   process.stdout.write(`\n=== ${name} ===\n`);
   try {
+    // biome-ignore lint/performance/noAwaitInLoops: verification layers must run in this exact order and stop at the first failure; parallelizing would blur which layer failed
     await run();
     process.stdout.write(`ok: ${name}\n`);
   } catch (error) {

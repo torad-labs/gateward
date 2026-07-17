@@ -51,7 +51,7 @@ bun packages/cli/src/index.ts audit
 |---|---|
 | `packages/core/` | The gate engine — zero-dependency TypeScript on Bun: projection, only-new diff, verdicts, canonical audit |
 | `packages/shims/` | Codex (`apply_patch` translator) and OpenCode (plugin) |
-| `packages/cli/` | The installer — layered TypeScript, zero runtime dependencies ([ARCHITECTURE.md](ARCHITECTURE.md)) |
+| `packages/cli/` | The installer — layered TypeScript, one runtime dependency (valibot, for JSON boundary validation; [ARCHITECTURE.md](ARCHITECTURE.md)) |
 | `packs/` | 5 rule packs, 28 rules, every rule tested, every pack standalone |
 | `apps/golden/` | The ideal architecture — audits **0**, CI-pinned |
 | `apps/broken/` | The same app done wrong — audits **52**, CI-pinned |

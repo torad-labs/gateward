@@ -4,6 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { listPacks, parsePackYaml } from "./packs";
 
+const MENTIONS_LANGUAGE_RE = /language/;
+
 const FIXTURE = `# Pack manifest comment, should be ignored.
 id: sample-pack
 language: typescript
@@ -36,7 +38,9 @@ test("parsePackYaml: top-level id/title/language", () => {
 });
 
 test("parsePackYaml: missing top-level language throws", () => {
-  expect(() => parsePackYaml("id: no-language\ntitle: No Language\nrules:\n", "/fake/dir")).toThrow(/language/);
+  expect(() => parsePackYaml("id: no-language\ntitle: No Language\nrules:\n", "/fake/dir")).toThrow(
+    MENTIONS_LANGUAGE_RE,
+  );
 });
 
 test("parsePackYaml: plain single-line summary and default tier/enabled", () => {

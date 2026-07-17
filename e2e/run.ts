@@ -28,6 +28,7 @@ const CORE = path.join(REPO, "packages", "core", "src", "events", "pretooluse.ts
 const CODEX_SHIM = path.join(REPO, "packages", "shims", "codex", "claude_compat.ts");
 const PACKS = path.join(REPO, "packs");
 const PAYLOADS = path.join(HERE, "payloads");
+// biome-ignore lint/security/noSecrets: not a secret — a literal template placeholder substituted into test payloads
 const PLACEHOLDER = "{{WORKSPACE}}";
 
 const CONFIG_TOML = `[core]
@@ -76,48 +77,65 @@ function classify(stdout: string): Classified {
   return ["unknown", text];
 }
 
+/** Verdict-kind matched "deny": check the reason names the expected rule
+ * (and, if pinned, the expected violation-line count). */
+function judgeDeny(expected: Expected, detail: unknown): [boolean, string] {
+  const reason = typeof detail === "string" ? detail : "";
+  const needle = expected.contains ?? "";
+  if (!reason.includes(needle)) {
+    return [false, `deny reason missing ${JSON.stringify(needle)}: ${JSON.stringify(reason)}`];
+  }
+  if (expected.lines !== undefined) {
+    const count = reason.split("\n").filter((line) => line.trim()).length;
+    if (count !== expected.lines) {
+      return [false, `expected ${expected.lines} violation line(s), got ${count}`];
+    }
+  }
+  return [true, ""];
+}
+
+/** Verdict-kind matched "autofix": check the rewritten input's target field
+ * is present and contains the expected text. */
+function judgeAutofix(expected: Expected, detail: unknown): [boolean, string] {
+  const target = expected.target ?? "";
+  if (typeof detail !== "object" || detail === null || !(target in (detail as Record<string, unknown>))) {
+    return [false, `updatedInput missing ${JSON.stringify(target)}: ${JSON.stringify(detail)}`];
+  }
+  const value = (detail as Record<string, unknown>)[target];
+  const needle = expected.contains ?? "";
+  if (typeof value !== "string" || !value.includes(needle)) {
+    return [false, `updatedInput.${target} missing ${JSON.stringify(needle)}: ${JSON.stringify(value)}`];
+  }
+  return [true, ""];
+}
+
 function judge(expected: Expected, kind: string, detail: unknown, stderr: string): [boolean, string] {
   const want = expected.verdict;
   if (kind !== want) {
     const note = stderr.trim() ? ` (stderr: ${stderr.trim()})` : "";
     return [false, `expected ${want}, got ${kind}${note}`];
   }
-
-  if (want === "deny") {
-    const reason = typeof detail === "string" ? detail : "";
-    const needle = expected.contains ?? "";
-    if (!reason.includes(needle)) {
-      return [false, `deny reason missing ${JSON.stringify(needle)}: ${JSON.stringify(reason)}`];
-    }
-    if (expected.lines !== undefined) {
-      const count = reason.split("\n").filter((line) => line.trim()).length;
-      if (count !== expected.lines) {
-        return [false, `expected ${expected.lines} violation line(s), got ${count}`];
-      }
-    }
-  }
-
-  if (want === "autofix") {
-    const target = expected.target ?? "";
-    if (typeof detail !== "object" || detail === null || !(target in (detail as Record<string, unknown>))) {
-      return [false, `updatedInput missing ${JSON.stringify(target)}: ${JSON.stringify(detail)}`];
-    }
-    const value = (detail as Record<string, unknown>)[target];
-    const needle = expected.contains ?? "";
-    if (typeof value !== "string" || !value.includes(needle)) {
-      return [false, `updatedInput.${target} missing ${JSON.stringify(needle)}: ${JSON.stringify(value)}`];
-    }
-  }
-
+  if (want === "deny") return judgeDeny(expected, detail);
+  if (want === "autofix") return judgeAutofix(expected, detail);
   return [true, ""];
 }
 
-async function runCase(caseName: string, workspace: string): Promise<[boolean, string]> {
+interface CasePayload {
+  tool_name?: string;
+  tool_input?: { file_path?: string };
+}
+
+interface LoadedCase {
+  payload: CasePayload;
+  expected: Expected;
+}
+
+/** Reads one case's payload + expected verdict, substituting the workspace
+ * placeholder into the payload, and materializes its fixture file (if any)
+ * at the payload's target path before the entrypoint runs. */
+async function loadCase(caseName: string, workspace: string): Promise<LoadedCase> {
   const payloadText = await Bun.file(path.join(PAYLOADS, `${caseName}.payload.json`)).text();
-  const payload = JSON.parse(payloadText.replaceAll(PLACEHOLDER, workspace)) as {
-    tool_name?: string;
-    tool_input?: { file_path?: string };
-  };
+  const payload = JSON.parse(payloadText.replaceAll(PLACEHOLDER, workspace)) as CasePayload;
   const expected = (await Bun.file(path.join(PAYLOADS, `${caseName}.expected.json`)).json()) as Expected;
 
   const fixture = Bun.file(path.join(PAYLOADS, `${caseName}.fixture.kt`));
@@ -126,18 +144,31 @@ async function runCase(caseName: string, workspace: string): Promise<[boolean, s
     if (target) await Bun.write(target, await fixture.text());
   }
 
-  const env: Record<string, string | undefined> = { ...Bun.env };
-  if (expected.scanner === "absent") {
-    env.PATH = "/nonexistent"; // make the ast-grep binary unfindable
-  }
+  return { payload, expected };
+}
 
+/** Runs the right subprocess entrypoint for one payload: Codex's `apply_patch`
+ * shape goes through the Codex shim, everything else goes straight through
+ * core's PreToolUse entrypoint. */
+function spawnEntrypoint(payload: CasePayload, env: Record<string, string | undefined>) {
   const entrypoint = payload.tool_name === "apply_patch" ? CODEX_SHIM : CORE;
-  const result = Bun.spawnSync({
+  return Bun.spawnSync({
     cmd: [process.execPath, entrypoint],
     stdin: new TextEncoder().encode(JSON.stringify(payload)),
     env,
     timeout: 60_000,
   });
+}
+
+async function runCase(caseName: string, workspace: string): Promise<[boolean, string]> {
+  const { payload, expected } = await loadCase(caseName, workspace);
+
+  const env: Record<string, string | undefined> = { ...Bun.env };
+  if (expected.scanner === "absent") {
+    env.PATH = "/nonexistent"; // make the ast-grep binary unfindable
+  }
+
+  const result = spawnEntrypoint(payload, env);
   const [kind, detail] = classify(result.stdout?.toString() ?? "");
   return judge(expected, kind, detail, result.stderr?.toString() ?? "");
 }
@@ -154,6 +185,7 @@ async function main(): Promise<void> {
   let failures = 0;
   try {
     for (const caseName of cases) {
+      // biome-ignore lint/performance/noAwaitInLoops: cases run sequentially so PASS/FAIL lines print in stable case order
       const [passed, message] = await runCase(caseName, workspace);
       console.log(`${passed ? "PASS" : "FAIL"}  ${caseName}  ${message}`.trimEnd());
       if (!passed) failures += 1;

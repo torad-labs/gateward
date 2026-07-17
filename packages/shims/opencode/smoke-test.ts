@@ -11,7 +11,7 @@
  */
 import * as os from "node:os";
 import * as path from "node:path";
-import { PortableHooksPlugin } from "./portable-hooks";
+import PortableHooksPlugin from "./portable-hooks";
 
 const PACKS_DIR = path.join(import.meta.dir, "..", "..", "..", "packs");
 const CONFIG_TOML = `[core]

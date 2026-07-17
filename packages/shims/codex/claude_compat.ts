@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// biome-ignore-all lint/style/noExcessiveLinesPerFile: one cohesive shim, vendored as a standalone file
 /**
  * Run the portable-hooks PreToolUse gate against Codex's `apply_patch` tool.
  *
@@ -53,6 +54,15 @@ const ADD = "Add";
 const UPDATE = "Update";
 const DELETE = "Delete";
 
+/** Splits patch text into lines, tolerating CRLF line endings. */
+const PATCH_LINE_SPLIT_RE = /\r?\n/;
+
+const FILE_HEADERS: [prefix: string, kind: string][] = [
+  ["*** Add File: ", ADD],
+  ["*** Update File: ", UPDATE],
+  ["*** Delete File: ", DELETE],
+];
+
 interface PatchHunk {
   /** context + removed, pre-patch order */
   oldLines: string[];
@@ -91,6 +101,7 @@ async function resolveEnginePretooluse(): Promise<string | null> {
     path.resolve(import.meta.dir, "..", "..", "core", "src", "events", "pretooluse.ts"),
   ];
   for (const candidate of candidates) {
+    // biome-ignore lint/performance/noAwaitInLoops: short-circuits on the first existing candidate; only two fixed layouts to check
     if (await Bun.file(candidate).exists()) return candidate;
   }
   return null;
@@ -122,8 +133,9 @@ export async function evaluate(
   if (patchFiles.length === 0) return null; // header-less/malformed envelope: silent allow
 
   const cwd = typed.cwd || process.cwd();
-  const fileVerdicts: Array<[string, string, unknown]> = [];
+  const fileVerdicts: [string, string, unknown][] = [];
   for (const patchFile of patchFiles) {
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so per-file deny reasons in the merged verdict stay in patch-file order
     const writeInput = await projectWriteInput(patchFile, cwd);
     if (writeInput === null) continue; // undecidable projection: let the harness reject it itself
     const [kind, detail] = await invoke(writeInput);
@@ -154,8 +166,43 @@ function commandPatchText(command: unknown): string {
   return "";
 }
 
+/** Recognizes a `*** {Add,Update,Delete} File: <path>` header line and
+ * returns its path + kind, or null for anything else. */
+function matchFileHeader(raw: string): { path: string; kind: string } | null {
+  for (const [prefix, kind] of FILE_HEADERS) {
+    if (raw.startsWith(prefix)) return { path: raw.slice(prefix.length), kind };
+  }
+  return null;
+}
+
+/** Applies one content line of an in-progress Update-File hunk: `+`-prefixed
+ * lines are additions, ` `-prefixed are context (kept on both sides), `-`-
+ * prefixed are removals, and a bare empty line is a context line some
+ * generators emit unprefixed — dropping it would break the anchor and
+ * silently fail-open a patch Codex itself would apply fine, so it's kept. */
+function applyUpdateLine(raw: string, currentHunk: PatchHunk | null, hunk: () => PatchHunk): void {
+  if (raw.startsWith("+")) {
+    hunk().newLines.push(raw.slice(1));
+  } else if (raw.startsWith(" ")) {
+    const h = hunk();
+    h.oldLines.push(raw.slice(1));
+    h.newLines.push(raw.slice(1));
+  } else if (raw.startsWith("-")) {
+    hunk().oldLines.push(raw.slice(1));
+  } else if (raw === "" && currentHunk !== null) {
+    currentHunk.oldLines.push("");
+    currentHunk.newLines.push("");
+  }
+}
+
+/** True if a hunk-in-progress has accumulated any old or new lines. */
+function hunkHasLines(h: PatchHunk): boolean {
+  return h.oldLines.length > 0 || h.newLines.length > 0;
+}
+
 /** Parse Add File / Update File / Delete File hunks. Unrecognized text (no
  * header lines at all) yields an empty list. */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: hand-rolled patch-envelope state machine; header-matching, update-line, and hunk-length checks are already extracted — the remaining per-line dispatch reads clearest as one function
 export function parseApplyPatch(text: string): PatchFile[] {
   const files: PatchFile[] = [];
   let current: PatchFile | null = null;
@@ -167,10 +214,8 @@ export function parseApplyPatch(text: string): PatchFile[] {
   };
 
   const flushHunk = () => {
-    if (current !== null && currentHunk !== null) {
-      if (currentHunk.oldLines.length > 0 || currentHunk.newLines.length > 0) {
-        current.hunks.push(currentHunk);
-      }
+    if (current !== null && currentHunk !== null && hunkHasLines(currentHunk)) {
+      current.hunks.push(currentHunk);
     }
     currentHunk = null;
   };
@@ -181,16 +226,11 @@ export function parseApplyPatch(text: string): PatchFile[] {
     current = null;
   };
 
-  for (const raw of text.split(/\r?\n/)) {
-    if (raw.startsWith("*** Add File: ")) {
+  for (const raw of text.split(PATCH_LINE_SPLIT_RE)) {
+    const header = matchFileHeader(raw);
+    if (header !== null) {
       flushFile();
-      current = { path: raw.slice("*** Add File: ".length), kind: ADD, newLines: [], hunks: [] };
-    } else if (raw.startsWith("*** Update File: ")) {
-      flushFile();
-      current = { path: raw.slice("*** Update File: ".length), kind: UPDATE, newLines: [], hunks: [] };
-    } else if (raw.startsWith("*** Delete File: ")) {
-      flushFile();
-      current = { path: raw.slice("*** Delete File: ".length), kind: DELETE, newLines: [], hunks: [] };
+      current = { path: header.path, kind: header.kind, newLines: [], hunks: [] };
     } else if (raw.startsWith("*** End Patch")) {
       flushFile();
     } else if (raw.startsWith("@@")) {
@@ -200,22 +240,7 @@ export function parseApplyPatch(text: string): PatchFile[] {
     } else if (current.kind === ADD) {
       if (raw.startsWith("+")) current.newLines.push(raw.slice(1));
     } else if (current.kind === UPDATE) {
-      if (raw.startsWith("+")) {
-        hunk().newLines.push(raw.slice(1));
-      } else if (raw.startsWith(" ")) {
-        const h = hunk();
-        h.oldLines.push(raw.slice(1));
-        h.newLines.push(raw.slice(1));
-      } else if (raw.startsWith("-")) {
-        hunk().oldLines.push(raw.slice(1));
-      } else if (raw === "" && currentHunk !== null) {
-        // A bare empty line inside a hunk is an empty context line — some
-        // generators emit "" instead of the space-prefixed form. Dropping it
-        // breaks the anchor and silently skips (allows) a patch Codex itself
-        // would apply fine: fail-open. Keep it.
-        currentHunk.oldLines.push("");
-        currentHunk.newLines.push("");
-      }
+      applyUpdateLine(raw, currentHunk, hunk);
     }
   }
 
@@ -269,32 +294,15 @@ async function projectWriteInput(
   return { file_path: filePath, content: projected };
 }
 
-/** Run core's pretooluse.ts against one synthetic Write payload and classify
- * the result as ["allow"|"deny"|"autofix", detail]. Fails closed (deny) if
- * the engine cannot be found or run, times out, or exits nonzero without an
- * explicit verdict — the same fail-closed stance core itself takes when it
- * cannot judge. */
-async function invokeCore(writeInput: { file_path: string; content: string }): Promise<[string, unknown]> {
-  const engine = await resolveEnginePretooluse();
-  if (engine === null) {
-    return ["deny", "portable-hooks core could not run: engine entrypoint not found in any known layout"];
-  }
-  const stdinPayload = JSON.stringify({ tool_name: "Write", tool_input: writeInput });
-  let result: ReturnType<typeof Bun.spawnSync>;
-  try {
-    result = Bun.spawnSync({
-      cmd: [process.execPath, engine],
-      stdin: new TextEncoder().encode(stdinPayload),
-      timeout: SUBPROCESS_TIMEOUT_MS,
-    });
-  } catch (exc) {
-    return ["deny", `portable-hooks core could not run: ${(exc as Error).message}`];
-  }
-
-  const out = (result.stdout?.toString() ?? "").trim();
+/** Parses and classifies core's raw subprocess output into
+ * ["allow"|"deny"|"autofix", detail]. Fails closed (deny) on empty output
+ * with a nonzero exit, or on unparseable JSON — the same fail-closed stance
+ * core itself takes when it cannot judge. */
+function classifyCoreOutput(stdout: string, exitCode: number | null): [string, unknown] {
+  const out = stdout.trim();
   if (!out) {
-    if (result.exitCode !== 0) {
-      return ["deny", `portable-hooks core exited ${result.exitCode} with no verdict`];
+    if (exitCode !== 0) {
+      return ["deny", `portable-hooks core exited ${exitCode} with no verdict`];
     }
     return ["allow", null];
   }
@@ -320,10 +328,35 @@ async function invokeCore(writeInput: { file_path: string; content: string }): P
   return ["allow", null];
 }
 
+/** Run core's pretooluse.ts against one synthetic Write payload and classify
+ * the result as ["allow"|"deny"|"autofix", detail]. Fails closed (deny) if
+ * the engine cannot be found or run, times out, or exits nonzero without an
+ * explicit verdict — the same fail-closed stance core itself takes when it
+ * cannot judge. */
+async function invokeCore(writeInput: { file_path: string; content: string }): Promise<[string, unknown]> {
+  const engine = await resolveEnginePretooluse();
+  if (engine === null) {
+    return ["deny", "portable-hooks core could not run: engine entrypoint not found in any known layout"];
+  }
+  const stdinPayload = JSON.stringify({ tool_name: "Write", tool_input: writeInput });
+  let result: ReturnType<typeof Bun.spawnSync>;
+  try {
+    result = Bun.spawnSync({
+      cmd: [process.execPath, engine],
+      stdin: new TextEncoder().encode(stdinPayload),
+      timeout: SUBPROCESS_TIMEOUT_MS,
+    });
+  } catch (exc) {
+    return ["deny", `portable-hooks core could not run: ${(exc as Error).message}`];
+  }
+
+  return classifyCoreOutput(result.stdout?.toString() ?? "", result.exitCode);
+}
+
 /** Merge per-file (path, kind, detail) verdicts into one Codex-shaped
  * verdict: any deny (or autofix, degraded — see module doc) wins, each
  * reason line prefixed with its file's path; otherwise allow. */
-export function merge(fileVerdicts: Array<[string, string, unknown]>): Record<string, unknown> | null {
+export function merge(fileVerdicts: [string, string, unknown][]): Record<string, unknown> | null {
   const denyLines: string[] = [];
   for (const [filePath, kind, detail] of fileVerdicts) {
     let reason: string;

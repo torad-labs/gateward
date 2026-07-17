@@ -10,13 +10,18 @@ import { sha256, toLockKey } from "./lock";
 
 const SKIP_NAMES = new Set([".gitkeep"]);
 
+/** A name starting with `test-`/`test_` (case-insensitive). */
+const TEST_PREFIX_RE = /^test[-_]/i;
+/** A name ending in `-test.<ext>`/`_test.<ext>` (case-insensitive). */
+const TEST_SUFFIX_RE = /[-_]test\.[^.]+$/i;
+
 /** True for filenames that are clearly a test/smoke-test companion rather
  * than the real entrypoint (e.g. `test_claude_compat.py`, `smoke-test.js`).
  * Used only for harness shims, which colocate implementation + test in one
  * flat directory — unlike packs (rules/ vs. rule-tests/) or the engine
  * (src/ vs. tests/), whose tests are already vendored deliberately. */
 export function looksLikeTestFile(name: string): boolean {
-  return /^test[-_]/i.test(name) || /[-_]test\.[^.]+$/i.test(name);
+  return TEST_PREFIX_RE.test(name) || TEST_SUFFIX_RE.test(name);
 }
 
 export interface VendorOptions {
@@ -28,6 +33,7 @@ export interface VendorOptions {
  * entrypoint must stay executable — writeIfChanged alone drops the exec bit
  * and the wired hook dies with exit 126. Idempotent by nature. */
 function mirrorMode(srcPath: string, destPath: string): void {
+  // biome-ignore lint/suspicious/noBitwiseOperators: POSIX permission mask
   fs.chmodSync(destPath, fs.statSync(srcPath).mode & 0o777);
 }
 
@@ -60,7 +66,8 @@ async function scanTree(srcDir: string, opts: VendorOptions = {}): Promise<strin
   for await (const rel of glob.scan({ cwd: srcDir, onlyFiles: true, dot: false })) {
     const parts = rel.split(path.sep);
     if (parts.some((part) => SKIP_NAMES.has(part))) continue;
-    if (opts.exclude?.(parts[parts.length - 1])) continue;
+    const lastPart = parts.at(-1);
+    if (lastPart !== undefined && opts.exclude?.(lastPart)) continue;
     rels.push(parts.join("/"));
   }
   return rels.sort();
@@ -74,6 +81,7 @@ export async function vendorDir(srcDir: string, destDir: string, opts: VendorOpt
   for (const rel of await scanTree(srcDir, opts)) {
     const srcPath = path.join(srcDir, ...rel.split("/"));
     const destPath = path.join(destDir, ...rel.split("/"));
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so `results` (which becomes lock.json's file order) matches scanTree's sorted order
     const content = await Bun.file(srcPath).bytes();
     const result = await writeIfChanged(destPath, content);
     mirrorMode(srcPath, destPath);

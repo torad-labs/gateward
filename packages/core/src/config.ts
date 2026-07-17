@@ -41,6 +41,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+/** Splits pack.yml text into lines, tolerating CRLF line endings. */
+const PACK_YML_LINE_SPLIT_RE = /\r?\n/;
+/** A line with leading whitespace (still inside an indented block). */
+const INDENTED_LINE_RE = /^\s/;
+
 export const TENETS_DIRNAME = ".tenets";
 export const CONFIG_FILENAME = "config.toml";
 
@@ -66,6 +71,7 @@ interface ConfigToml {
 
 /** A resolved `.tenets/config.toml`. */
 export class Config {
+  // biome-ignore lint/complexity/useMaxParams: constructor parameter properties are the house idiom for immutable value holders (see biome.jsonc) — one field per resolved config value
   constructor(
     readonly configDir: string,
     readonly languages: readonly string[],
@@ -129,6 +135,7 @@ export async function find(startPath: string): Promise<Config | null> {
   let directory = isDirectory(resolved) ? resolved : path.dirname(resolved);
   for (;;) {
     const candidate = path.join(directory, TENETS_DIRNAME, CONFIG_FILENAME);
+    // biome-ignore lint/performance/noAwaitInLoops: walks upward one directory at a time and stops at the first .tenets/ found; inherently sequential
     if (await Bun.file(candidate).exists()) {
       return load(candidate);
     }
@@ -164,12 +171,32 @@ async function load(configPath: string): Promise<Config> {
   const packRuleDefaults: Record<string, boolean> = {};
   for (const pack of enabledPacks) {
     const packYml = Bun.file(path.join(packsDir, pack, "pack.yml"));
+    // biome-ignore lint/performance/noAwaitInLoops: sequential so later packs' pack.yml defaults deterministically win the Object.assign merge
     if (await packYml.exists()) {
       Object.assign(packRuleDefaults, packRuleDefaultsFrom(await packYml.text()));
     }
   }
 
   return new Config(configDir, languages, defaultTier, packsDir, enabledPacks, data.rules ?? {}, packRuleDefaults);
+}
+
+/** Applies one line inside the `rules:` block: `- id:` starts a new rule
+ * (its id is returned, to track across subsequent lines), `default_enabled:`
+ * records that rule's default onto `defaults`. Any other line returns
+ * `currentId` unchanged. */
+function applyPackRuleLine(
+  defaults: Record<string, boolean>,
+  currentId: string | null,
+  stripped: string,
+): string | null {
+  if (stripped.startsWith("- id:")) {
+    return stripped.slice("- id:".length).trim();
+  }
+  if (stripped.startsWith("default_enabled:") && currentId !== null) {
+    const value = stripped.slice("default_enabled:".length).trim();
+    defaults[currentId] = value.toLowerCase() === "true";
+  }
+  return currentId;
 }
 
 /**
@@ -184,21 +211,17 @@ export function packRuleDefaultsFrom(packYmlText: string): Record<string, boolea
   const defaults: Record<string, boolean> = {};
   let currentId: string | null = null;
   let inRules = false;
-  for (const rawLine of packYmlText.split(/\r?\n/)) {
-    const line = rawLine.split("#", 1)[0];
+  for (const rawLine of packYmlText.split(PACK_YML_LINE_SPLIT_RE)) {
+    const [line] = rawLine.split("#", 1);
+    if (line === undefined) continue;
     const stripped = line.trim();
     if (!inRules) {
       if (stripped === "rules:") inRules = true;
       continue;
     }
     if (!stripped) continue;
-    if (!/^\s/.test(line)) break; // dedented past the rules: block
-    if (stripped.startsWith("- id:")) {
-      currentId = stripped.slice("- id:".length).trim();
-    } else if (stripped.startsWith("default_enabled:") && currentId !== null) {
-      const value = stripped.slice("default_enabled:".length).trim();
-      defaults[currentId] = value.toLowerCase() === "true";
-    }
+    if (!INDENTED_LINE_RE.test(line)) break; // dedented past the rules: block
+    currentId = applyPackRuleLine(defaults, currentId, stripped);
   }
   return defaults;
 }

@@ -42,6 +42,9 @@ import * as path from "node:path";
 import { type Config, find } from "./config";
 import { AstGrepMissing, exec, inlineRules, type Match, toMatches } from "./scan";
 
+/** Splits rule-file text into lines, tolerating CRLF line endings. */
+const RULE_FILE_LINE_SPLIT_RE = /\r?\n/;
+
 /** Directories never descended into, at any depth. `node_modules` matters
  * once TypeScript is a gated language: vendored `.d.ts` files under it would
  * otherwise be scanned as project code. */
@@ -56,6 +59,7 @@ export const SKIP_DIRS = new Set(["build", ".git", ".gradle", "node_modules"]);
 export async function authoredRuleIds(config: Config): Promise<Set<string>> {
   const ids = new Set<string>();
   for (const ruleFile of config.ruleFiles()) {
+    // biome-ignore lint/performance/noAwaitInLoops: small, fixed rule-file set; sequential reads keep this simple
     const ruleId = await readRuleId(ruleFile);
     if (ruleId) ids.add(ruleId);
   }
@@ -68,7 +72,7 @@ export async function authoredRuleIds(config: Config): Promise<Set<string>> {
  * (column-0) `id:` line is ever needed. */
 async function readRuleId(ruleFile: string): Promise<string | null> {
   const text = await Bun.file(ruleFile).text();
-  for (const rawLine of text.split(/\r?\n/)) {
+  for (const rawLine of text.split(RULE_FILE_LINE_SPLIT_RE)) {
     if (rawLine.startsWith("id:")) return rawLine.slice("id:".length).trim();
   }
   return null;
@@ -128,6 +132,7 @@ export async function runAudit(
   for (const filePath of await gatedFiles(projectRoot, config)) {
     let matches: Match[];
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: sequential so a missing ast-grep binary is caught after exactly `filesScanned` files, not an unpredictable subset
       matches = await scanOne(filePath, config);
     } catch (error) {
       if (error instanceof AstGrepMissing) {
@@ -184,7 +189,9 @@ async function main(): Promise<void> {
   const positionals = args.filter((a) => a !== "--json");
   if (positionals.length !== 1) usage();
 
-  const result = await runAudit(positionals[0]);
+  const [target] = positionals;
+  if (target === undefined) usage();
+  const result = await runAudit(target);
   console.log(json ? renderJson(result) : renderHuman(result));
 }
 

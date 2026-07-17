@@ -11,6 +11,10 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
+const DENY_PERMISSION_DECISION_RE = /"permissionDecision":\s*"deny"/;
+const NO_FORCE_UNWRAP_RE = /no-force-unwrap/;
+const NO_CHANGES_RE = /no changes/i;
+
 // integration.test.ts sits beside index.ts, so this resolves correctly
 // regardless of cwd. Under Bun, process.execPath is the Bun binary itself.
 const CLI_ENTRY = path.join(import.meta.dir, "index.ts");
@@ -39,12 +43,14 @@ function countVendoredFilesAndCheckLock(dir: string, prefix: string, lockKeys: S
       count += countVendoredFilesAndCheckLock(abs, rel, lockKeys);
     } else {
       count++;
+      // biome-ignore lint/suspicious/noMisplacedAssertion: expect() inside a test helper by design, called only from within the test below
       expect(lockKeys.has(rel), `lock.json is missing an entry for ${rel}`).toBeTruthy();
     }
   }
   return count;
 }
 
+// biome-ignore lint/complexity/noExcessiveLinesPerFunction: one end-to-end story, reads top-to-bottom
 test("integration: init -y --packs all vendors 5 packs + engine, merges Claude settings, and is idempotent on rerun", async () => {
   const projectRoot = path.join(os.tmpdir(), `portable-hooks-integration-${crypto.randomUUID()}`);
   await Bun.$`mkdir -p ${projectRoot}`.quiet();
@@ -131,8 +137,8 @@ test("integration: init -y --packs all vendors 5 packs + engine, merges Claude s
       env: { ...Bun.env, CLAUDE_PROJECT_DIR: projectRoot },
     });
     const verdict = hookRun.stdout.toString();
-    expect(verdict).toMatch(/"permissionDecision":\s*"deny"/);
-    expect(verdict).toMatch(/no-force-unwrap/);
+    expect(verdict).toMatch(DENY_PERMISSION_DECISION_RE);
+    expect(verdict).toMatch(NO_FORCE_UNWRAP_RE);
 
     // Second run reports no changes, and every file is byte-identical.
     const beforeLock = await Bun.file(path.join(projectRoot, ".tenets", "lock.json")).text();
@@ -141,7 +147,7 @@ test("integration: init -y --packs all vendors 5 packs + engine, merges Claude s
 
     const second = runCli(["init", "-y", "--packs", "all"], projectRoot);
     expect(second.status, `second init failed:\n${second.stdout}\n${second.stderr}`).toBe(0);
-    expect(second.stdout).toMatch(/no changes/i);
+    expect(second.stdout).toMatch(NO_CHANGES_RE);
 
     expect(await Bun.file(path.join(projectRoot, ".tenets", "lock.json")).text()).toBe(beforeLock);
     expect(await Bun.file(path.join(projectRoot, ".tenets", "config.toml")).text()).toBe(beforeConfig);
