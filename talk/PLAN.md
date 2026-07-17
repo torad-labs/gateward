@@ -30,7 +30,7 @@ final line of the close.
 
 ### 0 · Cold open (0:00–2:30) — pain the room recognizes, zero bio, zero agenda
 
-- Calibration questions (a conference speaker move): "Who uses a coding agent most days?" —
+- Calibration questions (live show-of-hands): "Who uses a coding agent most days?" —
   "Who has a CLAUDE.md or AGENTS.md?" — "Who has watched an agent violate the exact
   rule written in it?" (hands stay up — that's the talk)
 - Slide: a real agent-written Compose screen — business logic inside the composable,
@@ -237,3 +237,6 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
       on the golden app, or storyboard it from the training-engine incident
 - [ ] Timing pass: full run-through against the minute marks above (additions are
       absorbed by tightening the montage + design-decision elaborations; target ≤ 34)
+- [ ] Before flipping the repo public: git history from today contains pre-scrub
+      speaker attributions in talk/ files (commits de4af14..113a299). Squash or
+      filter talk/ history, or accept it — decide at release time.
