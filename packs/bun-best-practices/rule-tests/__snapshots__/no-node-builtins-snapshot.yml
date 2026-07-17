@@ -1,0 +1,32 @@
+id: no-node-builtins
+snapshots:
+  import * as fs from "node:fs";:
+    labels:
+    - source: import * as fs from "node:fs";
+      style: primary
+      start: 0
+      end: 30
+    - source: '"node:fs"'
+      style: secondary
+      start: 20
+      end: 29
+  import * as path from "node:path";:
+    labels:
+    - source: import * as path from "node:path";
+      style: primary
+      start: 0
+      end: 34
+    - source: '"node:path"'
+      style: secondary
+      start: 22
+      end: 33
+  import { createHash } from "node:crypto";:
+    labels:
+    - source: import { createHash } from "node:crypto";
+      style: primary
+      start: 0
+      end: 41
+    - source: '"node:crypto"'
+      style: secondary
+      start: 27
+      end: 40

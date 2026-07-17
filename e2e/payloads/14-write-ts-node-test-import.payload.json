@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/example.test.ts",
+    "content": "import { test } from \"node:test\";\nimport * as assert from \"node:assert/strict\";\n\ntest(\"demo\", () => {\n  assert.equal(1, 1);\n});\n"
+  }
+}

@@ -1,6 +1,6 @@
 /**
  * Generates and reads `.tenets/config.toml` — scoped exactly to the schema
- * this CLI itself writes (see packages/core/src/config.py's docstring for
+ * this CLI itself writes (see packages/core/src/config.ts's module doc for
  * the canonical schema). This is NOT a general TOML parser: it understands
  * `[core]`, `[packs]`, `languages`/`default_tier`/`packs_dir`/`enabled`, and
  * double-quoted string / string-array values only — the same narrow-scan
@@ -14,7 +14,7 @@
  * `add`/`remove` of a *different* pack in the same project — a known,
  * documented limitation, not exercised by the pinned test list.
  */
-import type { PackMeta } from "./types";
+import type { PackMeta } from "../types";
 
 export interface ConfigTomlCore {
   languages: string[];
@@ -73,7 +73,7 @@ export function generateConfigToml(opts: GenerateConfigTomlOptions): string {
       }
     }
   }
-  return lines.join("\n") + "\n";
+  return `${lines.join("\n")}\n`;
 }
 
 function stripTomlComment(line: string): string {
@@ -89,10 +89,7 @@ function stripTomlComment(line: string): string {
 function parseTomlString(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length >= 2 && trimmed[0] === '"' && trimmed[trimmed.length - 1] === '"') {
-    return trimmed
-      .slice(1, -1)
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, "\\");
+    return trimmed.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
   }
   return trimmed;
 }

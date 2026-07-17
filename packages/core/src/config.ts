@@ -1,0 +1,204 @@
+/**
+ * Reads `.tenets/config.toml` — the installed, per-project gate configuration.
+ *
+ * The core is zero-dependency: TOML parsing is Bun's native `.toml` import
+ * (import-with-attribute), so the engine carries no third-party dependency
+ * and no hand-rolled parser. It never parses rule YAML — ast-grep owns rule
+ * semantics.
+ *
+ * Schema (minimal by design):
+ *
+ *     [core]
+ *     languages    = ["kotlin"]      # which languages this project gates
+ *     default_tier = "deny"          # tier for any rule not listed below
+ *
+ *     [packs]
+ *     packs_dir = "../../../packs"          # rule-packs root. A relative path
+ *     enabled   = ["kotlin-best-practices"] #   resolves from THIS file's directory.
+ *
+ *     # Optional per-rule tables. `tier` overrides default_tier for one rule;
+ *     # `enabled` forces it on or off. A rule's default tier is authored
+ *     # upstream in its pack's pack.yml; the installer reflects the ones worth
+ *     # changing into this file so the core never has to read rule YAML.
+ *     [rules.no-assert-equals-boolean]
+ *     tier = "autofix"
+ *
+ * The language-to-extension mapping lives in code (LANGUAGE_EXTENSIONS): the
+ * config names languages, the core knows their file extensions. Tier is
+ * resolved here because ast-grep's scan JSON does not surface rule metadata.
+ *
+ * A pack's `pack.yml` may mark a rule `default_enabled: false` (house-taste
+ * opinions a project must opt into). `pack.yml` is a small, self-authored
+ * manifest, not rule YAML, so reading its `rules:` list stays consistent with
+ * "the core never parses rule YAML": `packRuleDefaults` does a narrow,
+ * line-oriented scan of that one list, and `Config.ruleEnabled` only falls
+ * back to it when `.tenets/config.toml` has no explicit `enabled` for the rule.
+ *
+ * Note on caching: the native TOML import caches per absolute path for the
+ * process lifetime. The hook and the audit are one-shot processes, so this is
+ * irrelevant at runtime; tests must use a fresh path per distinct content.
+ */
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+export const TENETS_DIRNAME = ".tenets";
+export const CONFIG_FILENAME = "config.toml";
+
+export const TIER_DENY = "deny";
+export const TIER_AUTOFIX = "autofix";
+
+/** Extensions gated for each language the packs support. */
+export const LANGUAGE_EXTENSIONS: Record<string, readonly string[]> = {
+  kotlin: [".kt", ".kts"],
+  typescript: [".ts", ".mts", ".cts"],
+};
+
+export interface RuleOverride {
+  tier?: string;
+  enabled?: boolean;
+}
+
+interface ConfigToml {
+  core?: { languages?: string[]; default_tier?: string };
+  packs?: { packs_dir?: string; enabled?: string[] };
+  rules?: Record<string, RuleOverride>;
+}
+
+/** A resolved `.tenets/config.toml`. */
+export class Config {
+  constructor(
+    readonly configDir: string,
+    readonly languages: readonly string[],
+    readonly defaultTier: string,
+    readonly packsDir: string,
+    readonly enabledPacks: readonly string[],
+    readonly ruleOverrides: Record<string, RuleOverride>,
+    readonly packRuleDefaults: Record<string, boolean>,
+  ) {}
+
+  get gatedExtensions(): Set<string> {
+    const extensions = new Set<string>();
+    for (const language of this.languages) {
+      for (const ext of LANGUAGE_EXTENSIONS[language] ?? []) extensions.add(ext);
+    }
+    return extensions;
+  }
+
+  /** True when this project gates the given file's type. */
+  gates(filePath: string): boolean {
+    return this.gatedExtensions.has(path.extname(filePath));
+  }
+
+  /** Absolute paths of every rule file in the enabled packs, sorted. */
+  ruleFiles(): string[] {
+    const files: string[] = [];
+    for (const pack of this.enabledPacks) {
+      const rulesDir = path.join(this.packsDir, pack, "rules");
+      if (!fs.existsSync(rulesDir)) continue;
+      const inPack: string[] = [];
+      for (const name of fs.readdirSync(rulesDir)) {
+        if (name.endsWith(".yml") || name.endsWith(".yaml")) inPack.push(path.join(rulesDir, name));
+      }
+      files.push(...inPack.sort());
+    }
+    return files;
+  }
+
+  /** The rule's tier: a per-rule override, else the project default. */
+  tierFor(ruleId: string): string {
+    return this.ruleOverrides[ruleId]?.tier ?? this.defaultTier;
+  }
+
+  /** A per-rule table's `enabled` wins when present; otherwise a rule
+   * defaults to its pack.yml's `default_enabled` (true when unset). */
+  ruleEnabled(ruleId: string): boolean {
+    const override = this.ruleOverrides[ruleId]?.enabled;
+    if (override !== undefined) return override;
+    return this.packRuleDefaults[ruleId] ?? true;
+  }
+}
+
+/**
+ * Locate the nearest `.tenets/config.toml` at or above `startPath`.
+ *
+ * Returns a Config, or null when no `.tenets/` exists — a project without
+ * one is simply not enforcing, so the gate stays inert.
+ */
+export async function find(startPath: string): Promise<Config | null> {
+  const resolved = path.resolve(startPath);
+  let directory = isDirectory(resolved) ? resolved : path.dirname(resolved);
+  for (;;) {
+    const candidate = path.join(directory, TENETS_DIRNAME, CONFIG_FILENAME);
+    if (await Bun.file(candidate).exists()) {
+      return load(candidate);
+    }
+    const parent = path.dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+}
+
+function isDirectory(p: string): boolean {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function load(configPath: string): Promise<Config> {
+  const data = (await import(configPath, { with: { type: "toml" } })).default as ConfigToml;
+  const configDir = path.dirname(configPath);
+
+  const core = data.core ?? {};
+  const languages = core.languages ?? [];
+  const defaultTier = core.default_tier ?? TIER_DENY;
+
+  const packs = data.packs ?? {};
+  let packsDir = packs.packs_dir ?? "";
+  if (!path.isAbsolute(packsDir)) {
+    packsDir = path.resolve(configDir, packsDir);
+  }
+  const enabledPacks = packs.enabled ?? [];
+
+  const packRuleDefaults: Record<string, boolean> = {};
+  for (const pack of enabledPacks) {
+    const packYml = Bun.file(path.join(packsDir, pack, "pack.yml"));
+    if (await packYml.exists()) {
+      Object.assign(packRuleDefaults, packRuleDefaultsFrom(await packYml.text()));
+    }
+  }
+
+  return new Config(configDir, languages, defaultTier, packsDir, enabledPacks, data.rules ?? {}, packRuleDefaults);
+}
+
+/**
+ * Read each rule's `default_enabled` out of a pack.yml's `rules:` list.
+ *
+ * Not a YAML parser: pack.yml is a small, self-authored manifest (a flat
+ * `rules:` list of `- id: ...` entries with scalar keys), and this scan only
+ * ever looks at that one list. Rules the list doesn't mention default to
+ * enabled, so callers should treat a missing key as true.
+ */
+export function packRuleDefaultsFrom(packYmlText: string): Record<string, boolean> {
+  const defaults: Record<string, boolean> = {};
+  let currentId: string | null = null;
+  let inRules = false;
+  for (const rawLine of packYmlText.split(/\r?\n/)) {
+    const line = rawLine.split("#", 1)[0];
+    const stripped = line.trim();
+    if (!inRules) {
+      if (stripped === "rules:") inRules = true;
+      continue;
+    }
+    if (!stripped) continue;
+    if (!/^\s/.test(line)) break; // dedented past the rules: block
+    if (stripped.startsWith("- id:")) {
+      currentId = stripped.slice("- id:".length).trim();
+    } else if (stripped.startsWith("default_enabled:") && currentId !== null) {
+      const value = stripped.slice("default_enabled:".length).trim();
+      defaults[currentId] = value.toLowerCase() === "true";
+    }
+  }
+  return defaults;
+}

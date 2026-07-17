@@ -1,0 +1,18 @@
+{
+  "name": "portable-hooks-core",
+  "version": "0.1.0",
+  "description": "The portable-hooks gate engine: zero-dependency TypeScript on Bun, vendored verbatim into gated projects as .tenets/engine/.",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "bun": ">=1.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^5.9.3"
+  }
+}

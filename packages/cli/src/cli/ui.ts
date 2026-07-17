@@ -1,7 +1,8 @@
 /** TTY detection, the interactive pack multiselect, and plain-text table
- * rendering. No color/animation libraries: decoration is ANSI cursor-motion
- * only, and only ever used once {@link isInteractive} is true. */
-import * as readline from "node:readline";
+ * rendering. No color/animation libraries and no node:readline: decoration
+ * is ANSI cursor-motion only, and key input is decoded from raw stdin bytes
+ * by the narrow parser below (house rule: narrow inputs get narrow,
+ * auditable parsers). Only ever active once {@link isInteractive} is true. */
 
 export function isInteractive(): boolean {
   return Boolean(process.stdin.isTTY && process.stdout.isTTY);
@@ -12,9 +13,29 @@ export interface SelectableItem {
   label: string;
 }
 
-interface KeypressKey {
-  name?: string;
-  ctrl?: boolean;
+type Key = "up" | "down" | "space" | "toggle-all" | "confirm" | "interrupt";
+
+/** Decodes the keys the multiselect uses from one raw-mode stdin chunk.
+ * Arrow keys arrive as the escape sequences `ESC [ A` (up) / `ESC [ B`
+ * (down); everything else the prompt reacts to is a single byte. Unknown
+ * bytes are ignored — this is a five-key prompt, not a terminal emulator. */
+function decodeKeys(chunk: Uint8Array): Key[] {
+  const keys: Key[] = [];
+  for (let i = 0; i < chunk.length; i++) {
+    const byte = chunk[i];
+    if (byte === 0x1b && chunk[i + 1] === 0x5b) {
+      if (chunk[i + 2] === 0x41) keys.push("up");
+      if (chunk[i + 2] === 0x42) keys.push("down");
+      i += 2;
+      continue;
+    }
+    if (byte === 0x20) keys.push("space");
+    else if (byte === 0x61)
+      keys.push("toggle-all"); // "a"
+    else if (byte === 0x0d || byte === 0x0a) keys.push("confirm");
+    else if (byte === 0x03) keys.push("interrupt"); // ctrl-c
+  }
+  return keys;
 }
 
 /** Arrow keys move the cursor, space toggles the current item, "a" toggles
@@ -26,7 +47,6 @@ export function promptMultiselect(items: SelectableItem[], message: string): Pro
     const stdout = process.stdout;
     const canRaw = typeof stdin.setRawMode === "function";
 
-    readline.emitKeypressEvents(stdin);
     if (canRaw) stdin.setRawMode(true);
     stdin.resume();
 
@@ -47,48 +67,46 @@ export function promptMultiselect(items: SelectableItem[], message: string): Pro
     };
 
     const cleanup = () => {
-      stdin.removeListener("keypress", onKeypress);
+      stdin.removeListener("data", onData);
       if (canRaw) stdin.setRawMode(false);
       stdin.pause();
     };
 
-    const onKeypress = (_str: string, key: KeypressKey | undefined) => {
-      if (!key) return;
-      if (key.ctrl && key.name === "c") {
-        cleanup();
-        reject(new Error("cancelled"));
-        return;
-      }
-      switch (key.name) {
-        case "up":
-          cursor = (cursor - 1 + items.length) % items.length;
-          render();
-          break;
-        case "down":
-          cursor = (cursor + 1) % items.length;
-          render();
-          break;
-        case "space":
-          if (selected.has(cursor)) selected.delete(cursor);
-          else selected.add(cursor);
-          render();
-          break;
-        case "a":
-          if (selected.size === items.length) selected.clear();
-          else items.forEach((_, i) => selected.add(i));
-          render();
-          break;
-        case "return":
-          cleanup();
-          resolve(items.filter((_, i) => selected.has(i)).map((item) => item.id));
-          break;
-        default:
-          break;
+    const onData = (chunk: Uint8Array) => {
+      for (const key of decodeKeys(chunk)) {
+        switch (key) {
+          case "interrupt":
+            cleanup();
+            reject(new Error("cancelled"));
+            return;
+          case "up":
+            cursor = (cursor - 1 + items.length) % items.length;
+            render();
+            break;
+          case "down":
+            cursor = (cursor + 1) % items.length;
+            render();
+            break;
+          case "space":
+            if (selected.has(cursor)) selected.delete(cursor);
+            else selected.add(cursor);
+            render();
+            break;
+          case "toggle-all":
+            if (selected.size === items.length) selected.clear();
+            else for (let i = 0; i < items.length; i++) selected.add(i);
+            render();
+            break;
+          case "confirm":
+            cleanup();
+            resolve(items.filter((_, i) => selected.has(i)).map((item) => item.id));
+            return;
+        }
       }
     };
 
     render();
-    stdin.on("keypress", onKeypress);
+    stdin.on("data", onData);
   });
 }
 
@@ -101,5 +119,12 @@ export function renderTable(rows: string[][]): string {
       widths[i] = Math.max(widths[i] ?? 0, cell.length);
     });
   }
-  return rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i])).join("  ").trimEnd()).join("\n");
+  return rows
+    .map((row) =>
+      row
+        .map((cell, i) => cell.padEnd(widths[i]))
+        .join("  ")
+        .trimEnd(),
+    )
+    .join("\n");
 }

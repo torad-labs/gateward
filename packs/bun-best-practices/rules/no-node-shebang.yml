@@ -1,0 +1,11 @@
+id: no-node-shebang
+language: typescript
+severity: error
+message: >-
+  "#!/usr/bin/env node" shebangs are banned in a Bun-only project. Use
+  "#!/usr/bin/env bun" — Bun runs TypeScript entrypoints directly.
+metadata:
+  tier: deny
+rule:
+  kind: hash_bang_line
+  regex: \benv node\b|/bin/node\b

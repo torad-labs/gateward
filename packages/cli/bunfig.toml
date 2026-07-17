@@ -1,0 +1,11 @@
+# Test coverage for this package. Lives here, not at the repo root: bun
+# resolves bunfig.toml from the working directory, and CI runs `bun test
+# --coverage` from this directory. Thresholds are a floor just under the
+# measured baseline (86.5% lines / 82.8% functions at migration time) —
+# ratchet them up, never down.
+[test]
+coverageReporter = ["text", "lcov"]
+
+[test.coverageThreshold]
+lines = 0.85
+functions = 0.8

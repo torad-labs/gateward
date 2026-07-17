@@ -1,0 +1,26 @@
+id: no-dotenv
+language: typescript
+severity: error
+message: >-
+  dotenv/dotenv-expand are redundant on Bun: .env files are loaded
+  automatically before your code runs. Delete the import and read
+  process.env directly.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: import_statement
+      has:
+        field: source
+        kind: string
+        regex: ^["'](dotenv|dotenv-expand)(/.+)?["']$
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: ^require$
+        - has:
+            field: arguments
+            has:
+              kind: string
+              regex: ^["'](dotenv|dotenv-expand)(/.+)?["']$

@@ -1,50 +1,48 @@
-import * as assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { test } from "node:test";
-import { detectHarnesses } from "./detect";
+import { detectHarnesses } from "./index";
 
-function tmpdir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "detect-test-"));
+async function tmpdir(): Promise<string> {
+  const dir = path.join(os.tmpdir(), `detect-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
+  return dir;
 }
 
-test("detectHarnesses: nothing present reports all undetected", () => {
-  const dir = tmpdir();
+test("detectHarnesses: nothing present reports all undetected", async () => {
+  const dir = await tmpdir();
   try {
     const detections = detectHarnesses(dir);
-    assert.deepEqual(
-      detections.map((d) => d.detected),
-      [false, false, false],
-    );
+    expect(detections.map((d) => d.detected)).toEqual([false, false, false]);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
-test("detectHarnesses: a .claude/settings.json signals Claude Code as detected", () => {
-  const dir = tmpdir();
+test("detectHarnesses: a .claude/settings.json signals Claude Code as detected", async () => {
+  const dir = await tmpdir();
   try {
     fs.mkdirSync(path.join(dir, ".claude"));
-    fs.writeFileSync(path.join(dir, ".claude", "settings.json"), "{}");
+    await Bun.write(path.join(dir, ".claude", "settings.json"), "{}");
     const detections = detectHarnesses(dir);
     const claude = detections.find((d) => d.harness === "claude");
-    assert.ok(claude?.detected);
-    assert.ok(claude.signals.includes(".claude"));
-    assert.ok(claude.signals.includes(".claude/settings.json"));
+    if (!claude?.detected) throw new Error("claude detection should exist and be detected");
+    expect(claude.signals.includes(".claude")).toBeTruthy();
+    expect(claude.signals.includes(".claude/settings.json")).toBeTruthy();
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
-test("detectHarnesses: a bare .opencode directory signals OpenCode as detected", () => {
-  const dir = tmpdir();
+test("detectHarnesses: a bare .opencode directory signals OpenCode as detected", async () => {
+  const dir = await tmpdir();
   try {
     fs.mkdirSync(path.join(dir, ".opencode"));
     const detections = detectHarnesses(dir);
     const opencode = detections.find((d) => d.harness === "opencode");
-    assert.ok(opencode?.detected);
+    expect(opencode?.detected).toBeTruthy();
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });

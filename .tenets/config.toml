@@ -1,0 +1,14 @@
+# Installed gate configuration for this repo's own TypeScript source.
+# Dogfoods the write-time gate this repo builds: the root .claude/settings.json
+# hook goes live the moment this file exists. No vendoring here — this
+# monorepo already IS the source of packs/ and the engine (same pattern as
+# apps/golden/.tenets and apps/broken/.tenets).
+[core]
+languages = ["typescript"]
+default_tier = "deny"
+
+[packs]
+# Resolved from this file's directory (.tenets/) up to the repo's own
+# top-level packs/ directory.
+packs_dir = "../packs"
+enabled = ["bun-best-practices"]

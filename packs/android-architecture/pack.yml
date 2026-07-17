@@ -2,6 +2,7 @@
 # tier for humans and the installer CLI; it is NOT read by ast-grep or by the
 # stdlib core (the core resolves tier from a project's .tenets/config.toml).
 id: android-architecture
+language: kotlin
 title: Android Architecture
 description: >-
   Layering rules for a ViewModel/UseCase/Repository Android app: domain stays

@@ -1,0 +1,18 @@
+id: no-node-shebang
+snapshots:
+  ? |
+    #!/usr/bin/env node
+    export {};
+  : labels:
+    - source: '#!/usr/bin/env node'
+      style: primary
+      start: 0
+      end: 19
+  ? |
+    #!/usr/bin/node
+    export {};
+  : labels:
+    - source: '#!/usr/bin/node'
+      style: primary
+      start: 0
+      end: 15

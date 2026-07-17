@@ -1,0 +1,15 @@
+id: no-redundant-natives
+language: typescript
+severity: error
+message: >-
+  ws/bcrypt/better-sqlite3 have Bun-native equivalents: the global WebSocket
+  (zero-dependency, uWebSockets-backed), Bun.password (argon2id/bcrypt), and
+  bun:sqlite. Off by default — enable when standardizing on Bun natives.
+metadata:
+  tier: deny
+rule:
+  kind: import_statement
+  has:
+    field: source
+    kind: string
+    regex: ^["'](ws|bcrypt|bcryptjs|argon2|better-sqlite3|sqlite3)(/.+)?["']$

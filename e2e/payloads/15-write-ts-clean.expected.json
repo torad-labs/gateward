@@ -1,0 +1,4 @@
+{
+  "description": "A clean TypeScript Write using bun:test passes every default-on Bun rule.",
+  "verdict": "allow"
+}

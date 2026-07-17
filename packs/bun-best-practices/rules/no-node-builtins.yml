@@ -1,0 +1,15 @@
+id: no-node-builtins
+language: typescript
+severity: error
+message: >-
+  Strict Bun purity: node: builtin imports are banned entirely in this
+  project. Use the Bun-native or web-standard API, or record an allowlisted
+  exception the way your project documents them.
+metadata:
+  tier: deny
+rule:
+  kind: import_statement
+  has:
+    field: source
+    kind: string
+    regex: ^["']node:.+["']$

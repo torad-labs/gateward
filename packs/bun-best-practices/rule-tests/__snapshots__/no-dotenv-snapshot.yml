@@ -1,0 +1,58 @@
+id: no-dotenv
+snapshots:
+  const expand = require("dotenv-expand");:
+    labels:
+    - source: require("dotenv-expand")
+      style: primary
+      start: 15
+      end: 39
+    - source: require
+      style: secondary
+      start: 15
+      end: 22
+    - source: '"dotenv-expand"'
+      style: secondary
+      start: 23
+      end: 38
+    - source: '"dotenv-expand"'
+      style: secondary
+      start: 23
+      end: 38
+  import "dotenv/config";:
+    labels:
+    - source: import "dotenv/config";
+      style: primary
+      start: 0
+      end: 23
+    - source: '"dotenv/config"'
+      style: secondary
+      start: 7
+      end: 22
+  import dotenv from "dotenv";:
+    labels:
+    - source: import dotenv from "dotenv";
+      style: primary
+      start: 0
+      end: 28
+    - source: '"dotenv"'
+      style: secondary
+      start: 19
+      end: 27
+  require("dotenv").config();:
+    labels:
+    - source: require("dotenv")
+      style: primary
+      start: 0
+      end: 17
+    - source: require
+      style: secondary
+      start: 0
+      end: 7
+    - source: '"dotenv"'
+      style: secondary
+      start: 8
+      end: 16
+    - source: '"dotenv"'
+      style: secondary
+      start: 8
+      end: 16

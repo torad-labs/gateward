@@ -1,53 +1,52 @@
-import * as fs from "node:fs";
-import { generateConfigToml, parseConfigToml } from "../configToml";
-import { runtimeError, usageError } from "../errors";
-import { buildLock, lockPath, readLock, serializeLock } from "../lock";
-import { PACKS_ROOT, configTomlPath, packsDestDir, readCliVersion, tenetsDir } from "../paths";
-import { listPacks } from "../packYaml";
-import type { PackMeta } from "../types";
-import { vendorDir, writeIfChanged } from "../vendor";
-
-export interface CommandOutcome {
-  changed: boolean;
-  lines: string[];
-}
+import { runtimeError, usageError } from "../cli/errors";
+import { buildLock, lockPath, readLock, serializeLock } from "../domain/lock";
+import { languagesForPacks, listPacks } from "../domain/packs";
+import { generateConfigToml, parseConfigToml } from "../domain/tenetsConfig";
+import { vendorDir, writeIfChanged } from "../domain/vendor";
+import { configTomlPath, PACKS_ROOT, packsDestDir, readCliVersion, tenetsDir } from "../paths";
+import type { CommandOutcome, PackMeta } from "../types";
 
 function enabledPackMetas(available: PackMeta[], ids: string[]): PackMeta[] {
   return ids.map((id) => available.find((p) => p.id === id)).filter((p): p is PackMeta => Boolean(p));
 }
 
-export function runAdd(root: string, packId: string): CommandOutcome {
+export async function runAdd(root: string, packId: string): Promise<CommandOutcome> {
   const configPath = configTomlPath(root);
-  if (!fs.existsSync(configPath)) {
+  const configFile = Bun.file(configPath);
+  if (!(await configFile.exists())) {
     runtimeError(`${configPath} not found; run \`portable-hooks init\` first.`);
   }
 
-  const available = listPacks(PACKS_ROOT);
+  const available = await listPacks(PACKS_ROOT);
   const pack = available.find((p) => p.id === packId);
   if (!pack) {
     usageError(`Unknown pack id "${packId}". Available: ${available.map((p) => p.id).join(", ") || "(none)"}`);
   }
 
-  const parsed = parseConfigToml(fs.readFileSync(configPath, "utf8"));
+  const parsed = parseConfigToml(await configFile.text());
   if (parsed.packs.enabled.includes(packId)) {
     return { changed: false, lines: [`Pack "${packId}" is already installed. No changes.`] };
   }
 
   const tDir = tenetsDir(root);
-  const existingLock = readLock(tDir) ?? buildLock(`portable-hooks@${readCliVersion()}`, {});
+  const existingLock = (await readLock(tDir)) ?? buildLock(`portable-hooks@${await readCliVersion()}`, {});
   const files = { ...existingLock.files };
-  const results = vendorDir(pack.dir, packsDestDir(root, packId));
+  const results = await vendorDir(pack.dir, packsDestDir(root, packId));
   for (const r of results) files[`packs/${packId}/${r.relPath}`] = r.hash;
-  writeIfChanged(lockPath(tDir), serializeLock(buildLock(existingLock.source, files)));
+  await writeIfChanged(lockPath(tDir), serializeLock(buildLock(existingLock.source, files)));
 
   const newEnabledIds = [...parsed.packs.enabled, packId];
+  const newEnabledPacks = enabledPackMetas(available, newEnabledIds);
   const configText = generateConfigToml({
-    languages: parsed.core.languages,
+    // Languages are re-derived from the new enabled-pack set, not copied
+    // from the existing file: adding the first pack of a new language must
+    // start gating that language's files.
+    languages: languagesForPacks(newEnabledPacks),
     defaultTier: parsed.core.defaultTier,
     packsDir: parsed.packs.packsDir,
-    enabledPacks: enabledPackMetas(available, newEnabledIds),
+    enabledPacks: newEnabledPacks,
   });
-  writeIfChanged(configPath, configText);
+  await writeIfChanged(configPath, configText);
 
   return {
     changed: true,

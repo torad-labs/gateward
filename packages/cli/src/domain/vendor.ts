@@ -1,12 +1,14 @@
 /** File-copy primitives shared by init/add/remove/update: write-if-changed
  * (for idempotency) and recursive vendoring of a source tree, hashing each
- * file as it goes so callers can build lock.json without re-reading disk. */
+ * file as it goes so callers can build lock.json without re-reading disk.
+ * `node:fs` here is structural-only (stat/chmod for permission mirroring) —
+ * content I/O is Bun.file/Bun.write, which auto-creates parent directories. */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type { WriteResult } from "../types";
 import { sha256, toLockKey } from "./lock";
-import type { WriteResult } from "./types";
 
-const SKIP_NAMES = new Set([".gitkeep", "__pycache__"]);
+const SKIP_NAMES = new Set([".gitkeep"]);
 
 /** True for filenames that are clearly a test/smoke-test companion rather
  * than the real entrypoint (e.g. `test_claude_compat.py`, `smoke-test.js`).
@@ -30,18 +32,16 @@ function mirrorMode(srcPath: string, destPath: string): void {
 }
 
 /** Writes `content` to `filePath` only if it differs from what's already
- * there (byte comparison). Creates parent directories as needed. */
-export function writeIfChanged(filePath: string, content: string | Buffer): WriteResult {
-  const next = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
-  let prev: Buffer | null = null;
-  try {
-    prev = fs.readFileSync(filePath);
-  } catch {
-    prev = null;
+ * there (byte comparison). Bun.write creates parent directories as needed. */
+export async function writeIfChanged(filePath: string, content: string | Uint8Array): Promise<WriteResult> {
+  const next: Uint8Array = typeof content === "string" ? new TextEncoder().encode(content) : content;
+  const file = Bun.file(filePath);
+  let prev: Uint8Array | null = null;
+  if (await file.exists()) {
+    prev = await file.bytes();
   }
-  if (prev !== null && prev.equals(next)) return "unchanged";
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, next);
+  if (prev !== null && prev.length === next.length && Buffer.compare(prev, next) === 0) return "unchanged";
+  await Bun.write(file, next);
   return prev === null ? "created" : "updated";
 }
 
@@ -52,55 +52,54 @@ export interface VendoredFile {
   hash: string;
 }
 
+/** Every non-skipped file under `srcDir`, as forward-slash relative paths,
+ * sorted for deterministic vendoring order. */
+async function scanTree(srcDir: string, opts: VendorOptions = {}): Promise<string[]> {
+  const rels: string[] = [];
+  const glob = new Bun.Glob("**/*");
+  for await (const rel of glob.scan({ cwd: srcDir, onlyFiles: true, dot: false })) {
+    const parts = rel.split(path.sep);
+    if (parts.some((part) => SKIP_NAMES.has(part))) continue;
+    if (opts.exclude?.(parts[parts.length - 1])) continue;
+    rels.push(parts.join("/"));
+  }
+  return rels.sort();
+}
+
 /** Recursively copies every file under `srcDir` into `destDir` (skipping
  * `.gitkeep` and `__pycache__`, plus anything `opts.exclude` matches),
  * preserving relative structure. */
-export function vendorDir(srcDir: string, destDir: string, opts: VendorOptions = {}): VendoredFile[] {
+export async function vendorDir(srcDir: string, destDir: string, opts: VendorOptions = {}): Promise<VendoredFile[]> {
   const results: VendoredFile[] = [];
-  const walk = (srcSub: string, destSub: string) => {
-    const entries = fs.readdirSync(srcSub, { withFileTypes: true });
-    for (const entry of entries) {
-      if (SKIP_NAMES.has(entry.name)) continue;
-      if (opts.exclude?.(entry.name)) continue;
-      const srcPath = path.join(srcSub, entry.name);
-      const destPath = path.join(destSub, entry.name);
-      if (entry.isDirectory()) {
-        walk(srcPath, destPath);
-      } else if (entry.isFile()) {
-        const content = fs.readFileSync(srcPath);
-        const result = writeIfChanged(destPath, content);
-        mirrorMode(srcPath, destPath);
-        results.push({
-          relPath: toLockKey(path.relative(destDir, destPath)),
-          result,
-          hash: sha256(content),
-        });
-      }
-    }
-  };
-  walk(srcDir, destDir);
+  for (const rel of await scanTree(srcDir, opts)) {
+    const srcPath = path.join(srcDir, ...rel.split("/"));
+    const destPath = path.join(destDir, ...rel.split("/"));
+    const content = await Bun.file(srcPath).bytes();
+    const result = await writeIfChanged(destPath, content);
+    mirrorMode(srcPath, destPath);
+    results.push({ relPath: rel, result, hash: sha256(content) });
+  }
   return results;
 }
 
 /** Vendors a single source path (file or directory) into a destination
  * directory. Used for shims, whose exact shape (one file vs. a directory)
  * varies per harness. */
-export function vendorInto(srcPath: string, destDir: string, opts: VendorOptions = {}): VendoredFile[] {
-  const stat = fs.statSync(srcPath);
-  if (stat.isDirectory()) {
+export async function vendorInto(srcPath: string, destDir: string, opts: VendorOptions = {}): Promise<VendoredFile[]> {
+  if (fs.statSync(srcPath).isDirectory()) {
     return vendorDir(srcPath, destDir, opts);
   }
   if (opts.exclude?.(path.basename(srcPath))) return [];
   const destPath = path.join(destDir, path.basename(srcPath));
-  const content = fs.readFileSync(srcPath);
-  const result = writeIfChanged(destPath, content);
+  const content = await Bun.file(srcPath).bytes();
+  const result = await writeIfChanged(destPath, content);
   mirrorMode(srcPath, destPath);
   return [{ relPath: toLockKey(path.basename(srcPath)), result, hash: sha256(content) }];
 }
 
 /** Removes a vendored directory entirely (used by `remove`). No-op if absent. */
-export function removeVendored(destDir: string): void {
-  fs.rmSync(destDir, { recursive: true, force: true });
+export async function removeVendored(destDir: string): Promise<void> {
+  await Bun.$`rm -rf ${destDir}`.quiet();
 }
 
 export interface SourceFile {
@@ -112,18 +111,7 @@ export interface SourceFile {
 /** Enumerates every file under `srcDir` (skipping `.gitkeep`/`__pycache__`)
  * WITHOUT copying anything — `update` needs to inspect each file before
  * deciding whether to overwrite it (see commands/update.ts). */
-export function listSourceFiles(srcDir: string): SourceFile[] {
-  const out: SourceFile[] = [];
-  const walk = (dir: string, relBase: string) => {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (SKIP_NAMES.has(entry.name)) continue;
-      const abs = path.join(dir, entry.name);
-      const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(abs, rel);
-      else if (entry.isFile()) out.push({ relPath: rel, absPath: abs });
-    }
-  };
-  walk(srcDir, "");
-  return out;
+export async function listSourceFiles(srcDir: string): Promise<SourceFile[]> {
+  const rels = await scanTree(srcDir);
+  return rels.map((relPath) => ({ relPath, absPath: path.join(srcDir, ...relPath.split("/")) }));
 }

@@ -1,0 +1,50 @@
+id: no-fetch-polyfill
+snapshots:
+  const fetch = require("cross-fetch");:
+    labels:
+    - source: require("cross-fetch")
+      style: primary
+      start: 14
+      end: 36
+    - source: require
+      style: secondary
+      start: 14
+      end: 21
+    - source: '"cross-fetch"'
+      style: secondary
+      start: 22
+      end: 35
+    - source: '"cross-fetch"'
+      style: secondary
+      start: 22
+      end: 35
+  import axios from "axios";:
+    labels:
+    - source: import axios from "axios";
+      style: primary
+      start: 0
+      end: 26
+    - source: '"axios"'
+      style: secondary
+      start: 18
+      end: 25
+  import fetch from "node-fetch";:
+    labels:
+    - source: import fetch from "node-fetch";
+      style: primary
+      start: 0
+      end: 31
+    - source: '"node-fetch"'
+      style: secondary
+      start: 18
+      end: 30
+  import { fetch } from "undici";:
+    labels:
+    - source: import { fetch } from "undici";
+      style: primary
+      start: 0
+      end: 31
+    - source: '"undici"'
+      style: secondary
+      start: 22
+      end: 30

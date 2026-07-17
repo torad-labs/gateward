@@ -1,12 +1,13 @@
-import * as assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { test } from "node:test";
 import { runInit } from "./init";
 
-function tmpdir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "init-idempotent-test-"));
+async function tmpdir(): Promise<string> {
+  const dir = path.join(os.tmpdir(), `init-idempotent-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
+  return dir;
 }
 
 // This exercises runInit() directly, in-process, against the real monorepo
@@ -16,67 +17,71 @@ function tmpdir(): string {
 // independent of process-spawning/argv-parsing concerns.
 
 test("runInit: a second run with the same options changes nothing and says so", async () => {
-  const root = tmpdir();
+  const root = await tmpdir();
   try {
     const first = await runInit(root, { packsFlag: "all", yes: false });
-    assert.equal(first.changed, true);
+    expect(first.changed).toBe(true);
 
-    const tenetsSnapshot = snapshotTenets(root);
+    const tenetsSnapshot = await snapshotTenets(root);
 
     const second = await runInit(root, { packsFlag: "all", yes: false });
-    assert.equal(second.changed, false);
-    assert.ok(second.lines.some((l) => /no changes/i.test(l)), second.lines.join("\n"));
+    expect(second.changed).toBe(false);
+    expect(
+      second.lines.some((l) => /no changes/i.test(l)),
+      second.lines.join("\n"),
+    ).toBeTruthy();
 
-    assert.deepEqual(snapshotTenets(root), tenetsSnapshot);
+    expect(await snapshotTenets(root)).toEqual(tenetsSnapshot);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    await Bun.$`rm -rf ${root}`.quiet();
   }
 });
 
 test("runInit: a single selected pack vendors only that pack, and rerunning it is still idempotent", async () => {
-  const root = tmpdir();
+  const root = await tmpdir();
   try {
     const first = await runInit(root, { packsFlag: "kotlin-best-practices", yes: false });
-    assert.equal(first.changed, true);
+    expect(first.changed).toBe(true);
     const packsDir = path.join(root, ".tenets", "packs");
-    assert.deepEqual(fs.readdirSync(packsDir), ["kotlin-best-practices"]);
+    expect(fs.readdirSync(packsDir)).toEqual(["kotlin-best-practices"]);
 
     const second = await runInit(root, { packsFlag: "kotlin-best-practices", yes: false });
-    assert.equal(second.changed, false);
+    expect(second.changed).toBe(false);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    await Bun.$`rm -rf ${root}`.quiet();
   }
 });
 
 test("runInit: an unknown --packs id is a usage error (exit code 2), not a runtime crash", async () => {
-  const root = tmpdir();
+  const root = await tmpdir();
   try {
-    await assert.rejects(
-      () => runInit(root, { packsFlag: "not-a-real-pack", yes: false }),
-      (err: unknown) => {
-        assert.ok(err instanceof Error);
-        assert.equal((err as { exitCode?: number }).exitCode, 2);
-        return true;
-      },
-    );
+    let caughtErr: unknown;
+    try {
+      await runInit(root, { packsFlag: "not-a-real-pack", yes: false });
+    } catch (err) {
+      caughtErr = err;
+    }
+    expect(caughtErr).toBeTruthy();
+    expect(caughtErr instanceof Error).toBe(true);
+    expect((caughtErr as { exitCode?: number }).exitCode).toBe(2);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    await Bun.$`rm -rf ${root}`.quiet();
   }
 });
 
-function snapshotTenets(root: string): Record<string, string> {
+async function snapshotTenets(root: string): Promise<Record<string, string>> {
   const tenets = path.join(root, ".tenets");
   const claudeSettings = path.join(root, ".claude", "settings.json");
   const snapshot: Record<string, string> = {};
-  const walk = (dir: string, rel: string) => {
+  const walk = async (dir: string, rel: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const abs = path.join(dir, entry.name);
       const relPath = rel ? `${rel}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(abs, relPath);
-      else snapshot[relPath] = fs.readFileSync(abs, "utf8");
+      if (entry.isDirectory()) await walk(abs, relPath);
+      else snapshot[relPath] = await Bun.file(abs).text();
     }
   };
-  walk(tenets, "");
-  snapshot["<claude-settings>"] = fs.readFileSync(claudeSettings, "utf8");
+  await walk(tenets, "");
+  snapshot["<claude-settings>"] = await Bun.file(claudeSettings).text();
   return snapshot;
 }

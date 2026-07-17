@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{WORKSPACE}}/example.test.ts",
+    "content": "import { expect, test } from \"bun:test\";\n\ntest(\"demo\", () => {\n  expect(1).toBe(1);\n});\n"
+  }
+}

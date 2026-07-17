@@ -4,38 +4,74 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  engine:
-    name: engine gates
+  lint:
+    name: typecheck + biome
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          node-version: 22
+          bun-version-file: .bun-version
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck packages/cli
+        working-directory: packages/cli
+        run: bun run typecheck
+      - name: Typecheck packages/core
+        working-directory: packages/core
+        run: bun run typecheck
+      - name: Biome (format + lint)
+        run: bunx biome ci .
+
+  engine:
+    name: engine gates (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
       - name: Install ast-grep
-        run: npm install -g @ast-grep/cli
-      - name: CLI build + tests
+        # setup-bun's handling of the global bin dir on PATH is undocumented;
+        # the version check makes a gap loud instead of a mystery downstream.
         run: |
-          npm install --no-audit --no-fund
-          npm --workspace packages/cli test
+          bun add -g @ast-grep/cli
+          ast-grep --version
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
+      - name: CLI tests (with coverage)
+        working-directory: packages/cli
+        run: bun test --coverage
+      - name: Engine tests
+        working-directory: packages/core
+        run: bun test
+      - name: Codex shim tests
+        run: bun test packages/shims/codex/claude_compat.test.ts
+      - name: OpenCode plugin smoke test
+        run: bun packages/shims/opencode/smoke-test.ts
       - name: Rule-pack tests
         run: |
           for pack in packs/*/; do
             echo "--- $pack"
             (cd "$pack" && ast-grep test)
           done
-      - name: Core unit tests
-        run: python3 -m unittest discover -s packages/core/tests -v
-      - name: Codex shim unit tests
-        run: python3 packages/shims/codex/test_claude_compat.py
-      - name: OpenCode plugin smoke test
-        run: node packages/shims/opencode/smoke-test.js
       - name: End-to-end payload replay
-        run: python3 e2e/run.py
+        run: bun e2e/run.ts
       - name: Golden stays clean (pinned at 0)
         run: |
-          total=$(python3 packages/core/src/audit.py apps/golden --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["total"])')
+          total=$(bun packages/core/src/audit.ts apps/golden --json | bun -e 'console.log((await Bun.stdin.json()).total)')
           echo "golden audit: $total"
           test "$total" = "0"
       - name: Broken audit count pin
@@ -43,20 +79,35 @@ jobs:
         # app changes this, the change must be deliberate: update the pin in
         # the same commit and say why.
         run: |
-          total=$(python3 packages/core/src/audit.py apps/broken --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["total"])')
+          total=$(bun packages/core/src/audit.ts apps/broken --json | bun -e 'console.log((await Bun.stdin.json()).total)')
           echo "broken audit: $total"
           test "$total" = "52"
+      - name: Repo self-audit stays clean (pinned at 0)
+        # This repo gates its own TypeScript against bun-best-practices
+        # (root .tenets/config.toml). If this ever goes non-zero, fix the
+        # source — do not raise this pin.
+        run: |
+          total=$(bun packages/core/src/audit.ts . --json | bun -e 'console.log((await Bun.stdin.json()).total)')
+          echo "self audit: $total"
+          test "$total" = "0"
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-coverage-lcov
+          path: packages/cli/coverage/lcov.info
+          if-no-files-found: warn
 
   apps:
     name: android apps build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
       - name: Golden assembles + tests
         working-directory: apps/golden
         run: ./gradlew assembleDebug test --console=plain

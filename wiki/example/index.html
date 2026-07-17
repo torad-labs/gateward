@@ -92,7 +92,7 @@ invalid:
 <h2>4 · The wire — proving the gate sees it</h2>
 <p>A rule that passes its own tests can still never fire in production. So the rule
 gets an end-to-end payload: a real <code>PreToolUse</code> body, piped through the
-real entrypoint by <code>e2e/run.py</code>.</p>
+real entrypoint by <code>e2e/run.ts</code>.</p>
 <pre><code class="language-json">{
   "tool_name": "Write",
   "tool_input": {
@@ -115,13 +115,13 @@ existing suites could know.</p></div>
 <h2>6 · The fix</h2>
 <p>The scanner now mirrors the file's project-relative path under a temp directory,
 so rule-level <code>files:</code> globs see the real shape
-(<code>engine/scan.py</code>):</p>
-<pre><code class="language-python"># Mirror the file's project-relative path under a temp dir. Rule-level
-# files:/ignores: globs (e.g. **/domain/**, **/test/**) match on path
-# shape; a bare temp name would erase it and those rules could never fire.
-root = config.config_dir.parent.resolve()
-rel = Path(path).resolve().relative_to(root)
-tmp = Path(tmpdir) / rel</code></pre>
+(<code>engine/scan.ts</code>):</p>
+<pre><code class="language-typescript">// Mirror the file's project-relative path under a temp dir. Rule-level
+// files:/ignores: globs (e.g. **/domain/**, **/test/**) match on path
+// shape; a bare temp name would erase it and those rules could never fire.
+const root = path.resolve(config.configDir, "..");
+const rel = path.relative(root, path.resolve(filePath));
+const tmp = path.join(tmpDir, rel);</code></pre>
 
 <h2>7 · Green</h2>
 <div class="green"><pre style="margin:0"><code class="language-text">PASS  13-write-context-in-domain

@@ -2,10 +2,11 @@
 # tier for humans and the installer CLI; it is NOT read by ast-grep — the
 # stdlib core resolves tier from a project's .tenets/config.toml. The core
 # DOES resolve each rule's `default_enabled` from this file (see
-# packages/core/src/config.py): a rule with `default_enabled: false` here
+# packages/core/src/config.ts): a rule with `default_enabled: false` here
 # only runs once a project's .tenets/config.toml explicitly turns it on via
 # `[rules.<id>] enabled = true`.
 id: android-opinionated
+language: kotlin
 title: Android Opinionated
 description: >-
   House-taste rules, each one a single, independently toggleable opinion —

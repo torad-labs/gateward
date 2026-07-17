@@ -1,0 +1,54 @@
+# Pack manifest. This file indexes the pack and records each rule's default
+# tier for humans and the installer CLI; it is NOT read by ast-grep — the
+# core resolves tier from a project's .tenets/config.toml, and resolves each
+# rule's default_enabled from this file. The installer CLI reads `language:`
+# to derive .tenets/config.toml's [core] languages from the selected packs.
+id: bun-best-practices
+language: typescript
+title: Bun Best Practices
+description: >-
+  Official-guidance rules for TypeScript running on Bun: prefer Bun and
+  web-standard built-ins over Node-ecosystem polyfills and helper packages.
+  Sources are Bun's own documentation (bun.com/docs) — each rule's message
+  names the built-in replacement. Every rule is plain ast-grep YAML and runs
+  standalone under `ast-grep test`.
+rules:
+  - id: prefer-bun-test
+    tier: deny
+    summary: Test files import from bun:test, not node:test/jest/vitest/mocha.
+  - id: no-dotenv
+    tier: deny
+    summary: dotenv/dotenv-expand are redundant — Bun auto-loads .env files.
+  - id: no-fetch-polyfill
+    tier: deny
+    summary: node-fetch/cross-fetch/axios/undici are banned; fetch is built in.
+  - id: no-fs-helper-packages
+    tier: deny
+    summary: rimraf/mkdirp/glob packages are banned; fs.rm/fs.mkdir recursive and Bun.Glob are built in.
+  - id: no-spawn-helpers
+    tier: deny
+    summary: execa/cross-spawn/shelljs are banned; Bun.$ and Bun.spawn are built in.
+  - id: no-redundant-natives
+    tier: deny
+    default_enabled: false
+    summary: >-
+      Off by default: ws/bcrypt/better-sqlite3 have Bun-native equivalents
+      (WebSocket, Bun.password, bun:sqlite). Enable for teams standardizing
+      on Bun runtime natives.
+  - id: no-node-shebang
+    tier: deny
+    summary: "#!/usr/bin/env node shebangs are banned in a Bun-only project."
+  - id: prefer-bun-file-read
+    tier: deny
+    summary: >-
+      Whole-file text reads use Bun.file(path).text() instead of
+      fs.readFileSync with a text encoding — Bun's documented recommended
+      file API. No autofix: the rewrite is sync-to-async and never mechanical.
+  - id: no-node-builtins
+    tier: deny
+    default_enabled: false
+    summary: >-
+      Off by default (strict purity mode): bans EVERY node: builtin import.
+      For projects that enumerate their irreducible node: remainder some
+      other way — most projects legitimately need node:path and structural
+      node:fs and should leave this off.

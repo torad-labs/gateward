@@ -1,49 +1,51 @@
-import * as fs from "node:fs";
-import { generateConfigToml, parseConfigToml } from "../configToml";
-import { runtimeError } from "../errors";
-import { buildLock, lockPath, readLock, serializeLock } from "../lock";
-import { PACKS_ROOT, configTomlPath, packsDestDir, readCliVersion, tenetsDir } from "../paths";
-import { listPacks } from "../packYaml";
-import type { PackMeta } from "../types";
-import { removeVendored, writeIfChanged } from "../vendor";
-import type { CommandOutcome } from "./add";
+import { runtimeError } from "../cli/errors";
+import { buildLock, lockPath, readLock, serializeLock } from "../domain/lock";
+import { languagesForPacks, listPacks } from "../domain/packs";
+import { generateConfigToml, parseConfigToml } from "../domain/tenetsConfig";
+import { removeVendored, writeIfChanged } from "../domain/vendor";
+import { configTomlPath, PACKS_ROOT, packsDestDir, readCliVersion, tenetsDir } from "../paths";
+import type { CommandOutcome, PackMeta } from "../types";
 
 function enabledPackMetas(available: PackMeta[], ids: string[]): PackMeta[] {
   return ids.map((id) => available.find((p) => p.id === id)).filter((p): p is PackMeta => Boolean(p));
 }
 
-export function runRemove(root: string, packId: string): CommandOutcome {
+export async function runRemove(root: string, packId: string): Promise<CommandOutcome> {
   const configPath = configTomlPath(root);
-  if (!fs.existsSync(configPath)) {
+  const configFile = Bun.file(configPath);
+  if (!(await configFile.exists())) {
     runtimeError(`${configPath} not found; run \`portable-hooks init\` first.`);
   }
 
-  const parsed = parseConfigToml(fs.readFileSync(configPath, "utf8"));
+  const parsed = parseConfigToml(await configFile.text());
   if (!parsed.packs.enabled.includes(packId)) {
     return { changed: false, lines: [`Pack "${packId}" is not installed. Nothing to remove.`] };
   }
 
-  removeVendored(packsDestDir(root, packId));
+  await removeVendored(packsDestDir(root, packId));
 
   const tDir = tenetsDir(root);
-  const existingLock = readLock(tDir);
+  const existingLock = await readLock(tDir);
   const files = existingLock ? { ...existingLock.files } : {};
   const prefix = `packs/${packId}/`;
   for (const key of Object.keys(files)) {
     if (key.startsWith(prefix)) delete files[key];
   }
-  const source = existingLock?.source ?? `portable-hooks@${readCliVersion()}`;
-  writeIfChanged(lockPath(tDir), serializeLock(buildLock(source, files)));
+  const source = existingLock?.source ?? `portable-hooks@${await readCliVersion()}`;
+  await writeIfChanged(lockPath(tDir), serializeLock(buildLock(source, files)));
 
   const newEnabledIds = parsed.packs.enabled.filter((id) => id !== packId);
-  const available = listPacks(PACKS_ROOT);
+  const available = await listPacks(PACKS_ROOT);
+  const newEnabledPacks = enabledPackMetas(available, newEnabledIds);
   const configText = generateConfigToml({
-    languages: parsed.core.languages,
+    // Re-derived, mirroring add.ts: removing the last pack of a language
+    // must stop gating that language's files.
+    languages: languagesForPacks(newEnabledPacks),
     defaultTier: parsed.core.defaultTier,
     packsDir: parsed.packs.packsDir,
-    enabledPacks: enabledPackMetas(available, newEnabledIds),
+    enabledPacks: newEnabledPacks,
   });
-  writeIfChanged(configPath, configText);
+  await writeIfChanged(configPath, configText);
 
   return {
     changed: true,

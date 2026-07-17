@@ -1,0 +1,22 @@
+name: Feature request
+description: A new rule, pack, harness, or capability.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What should the gate catch (or the tool do) that it doesn't today?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: >-
+        For rule ideas: a code snippet that should be denied and one that
+        should pass. For harness ideas: how that harness exposes pre-write
+        hooks.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

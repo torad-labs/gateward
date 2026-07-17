@@ -1,0 +1,10 @@
+id: prefer-bun-test
+valid:
+  - 'import { expect, test } from "bun:test";'
+  - 'import * as fs from "node:fs";'
+  - 'import { walk } from "majestic";'
+invalid:
+  - 'import { test } from "node:test";'
+  - 'import { describe, it } from "vitest";'
+  - 'import { expect } from "@jest/globals";'
+  - 'import { describe } from "mocha";'
