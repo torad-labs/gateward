@@ -57,7 +57,7 @@ Beats to lift:
   design; 2,700 lines of Python regex → ~700 lines of declarative tested rules;
   whole-repo audit < 5 s.
 
-## Source material B — this repo (portable-hooks)
+## Source material B — this repo (gateward)
 
 - `packages/` — the engine (core + shims: portable across Claude Code / Codex harnesses)
 - `packs/` — rule packs, incl. `android-architecture` (e.g. no-android-import-in-domain)
@@ -85,6 +85,6 @@ Beats to lift:
 - **Demo:** none live — code on slides as single-delta builds (storyboarded like a demo).
 - **Company material (clearance expanded 2026-07-17):** the abstract's "slop-free"
   line + the 19,000-legacy-findings number at Realtor + the safe-migration ratchet
-  story. Everything deeper demoed via portable-hooks + OpenHouse golden app.
+  story. Everything deeper demoed via gateward + OpenHouse golden app.
 - **5-hour deliverable:** locked plan + deck skeleton + code-build storyboards, all rough.
 - Plan lives in `talk/PLAN.md`.

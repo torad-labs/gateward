@@ -58,7 +58,7 @@ interface Expected {
 }
 
 async function buildWorkspace(): Promise<string> {
-  const workspace = path.join(os.tmpdir(), `portable-hooks-e2e-${crypto.randomUUID()}`);
+  const workspace = path.join(os.tmpdir(), `gateward-e2e-${crypto.randomUUID()}`);
   await Bun.write(path.join(workspace, ".tenets", "config.toml"), CONFIG_TOML);
   return workspace;
 }

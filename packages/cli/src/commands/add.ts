@@ -14,7 +14,7 @@ export async function runAdd(root: string, packId: string): Promise<CommandOutco
   const configPath = configTomlPath(root);
   const configFile = Bun.file(configPath);
   if (!(await configFile.exists())) {
-    runtimeError(`${configPath} not found; run \`portable-hooks init\` first.`);
+    runtimeError(`${configPath} not found; run \`gateward init\` first.`);
   }
 
   const available = await listPacks(PACKS_ROOT);
@@ -29,7 +29,7 @@ export async function runAdd(root: string, packId: string): Promise<CommandOutco
   }
 
   const tDir = tenetsDir(root);
-  const existingLock = (await readLock(tDir)) ?? buildLock(`portable-hooks@${await readCliVersion()}`, {});
+  const existingLock = (await readLock(tDir)) ?? buildLock(`gateward@${await readCliVersion()}`, {});
   const files = { ...existingLock.files };
   const results = await vendorDir(pack.dir, packsDestDir(root, packId));
   for (const r of results) files[`packs/${packId}/${r.relPath}`] = r.hash;

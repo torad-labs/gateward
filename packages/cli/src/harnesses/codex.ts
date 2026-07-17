@@ -101,8 +101,8 @@ async function check(root: string): Promise<DoctorCheck> {
     return {
       name: "harness:codex",
       status: "warn",
-      message: "Codex detected, but portable-hooks has no Codex shim yet.",
-      remedy: "upgrade portable-hooks once the Codex shim ships; not fixable today",
+      message: "Codex detected, but gateward has no Codex shim yet.",
+      remedy: "upgrade gateward once the Codex shim ships; not fixable today",
     };
   }
   const hooksFile = Bun.file(path.join(root, ".codex", "hooks.json"));
@@ -112,7 +112,7 @@ async function check(root: string): Promise<DoctorCheck> {
       name: "harness:codex",
       status: "fail",
       message: "Codex detected but not wired.",
-      remedy: "run `portable-hooks init`",
+      remedy: "run `gateward init`",
     };
   }
   return { name: "harness:codex", status: "pass", message: "Codex hook wired." };

@@ -25,7 +25,7 @@ export async function runAudit(root: string, json: boolean): Promise<AuditRun> {
             text: JSON.stringify({ error: "audit.ts not vendored in this project.", remedy }, null, 2),
             stream: "stdout",
           }
-        : { text: `portable-hooks: audit.ts not vendored in this project. remedy: ${remedy}`, stream: "stderr" },
+        : { text: `gateward: audit.ts not vendored in this project. remedy: ${remedy}`, stream: "stderr" },
     };
   }
 
@@ -44,7 +44,7 @@ export async function runAudit(root: string, json: boolean): Promise<AuditRun> {
     return {
       status: 1,
       message: {
-        text: `portable-hooks: failed to run the vendored audit: ${(err as Error).message}`,
+        text: `gateward: failed to run the vendored audit: ${(err as Error).message}`,
         stream: "stderr",
       },
     };

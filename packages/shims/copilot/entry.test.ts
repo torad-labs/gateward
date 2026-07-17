@@ -1,5 +1,5 @@
 /**
- * Unit tests for the GitHub Copilot preToolUse -> portable-hooks shim.
+ * Unit tests for the GitHub Copilot preToolUse -> gateward shim.
  *
  * Payload normalization, arg mapping, and verdict translation are tested
  * with the core invocation injected (no subprocess); `evaluate()` is

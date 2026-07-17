@@ -1,17 +1,17 @@
 {
-  "name": "portable-hooks",
+  "name": "gateward",
   "version": "0.1.0",
-  "description": "Installs portable ast-grep hooks (rule packs + engine) into a project and wires them into detected AI coding harnesses (Claude Code, Codex, OpenCode).",
+  "description": "The keeper of the write gate: installs ast-grep rule packs + the gate engine into a project and wires them into AI coding harnesses (Claude Code, GitHub Copilot, Codex, OpenCode).",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/torad-labs/portable-hooks.git",
+    "url": "git+https://github.com/torad-labs/gateward.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/torad-labs/portable-hooks",
-  "bugs": "https://github.com/torad-labs/portable-hooks/issues",
+  "homepage": "https://github.com/torad-labs/gateward",
+  "bugs": "https://github.com/torad-labs/gateward/issues",
   "bin": {
-    "portable-hooks": "./src/index.ts"
+    "gateward": "./src/index.ts"
   },
   "engines": {
     "bun": ">=1.3"

@@ -6,7 +6,7 @@ language: kotlin
 title: Kotlin Best Practices
 description: >-
   Correctness and clarity rules for Kotlin source, enforced at edit time by the
-  portable-hooks gate. Every rule is plain ast-grep YAML and runs standalone
+  gateward gate. Every rule is plain ast-grep YAML and runs standalone
   under `ast-grep test`.
 rules:
   - id: no-force-unwrap

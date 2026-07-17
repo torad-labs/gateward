@@ -26,7 +26,7 @@ async function checkTenetsConfig(root: string): Promise<DoctorCheck> {
       name: "tenets-config",
       status: "fail",
       message: ".tenets/config.toml not found.",
-      remedy: "run `portable-hooks init`",
+      remedy: "run `gateward init`",
     };
   }
   const text = await configFile.text();
@@ -35,7 +35,7 @@ async function checkTenetsConfig(root: string): Promise<DoctorCheck> {
       name: "tenets-config",
       status: "fail",
       message: ".tenets/config.toml is missing a [core] or [packs] section.",
-      remedy: "run `portable-hooks init` again, or restore config.toml",
+      remedy: "run `gateward init` again, or restore config.toml",
     };
   }
   return { name: "tenets-config", status: "pass", message: ".tenets/config.toml present and structurally valid." };
@@ -49,7 +49,7 @@ async function checkLockDrift(root: string): Promise<DoctorCheck> {
       name: "lock-drift",
       status: "fail",
       message: ".tenets/lock.json not found.",
-      remedy: "run `portable-hooks init`",
+      remedy: "run `gateward init`",
     };
   }
   const drifted: string[] = [];
