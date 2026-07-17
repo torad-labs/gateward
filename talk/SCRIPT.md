@@ -1,6 +1,6 @@
 # Portable Hooks — full talk script
 
-Spoken script for the 44-slide deck (`talk/deck.html`). Target: ~33 minutes of
+Spoken script for the 46-slide deck (`talk/deck.html`). Target: ~33 minutes of
 content, 5–10 minutes of questions inside a 40-minute slot. Slide markers show
 when to advance; times are section targets, not a metronome. Written to be read
 aloud — rehearse with the deck's N key, or listen to the generated audio.
@@ -64,42 +64,13 @@ the wrong room. And if you're certain AI code is garbage, you're going to
 enjoy the next half hour, because I'm going to agree with you. And then we're
 going to do something about it.
 
-There's also a concrete, mechanical reason the written rules lose. It's worth
-sixty seconds, because it explains everything after it.
-
-**[Slide 6 · the mechanics of forgetting]**
-
-Probability explains why the bad pattern shows up. This explains why the rule
-you wrote to stop it doesn't, and it's mechanical, nothing mysterious.
-
-Models pay attention unevenly across their context. Text near where they're
-working right now pulls hard. Text from an hour ago barely pulls at all. Your
-CLAUDE.md is minute-one text. The agent reads it once, at the start, and then
-the session starts filling up: file reads, tool output, diffs, test results.
-Watch the strip. The rules never change. They just get farther and farther
-from where the model is working, and their pull gets weaker with every block
-that lands in between.
-
-And every model does this a little differently. Some concentrate almost
-entirely on the last few thousand tokens and let the rest fade. Some hold the
-start and the end and lose the middle, which is exactly where a long rules
-file ends up. Some slide a fixed window and drop anything past it outright.
-And when the harness compacts the session to make room, early text can vanish
-entirely. Not deprioritized. Gone. Different context lengths, different
-compaction rules, different ways to forget.
-
-So the fix can't be a better prompt. You'd be rewriting it for every model's
-idea of forgetting, and distance wins every time. The only place a rule
-behaves the same on all of them is outside the model entirely. Hold onto
-that. It's the whole reason part three exists.
-
-**[Slide 7 · refrain]**
+**[Slide 6 · refrain]**
 
 So here's the sentence this talk keeps coming back to.
 
 A prompt is a suggestion. A gate is a rule.
 
-**[Slide 8 · three ideas]**
+**[Slide 7 · three ideas]**
 
 The talk is three ideas, in order. First, agents don't read your docs, or
 more precisely, why writing rules down stopped being enough. Second, gates,
@@ -111,13 +82,13 @@ these three again at the end, so you're free to forget everything in between.
 
 ## Part one — Agents don't read your docs — 3:30
 
-**[Slide 9 · section]**
+**[Slide 8 · section]**
 
 Part one. What I want to establish here is that the drift you saw in that
 composable is structural. It's not a model-quality problem that the next
 release fixes.
 
-**[Slide 10 · how standards used to hold]**
+**[Slide 9 · how standards used to hold]**
 
 Think about how standards actually held before agents. We always enforced
 part of them mechanically: formatting, lint. The bigger part, architecture,
@@ -125,7 +96,7 @@ layering, naming, conventions, we enforced with common sense. And that
 genuinely worked, because standards lived in people's heads, and the volume
 of code was small enough that review could keep up.
 
-**[Slide 11 · the volume flip]**
+**[Slide 10 · the volume flip]**
 
 That arrangement had a hidden assumption: volume. An engineer hands review a
 few hundred lines a week. An agent hands it that before lunch.
@@ -134,7 +105,44 @@ The line on screen is from the writeup we shared internally at Realtor, and
 it's the honest version. You cannot review your way out of this. Reviewers
 get tired. Agents don't.
 
-**[Slide 12 · the cost curve]**
+And volume is only half the problem. The other half is how the agent
+remembers your rules in the first place. That part is worth two minutes,
+because it explains everything else in this talk.
+
+**[Slide 11 · what the agent actually knows]**
+
+To see it, you need the picture of what the agent actually knows. Everything
+it knows about your project sits in one long window. Your rules go in once,
+at the start. Then the session fills: every file it reads, every tool result,
+every diff, every message. And each one lands closer to where the model is
+working than your rules ever will again.
+
+**[Slide 12 · the mechanics of forgetting]**
+
+Models pay attention unevenly across that window. Text near where they're
+working right now pulls hard. Text from an hour ago barely pulls at all. And
+your rules are minute-one text. Watch the strip. The rules never change. They
+just get farther from the work with every block that lands, and their pull
+fades. And at the end of the loop, the window compacts to make room, and the
+early text vanishes entirely. Not deprioritized. Gone.
+
+So a better-written prompt can't fix this. You can write the best rules file
+in the industry and it's still fighting distance, and distance wins.
+
+**[Slide 13 · every model forgets differently]**
+
+And here's the part that matters for anyone running more than one model. They
+all forget, but they forget differently. Some are recency-heavy, and old text
+just fades. Some hold the start and the end and lose the middle. Sliding-window
+models drop far text outright. And harness compaction summarizes early turns
+away entirely. Your rules live at the start of the window, so their fate
+depends on which model you happen to be talking to today.
+
+A rule in the prompt fails differently on every model, and you don't control
+which. The only place a rule behaves the same everywhere is outside the model.
+Hold onto that. It's the whole reason part three of this talk exists.
+
+**[Slide 14 · the cost curve]**
 
 And the cost of missing something isn't flat. Watch the same violation get
 caught later and later.
@@ -147,14 +155,14 @@ actually hurts. If the agent ignored an architecture rule from the first
 file, you're not fixing a line anymore. You're re-architecting the feature it
 built on top of the mistake. We've paid that one.
 
-**[Slide 13 · the montage]**
+**[Slide 15 · the montage]**
 
 And if you write Android with an agent, you've met all of these. Business
 logic in composables. Unidirectional flow, broken. ViewModel god-objects.
 Managers everywhere. Event buses, still, in 2026. And Context handed into
 the domain layer. Everyone's nodding. That's recognition, not news.
 
-**[Slide 14 · we already do this to ourselves]**
+**[Slide 16 · we already do this to ourselves]**
 
 Now, before anyone says, if the tool needs this much fencing, don't use the
 tool. Notice that we never solved this problem for humans by requiring
@@ -163,7 +171,7 @@ trust me. The borrow checker runs on every line I write. We have been putting
 mechanical checks in front of human code for fifty years. The agent is just
 the newest thing standing in that line.
 
-**[Slide 15 · refrain]**
+**[Slide 17 · refrain]**
 
 A prompt is a suggestion. A gate is a rule.
 
@@ -173,12 +181,12 @@ So let's build a gate.
 
 ## Part two — Gates, not guidelines — 9:30
 
-**[Slide 16 · section]**
+**[Slide 18 · section]**
 
 Part two. We're going to build one gate, piece by piece, on a real app, and
 everything you'll see here is in the repo.
 
-**[Slide 17 · what a lifecycle hook is]**
+**[Slide 19 · what a lifecycle hook is]**
 
 One concept first, because everything builds on it. Every coding harness now
 ships lifecycle hooks. Before the agent writes a file, your script runs, and
@@ -190,7 +198,7 @@ violating write gets stopped at the gate and goes back. That's the whole
 trick. Claude Code, Codex, Antigravity, OpenCode, they all have some version
 of this. Hold that thought, it matters at the end.
 
-**[Slide 18 · step one, intercept]**
+**[Slide 20 · step one, intercept]**
 
 Step one, intercept the write. A project opts in with one settings file,
 that's it on the left. And from then on, before any write or edit, the
@@ -199,7 +207,7 @@ which file it wants to touch, and the exact content it wants to write. From
 my abstract: you can see exactly what the model is trying to write, before
 it exists.
 
-**[Slide 19 · step two, project]**
+**[Slide 21 · step two, project]**
 
 Step two. There's a small problem: there's nothing to lint yet. The file
 doesn't exist, or the edit hasn't been applied. So the engine reconstructs
@@ -208,7 +216,7 @@ current content, the projected content, and we compare the two. If an edit is
 undecidable, the engine steps aside and lets the harness reject it on its
 own, so nothing gets judged twice.
 
-**[Slide 20 · step three, parse]**
+**[Slide 22 · step three, parse]**
 
 Step three, scanning. The whole scanning step is one call into ast-grep, a
 Rust-based code search engine that understands language structure, not just
@@ -220,7 +228,7 @@ don't worry about memorizing any of this, the packs ship it. A pack is just a
 bundle of rules for one domain, like the Android one we're using: install it
 and you get the rules and their tests.
 
-**[Slide 21 · step four, one rule]**
+**[Slide 23 · step four, one rule]**
 
 Step four, an actual rule, and this is most of what you'd ever write. The
 identity, the language. The message, and notice it's written for the thing
@@ -237,13 +245,13 @@ principle: domain code stays Android-free. A rule is that principle written
 so a machine can check it. This YAML is the rule, and the hook is what makes
 it a gate.
 
-**[Slide 22 · the rule has tests]**
+**[Slide 24 · the rule has tests]**
 
 Fifteen lines of rule, eight lines of test. Valid snippets that must pass,
 invalid ones that must fire. Rules are code, so they get tests like code, and
 when a rule misfires, fixing it is a small reviewed change, not a mystery.
 
-**[Slide 23 · step five, the block message]**
+**[Slide 25 · step five, the block message]**
 
 Step five, what happens on a violation. This is the entire formatting logic,
 four lines. And below it, what the agent actually receives. Notice it isn't
@@ -251,7 +259,7 @@ just "denied." It's the rule, the line number, and what to do instead,
 because the reader is a generator that's about to try again, and the message
 is its instructions.
 
-**[Slide 24 · the payoff, real capture]**
+**[Slide 26 · the payoff, real capture]**
 
 So here's the whole loop, and this is a real captured session, not a mockup.
 The agent goes to add a Context parameter to a use case in the domain layer.
@@ -266,7 +274,7 @@ and automatic.
 And that FavoritesScreen the agent wrote at the start? Every one of those
 three patterns is a blocked write now. It never gets to disk.
 
-**[Slide 25 · isn't this just lint]**
+**[Slide 27 · isn't this just lint]**
 
 Now, at this point, half of you are thinking: isn't this just lint? And
 mostly, yes. On purpose. We didn't invent a new discipline, we moved an old
@@ -276,7 +284,7 @@ style. When it fires: before the code exists, not minutes later in CI. And
 who does the fixing: the generator, in the same turn, instead of a tired
 human three hours later.
 
-**[Slide 26 · the multiplier]**
+**[Slide 28 · the multiplier]**
 
 And there's one more difference, and it's the one nobody expects. Block the
 agent once, at write time, and the correction happens once, because the block
@@ -290,7 +298,7 @@ top of it for an hour. Now you rewrite everything downstream, in our
 experience at two or three times the tokens. Same rule, same fix. The only
 thing that changed is when.
 
-**[Slide 27 · design decision one]**
+**[Slide 29 · design decision one]**
 
 Three design decisions made this survivable on a real codebase, and they
 matter more than the rule count.
@@ -305,7 +313,7 @@ Finding nineteen thousand and one, though? That one gets stopped.
 We call that the ratchet: debt only goes down. New violations can't land, and
 the old ones drain out as we migrate.
 
-**[Slide 28 · design decision two]**
+**[Slide 30 · design decision two]**
 
 Second decision: there is no bypass. The suppression comment, the Suppress
 annotation you'd normally drop in to make a linter look the other way, is
@@ -316,7 +324,7 @@ side door.
 
 That sounds paranoid. It did to me too. Which brings me to a story.
 
-**[Slide 29 · the side door, a true story]**
+**[Slide 31 · the side door, a true story]**
 
 On another codebase, we gate low-precision rules. FP4, FP8, the kind of
 constraints where one lazy fallback quietly ruins a training run. One night,
@@ -331,7 +339,7 @@ content, moved in with an m v command. The write gate never sees it, because
 the write gate watches writes, not shell commands. And act three: we turn on
 the Bash counter-guard, run the identical command. Blocked again.
 
-**[Slide 30 · the lesson]**
+**[Slide 32 · the lesson]**
 
 Here's the honest lesson. I didn't predict the scratchpad, and I didn't
 predict m v, and I won't predict the next trick either. That's fine. The
@@ -339,7 +347,7 @@ gate is code. When something gets past it, we add the rule that catches it.
 That counter-guard took an evening, and it reuses the same definition of
 "gated file" the write gate already uses. One definition, two surfaces.
 
-**[Slide 31 · design decision three, numbers]**
+**[Slide 33 · design decision three, numbers]**
 
 Third decision: everything is an error. We had exactly one warning-level
 message early on, and we removed it, because agents ignore warnings. And
@@ -350,7 +358,7 @@ violation costs about eighty milliseconds, against a full lint cycle in CI
 with a red build and a context switch. And lint-reason CI failures head
 toward zero, because the same thresholds already ran before the code existed.
 
-**[Slide 32 · the honest boundary]**
+**[Slide 34 · the honest boundary]**
 
 And the honest boundary, before anyone in the back asks. None of this judges
 design. No rule catches a use case that is conceptually wrong. That's fine,
@@ -358,7 +366,7 @@ because what the gate does is clear the convention comments out of review.
 From our internal writeup: review is now about design, which is the part
 humans are actually good at.
 
-**[Slide 33 · refrain]**
+**[Slide 35 · refrain]**
 
 A prompt is a suggestion. A gate is a rule.
 
@@ -368,19 +376,19 @@ Two moves left.
 
 ## Part three — Tenets that travel — 22:00
 
-**[Slide 34 · section]**
+**[Slide 36 · section]**
 
 Part three. First the gate learns to watch decisions, then the whole thing
 learns to travel.
 
-**[Slide 35 · beyond file writes]**
+**[Slide 37 · beyond file writes]**
 
 Everything so far fired when the agent wrote a file. But hooks fire at other
 moments in the loop too, and the moment I care about most is when the agent
 decides it's done. Because agents love declaring victory with work still on
 the table.
 
-**[Slide 36 · the stop hook]**
+**[Slide 38 · the stop hook]**
 
 So here's a real capture, with one quick piece of setup. The agent works from
 a small task file, we call it the backlog, and it keeps that file current
@@ -391,7 +399,7 @@ left. Read the reply on screen: you're about to stop, but one task is still
 open. That instruction, don't stop until you're done, used to be a hope in
 the prompt. Now it's a check.
 
-**[Slide 37 · why this shape works]**
+**[Slide 39 · why this shape works]**
 
 Two properties make this trustworthy. The tracker is a file, not a promise.
 An open task is mechanically visible, so the agent can't just say it's done.
@@ -404,7 +412,7 @@ every one of them, because it lives outside the model. That's the bridge to
 the last idea. It honors the harness's loop guard too, so the agent can
 never get trapped.
 
-**[Slide 38 · tenets that travel]**
+**[Slide 40 · tenets that travel]**
 
 And the rules travel. Every harness speaks a slightly different hook
 protocol, so the engine stays one codebase with a thin shim per harness, and
@@ -413,7 +421,7 @@ write time, in any pre-commit runner, in CI, and as a whole-repo audit. One
 source of truth per tenet. And even if you personally never touch an agent,
 your teammates' agents are already committing to the codebase you maintain.
 
-**[Slide 39 · the release]**
+**[Slide 41 · the release]**
 
 Which brings me to the part I submitted this abstract for.
 
@@ -421,7 +429,7 @@ The project is called portable-hooks. I've been running it on my own projects
 for months, and as of right now, the repo is public. Two commands. Pick the
 packs you want, or take everything.
 
-**[Slide 40 · running in production]**
+**[Slide 42 · running in production]**
 
 And it isn't a demo repo dressed up for a conference. It's been running in
 production at Realtor for months, across the whole Android team, and in that
@@ -431,12 +439,12 @@ whole time, zero new findings have landed. We're slop-free.
 
 ## Close — 30:30
 
-**[Slide 41 · three ideas, again]**
+**[Slide 43 · three ideas, again]**
 
 The same three ideas, so they leave the room with you. Agents don't read
 your docs. Gates, not guidelines. Tenets that travel.
 
-**[Slide 42 · what this does to seniority]**
+**[Slide 44 · what this does to seniority]**
 
 One closing thought, for the most skeptical person in the room. Here's what
 this actually does to your job. A review comment fixes one PR. A rule you
@@ -445,13 +453,13 @@ you've stopped paying attention. That is not less senior than writing the
 code was. It's more. And notice what kind of change that is. Not a tooling
 change. A staffing one.
 
-**[Slide 43 · the homework]**
+**[Slide 45 · the homework]**
 
 So here's the homework, and it's small. Tonight, before your next standup:
 one hook, one rule. Whichever pattern you're most tired of flagging in
 review. After you watch the agent fix itself once, you won't go back.
 
-**[Slide 44 · close]**
+**[Slide 46 · close]**
 
 Agents writing most of the code isn't a prediction to debate anymore. It's a
 staffing change to prepare for.

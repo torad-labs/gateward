@@ -204,6 +204,24 @@
     font-family:var(--mono);font-size:12px;transition:left .8s ease,opacity .3s ease,transform .3s ease}
   .hg-card.bad{border-color:var(--red);color:var(--red)}
   .hg-card.ok{border-color:var(--allow);color:var(--allow)}
+  /* context-window diagram + forgetting-shapes comparison */
+  .cw{display:flex;gap:6px;align-items:center;margin-top:34px}
+  .cw .seg{height:64px;border-radius:8px;background:#E4DCD8;display:flex;align-items:center;
+    justify-content:center;font-family:var(--mono);font-size:16px;color:var(--ink-2);padding:0 14px}
+  .cw .seg.rules{background:var(--red);color:#fff}
+  .cw .seg.now{background:#fff;border:3px solid var(--ink);color:var(--ink);font-weight:700}
+  .cw-axis{display:flex;justify-content:space-between;margin-top:12px;
+    font-family:var(--mono);font-size:15px;color:var(--ink-3)}
+  .fm-row{display:flex;align-items:center;gap:22px;margin-top:16px}
+  .fm-label{flex:0 0 330px;font-size:21px;color:var(--ink);line-height:1.25}
+  .fm-label span{display:block;font-size:17px;color:var(--ink-3)}
+  .fm-strip{display:flex;gap:4px;flex:1;align-items:center}
+  .fm-b{width:24px;height:30px;border-radius:4px;background:#E4DCD8;flex:0 0 auto}
+  .fm-b.rules{background:var(--red)}
+  .fm-b.ghost{background:none;border:2px dashed #D9CFC9;height:26px}
+  .fm-b.ghost.rules{border-color:var(--red);background:none}
+  .fm-sum{width:64px;height:30px;border-radius:4px;flex:0 0 auto;
+    background:repeating-linear-gradient(45deg,#E4DCD8 0 6px,#F6F0ED 6px 12px)}
 </style>
 </head>
 <body>
@@ -262,22 +280,13 @@
   </section>
 
   <!-- 5 · not carelessness + wrong room -->
-  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it. Then set up the next slide: and there's a concrete mechanical reason the rules lose.">
+  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it. Then land the refrain.">>
     <div class="kicker">Why it happens</div>
     <h2>The agent will happily use a banned pattern.</h2>
     <div class="sub" style="margin-top:26px;max-width:42ch">Not because it's careless, but because it generates from probability, not from our rules. Multiply that by every session, every day, and the codebase slowly stops looking like its own architecture.</div>
   </section>
 
-  <!-- 6 · context attention decay -->
-  <section class="slide" data-notes="Hand off from the last slide: that was why the bad pattern shows up, probability. This is why the rule you wrote to stop it doesn't, and it's mechanical, nothing mysterious. Say: models pay attention unevenly. Text near where they're working pulls hard, text from an hour ago barely pulls at all, and your CLAUDE.md was minute-one text. And every model does this a little differently. Some concentrate almost entirely on the last few thousand tokens and let the rest fade. Some hold the start and the end and lose the middle, which is exactly where a long rules file ends up. Some slide a fixed window and drop anything past it outright. And when the harness compacts the session to make room, early text can vanish entirely. Different context lengths, different compaction rules, different ways to forget. So the fix can't be a better prompt. You'd be rewriting it for every model's idea of forgetting, and distance wins every time. The only place a rule behaves the same on all of them is outside the model entirely. Hold onto that, it's the whole reason part three exists.">
-    <div class="kicker">The mechanics of forgetting</div>
-    <h2>Your rules are minute-one text in an hour-long context.</h2>
-    <div class="anim" data-anim="contextDecay" style="height:190px;margin-top:26px"></div>
-    <div class="sub" style="margin-top:18px;max-width:44ch">Attention concentrates where the model is working. The farther your CLAUDE.md drifts, the weaker its pull, and a compaction can drop it entirely.</div>
-    <div class="sub frag" style="margin-top:12px;max-width:44ch"><strong>Every model forgets differently.</strong> The only place a rule behaves the same everywhere is outside the model.</div>
-  </section>
-
-  <!-- 7 · REFRAIN 1 -->
+  <!-- 6 · REFRAIN 1 -->
   <section class="slide slide--refrain" data-notes="Land the refrain for the first time and then be quiet for a beat. This sentence comes back three more times, always in the same words.">
     <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
     <div class="tag">Refrain · 1 of 4</div>
@@ -318,10 +327,64 @@
   </section>
 
   <!-- 10 · the volume flip -->
-  <section class="slide cream" data-notes="Link back: that arrangement had a hidden assumption, volume. Say: an engineer hands review a few hundred lines a week. An agent hands it that before lunch. The quote on screen is from the writeup we shared internally, and it is the honest version: reviewers get tired, agents don't, and you cannot review your way out of that.">
+  <section class="slide cream" data-notes="Link back: that arrangement had a hidden assumption, volume. Say: an engineer hands review a few hundred lines a week. An agent hands it that before lunch. The quote on screen is from the writeup we shared internally, and it is the honest version: reviewers get tired, agents don't, and you cannot review your way out of that. Then the turn: and volume is only half the problem. The other half is how the agent remembers your rules in the first place. That part is worth two minutes, because it explains everything else in this talk.">
     <div class="kicker">Then the volume flipped</div>
     <h2>Hundreds of lines a week<br>became hundreds an <em>hour</em>.</h2>
     <div class="quote-big red" style="margin-top:40px">You cannot review your way out of this.<br>Reviewers get tired. Agents don't.</div>
+  </section>
+
+  <!-- Part 1 · context sequence a — what the agent actually knows -->
+  <section class="slide" data-notes="Announce the dive plainly: to see the second half of the problem, you need the picture of what the agent actually knows. Say: everything the agent knows about your project sits in one long window. Your rules go in once, at the start. Then the session fills: every file it reads, every tool result, every diff, every message, and each one lands closer to where the model is working than your rules ever will again. Point at the strip left to right as you talk. Now watch what distance does.">
+    <div class="kicker">What the agent actually knows</div>
+    <h2>Everything the agent knows sits in one long window.</h2>
+    <div class="cw">
+      <div class="seg rules">your rules</div>
+      <div class="seg" style="flex:1.1">file reads</div>
+      <div class="seg" style="flex:1.3">tool output</div>
+      <div class="seg" style="flex:.9">diffs</div>
+      <div class="seg" style="flex:1.4">conversation</div>
+      <div class="seg now">now</div>
+    </div>
+    <div class="cw-axis"><span>minute 1</span><span>an hour in</span></div>
+    <div class="sub" style="margin-top:26px;max-width:44ch">Your rules go in once, at the start. Everything after them lands closer to where the model is working.</div>
+  </section>
+
+  <!-- Part 1 · context sequence b — attention decay (animated) -->
+  <section class="slide" data-notes="Say: models pay attention unevenly across that window. Text near where they're working pulls hard. Text from an hour ago barely pulls at all. And your rules are minute-one text. Watch the strip: the rules never change, they just get farther from the work with every block that lands, and their pull fades. At the end of the loop the window compacts to make room and the early text vanishes entirely. Not deprioritized. Gone. So a better-written prompt can't fix this. It's still fighting distance, and distance wins.">
+    <div class="kicker">The mechanics of forgetting</div>
+    <h2>Your rules are minute-one text in an hour-long context.</h2>
+    <div class="anim" data-anim="contextDecay" style="height:190px;margin-top:26px"></div>
+    <div class="sub" style="margin-top:18px;max-width:44ch">Attention concentrates where the model is working. The farther your rules drift, the weaker their pull, and a compaction can drop them entirely.</div>
+  </section>
+
+  <!-- Part 1 · context sequence c — every model forgets differently -->
+  <section class="slide cream" data-notes="Walk the four shapes top to bottom. Say: and here's the part that matters for anyone running more than one model. They all forget, but they forget differently. Some are recency-heavy, old text just fades. Some hold the start and the end and lose the middle. Sliding-window models drop far text outright. And harness compaction summarizes early turns away entirely. Your rules live at the start of the window, so their fate depends on which model you happen to be talking to today. A rule in the prompt fails differently on every one of them, and you don't control which. Then the seed, slowly: the only place a rule behaves the same everywhere is outside the model. Hold onto that. It's the whole reason part three of this talk exists.">
+    <div class="kicker">And every model forgets differently</div>
+    <div class="fm-row">
+      <div class="fm-label">Recency-heavy<span>old text fades</span></div>
+      <div class="fm-strip">
+        <div class="fm-b rules" style="opacity:.18"></div><div class="fm-b" style="opacity:.2"></div><div class="fm-b" style="opacity:.26"></div><div class="fm-b" style="opacity:.33"></div><div class="fm-b" style="opacity:.4"></div><div class="fm-b" style="opacity:.5"></div><div class="fm-b" style="opacity:.6"></div><div class="fm-b" style="opacity:.72"></div><div class="fm-b" style="opacity:.85"></div><div class="fm-b"></div><div class="fm-b"></div>
+      </div>
+    </div>
+    <div class="fm-row frag">
+      <div class="fm-label">Lost in the middle<span>ends held, middle fades</span></div>
+      <div class="fm-strip">
+        <div class="fm-b rules"></div><div class="fm-b" style="opacity:.85"></div><div class="fm-b" style="opacity:.5"></div><div class="fm-b" style="opacity:.28"></div><div class="fm-b" style="opacity:.22"></div><div class="fm-b" style="opacity:.22"></div><div class="fm-b" style="opacity:.28"></div><div class="fm-b" style="opacity:.5"></div><div class="fm-b" style="opacity:.85"></div><div class="fm-b"></div><div class="fm-b"></div>
+      </div>
+    </div>
+    <div class="fm-row frag">
+      <div class="fm-label">Sliding window<span>far text drops out</span></div>
+      <div class="fm-strip">
+        <div class="fm-b ghost rules"></div><div class="fm-b ghost"></div><div class="fm-b ghost"></div><div class="fm-b ghost"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div>
+      </div>
+    </div>
+    <div class="fm-row frag">
+      <div class="fm-label">Compaction<span>early turns summarized away</span></div>
+      <div class="fm-strip">
+        <div class="fm-sum"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div><div class="fm-b"></div>
+      </div>
+    </div>
+    <div class="sub frag" style="margin-top:24px;max-width:46ch">A rule in the prompt fails differently on every model. <strong>The only place a rule behaves the same everywhere is outside the model.</strong></div>
   </section>
 
   <!-- 11 · cost curve -->
