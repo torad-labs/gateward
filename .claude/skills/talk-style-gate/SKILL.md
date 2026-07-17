@@ -1,6 +1,6 @@
 ---
 name: talk-style-gate
-description: Gate any talk artifact (talk/DECK.md, talk/storyboards/*, script drafts, PLAN.md) against the stage style DNA distilled from a studied corpus of elite technical conference talks — brain concept #1001 and the technical_stage voice. Use when asked to "run the style gate", "gate the deck", "review the deck against the style", "talk style review", "run the style skill on the deck", or before committing any deck/script change.
+description: Gate any talk artifact (talk/DECK.md, talk/storyboards/*, script drafts, PLAN.md) against the stage style DNA distilled from a studied corpus of elite technical conference talks (local research notes, git-ignored) and the technical_stage voice. Use when asked to "run the style gate", "gate the deck", "review the deck against the style", "talk style review", or before committing any deck/script change.
 ---
 
 # Talk Style Gate
@@ -13,8 +13,8 @@ no warning-level findings.
 ## Procedure
 
 1. **Load the evidence base** (progressive disclosure — read what exists, skip what doesn't):
-   - `talk/research/corpus/ANALYSIS.md` — quote-backed communication patterns
-   - `talk/research/corpus/ANALYSIS.md` — quote-backed communication patterns
+   - `talk/research/*/ANALYSIS.md` — quote-backed communication patterns from the
+     studied talk corpus (git-ignored, local only)
    - `talk/ADVERSARIAL.md` — the eight locked skeptic-proofing beats
    - `talk/PLAN.md` — the locked structure the artifact must implement
 2. **Read the target artifact** (the file(s) the user pointed at; default `talk/DECK.md`).
@@ -27,8 +27,8 @@ no warning-level findings.
 
 ### Opening
 - G1 · First 60 seconds contain shared pain or a live calibration question. NO bio,
-  NO agenda slide, NO "about me / about this talk". (a conference speaker: "how many people are
-  familiar with what RxJava is?")
+  NO agenda slide, NO "about me / about this talk". (e.g. "how many people here use
+  a coding agent every day?")
 - G2 · The calibration question does real work (filters/warns/sets stakes), not
   an icebreaker.
 
@@ -45,8 +45,8 @@ no warning-level findings.
 - G8 · ≤ 15 LOC per code slide; ≤ 6 single-line bullets per slide, revealed individually.
 - G9 · Concrete artifact BEFORE abstraction: real code / block message / transcript
   precedes every conceptual claim. Punchline sits on the LAST frame of a build chain.
-- G10 · Narrate builds in first-person-plural with suspense beats (a conference speaker: "hooray,
-  we found a new line") — the audience discovers with you, not from you.
+- G10 · Narrate builds in first-person-plural with suspense beats — the audience
+  discovers with you, not from you.
 
 ### Language
 - G11 · One coined refrain ("A prompt is a suggestion. A gate is a rule."), verbatim
@@ -56,7 +56,7 @@ no warning-level findings.
 - G13 · "We" for building, "I" only for testimony/war stories (the side-door incident
   is an "I" zone — announce it as one).
 - G14 · Humor is dry and hype-puncturing; never punches at the audience; running
-  gags allowed (speakers reuse jokes across years — one internal callback minimum).
+  gags allowed — at least one internal callback.
 - G15 · Banned words unless quoted ironically: revolutionary, game-changing,
   disruptive, magic, blazingly.
 
@@ -73,8 +73,8 @@ no warning-level findings.
   beat · one-rule-four-places · ego flip in the close.
 
 ### Close
-- G19 · Ends on ONE actionable habit (time-boxed if possible; a conference speaker precedent:
-  release-on-stage) — never a recap slide.
+- G19 · Ends on ONE actionable habit (time-boxed if possible; releasing the project
+  on stage is the strongest form) — never a recap slide.
 - G20 · Hype undercut on exit; exit open; humanizing coda allowed, victory lap not.
 
 ## Output format
