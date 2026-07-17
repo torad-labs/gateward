@@ -67,6 +67,7 @@ const NODE_ALLOWLIST: Record<string, ReadonlySet<string> | "test-and-source"> = 
     "harnesses/opencode.ts",
     // Tests build real on-disk directory fixtures.
     "commands/init.test.ts",
+    "commands/remove.test.ts",
     "domain/packs.test.ts",
     "domain/vendor.test.ts",
     "harnesses/detect.test.ts",
@@ -75,6 +76,7 @@ const NODE_ALLOWLIST: Record<string, ReadonlySet<string> | "test-and-source"> = 
   // os.tmpdir has no Bun equivalent; tests only.
   "node:os": new Set([
     "commands/init.test.ts",
+    "commands/remove.test.ts",
     "domain/lock.test.ts",
     "domain/packs.test.ts",
     "domain/vendor.test.ts",

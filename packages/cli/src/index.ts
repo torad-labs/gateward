@@ -37,7 +37,7 @@ async function handleInit(rest: string[]): Promise<void> {
       yes: { type: "boolean", short: "y" },
     },
   });
-  const packsFlag = values.packs as string | undefined;
+  const packsFlag = typeof values.packs === "string" ? values.packs : undefined;
   const outcome = await runInit(projectRoot(), {
     ...(packsFlag === undefined ? {} : { packsFlag }),
     yes: Boolean(values.yes),

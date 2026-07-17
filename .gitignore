@@ -10,3 +10,6 @@ local.properties
 # talk research downloads (transcripts, video metadata) — local only
 talk/research/
 coverage/
+
+# local review/fix tooling — may hardcode maintainer-specific absolute paths
+.claude/workflows/

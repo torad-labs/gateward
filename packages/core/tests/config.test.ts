@@ -113,3 +113,34 @@ test("find returns null when no .tenets exists anywhere above", async () => {
   const root = await freshRoot();
   expect(await find(root)).toBeNull();
 });
+
+test("[core].languages as a bracket-typo scalar string throws (fails closed, not silently inert)", async () => {
+  const root = await freshRoot();
+  const project = path.join(root, "project");
+  await Bun.write(
+    path.join(project, ".tenets", "config.toml"),
+    `[core]
+languages = "kotlin"
+default_tier = "deny"
+`,
+  );
+  await expect(find(project)).rejects.toThrow(/languages/);
+});
+
+test("[packs].enabled as a scalar string throws (fails closed, not silently inert)", async () => {
+  const root = await freshRoot();
+  const packsDir = await writePack(root);
+  const project = path.join(root, "project");
+  await Bun.write(
+    path.join(project, ".tenets", "config.toml"),
+    `[core]
+languages = ["kotlin"]
+default_tier = "deny"
+
+[packs]
+packs_dir = "${packsDir}"
+enabled = "sample-pack"
+`,
+  );
+  await expect(find(project)).rejects.toThrow(/enabled/);
+});

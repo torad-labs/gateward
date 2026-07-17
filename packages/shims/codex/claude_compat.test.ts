@@ -133,8 +133,24 @@ test("applyHunks: missing anchor is undecidable", () => {
   expect(applyHunks("a\nb\n", [{ oldLines: ["does not exist"], newLines: ["x"] }])).toBeNull();
 });
 
-test("applyHunks: hunk with no old lines is a no-op", () => {
-  expect(applyHunks("unchanged\n", [{ oldLines: [], newLines: ["ignored"] }])).toBe("unchanged\n");
+test("applyHunks: a pure-insertion hunk (no old lines) is undecidable, not a no-op", () => {
+  // Finding #8: a zero-context insertion has no anchor to position it against.
+  // Silently dropping it would make the projected content identical to what's
+  // already on disk, hiding the insertion from the engine entirely.
+  expect(applyHunks("unchanged\n", [{ oldLines: [], newLines: ["inserted"] }])).toBeNull();
+});
+
+test("applyHunks: a non-unique anchor is undecidable, not first-match", () => {
+  // Finding #9: replacing the first occurrence of a non-unique anchor could
+  // patch the wrong site, so the judged bytes could diverge from what Codex
+  // actually lands.
+  const content = "block\nblock\n";
+  expect(applyHunks(content, [{ oldLines: ["block"], newLines: ["patched"] }])).toBeNull();
+});
+
+test("applyHunks: a unique anchor still replaces correctly", () => {
+  const content = "block\nother\n";
+  expect(applyHunks(content, [{ oldLines: ["block"], newLines: ["patched"] }])).toBe("patched\nother\n");
 });
 
 // --- verdict merging ---
@@ -233,6 +249,49 @@ test("evaluate: malformed envelopes are silent allow", async () => {
   expect(
     await evaluate({ tool_name: "apply_patch", tool_input: { command: "*** Begin Patch\n*** End Patch\n" } }),
   ).toBeNull();
+});
+
+// --- evaluate(): undecidable projections fail closed (deny), not silent skip ---
+
+test("evaluate: a pure-insertion Update hunk denies rather than silently allowing", async () => {
+  const workspace = await freshWorkspace();
+  const target = path.join(workspace, "Insert.kt");
+  await Bun.write(target, "package com.example\n\nval a = 1\n");
+
+  // No context/removed lines at all: an all-`+` hunk.
+  const text = `*** Begin Patch\n*** Update File: ${target}\n@@\n+val inserted = 1\n*** End Patch\n`;
+  const payload = { tool_name: "apply_patch", tool_input: { command: text } };
+
+  const result = await evaluate(payload, {
+    invokeCore: async (): Promise<[string, unknown]> => {
+      throw new Error("invokeCore must not be called for an undecidable projection");
+    },
+  });
+
+  expect(result).not.toBeNull();
+  const reason = reasonOf(result) ?? "";
+  expect(reason).toContain(target);
+  expect(reason).toContain("could not confidently determine");
+});
+
+test("evaluate: a non-unique anchor denies rather than guessing the first match", async () => {
+  const workspace = await freshWorkspace();
+  const target = path.join(workspace, "Dup.kt");
+  await Bun.write(target, "val x = 1\nval x = 1\n");
+
+  const text = `*** Begin Patch\n*** Update File: ${target}\n@@\n-val x = 1\n+val x = 2\n*** End Patch\n`;
+  const payload = { tool_name: "apply_patch", tool_input: { command: text } };
+
+  const result = await evaluate(payload, {
+    invokeCore: async (): Promise<[string, unknown]> => {
+      throw new Error("invokeCore must not be called for an undecidable projection");
+    },
+  });
+
+  expect(result).not.toBeNull();
+  const reason = reasonOf(result) ?? "";
+  expect(reason).toContain(target);
+  expect(reason).toContain("could not confidently determine");
 });
 
 // --- evaluate() against the real core + real ast-grep ---

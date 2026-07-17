@@ -24,4 +24,4 @@ most:
 
 ## Supported versions
 
-Pre-1.0: only the latest release/main is supported.
+Pre-1.0: only the latest release/master is supported.

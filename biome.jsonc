@@ -10,9 +10,23 @@
     // runner that injects phase/pipeline/agent/parallel/log as ambient
     // bindings (and allows a top-level `return`) — not standalone ES
     // modules, so they aren't part of the linted TypeScript codebase.
+    // .claude/worktrees/* are ephemeral git worktrees checked out by
+    // concurrent agent sessions; each carries its own biome.jsonc, which
+    // Biome's root-config detection trips over if this subtree isn't
+    // excluded from view.
     // talk/ is conference-talk prep (deck.html, storyboards, notes) — not
     // product source, same category as apps/demos/packs/wiki below.
-    "includes": ["**", "!bun.lock", "!wiki", "!apps", "!demos", "!packs", "!.claude/workflows", "!talk"]
+    "includes": [
+      "**",
+      "!bun.lock",
+      "!wiki",
+      "!apps",
+      "!demos",
+      "!packs",
+      "!.claude/workflows",
+      "!.claude/worktrees",
+      "!talk"
+    ]
   },
   "formatter": {
     "enabled": true,
