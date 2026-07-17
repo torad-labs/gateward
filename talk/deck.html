@@ -441,18 +441,16 @@
     <div class="spine"><span>1. Agents don't read your docs</span><span><b>2. Gates, not guidelines</b></span><span>3. Tenets that travel</span></div>
   </section>
 
-  <!-- 16 · payoff first — the whole thing, proven, in one command -->
-  <section class="slide" data-notes="Payoff before plumbing. Say: before I explain a single line, here's the whole idea working. This is one command in the repo, no agent, no network, it runs the shipped code. Walk the acts as they sit on screen: a violating write is blocked with instructions. An old finding is tolerated but a new one is stopped. The mv side-door is caught. A stop with open work is blocked. And the same rule fires the same way through two different harness protocols. Everything I'm about to explain is behind this one command, and so is every number in this talk. Now let's take it apart.">
-    <div class="kicker">The whole idea, in one command</div>
-    <div class="term sm">
-      <span class="u">$ bun demos/talk-proof/proof.ts</span>
-      <div style="margin-top:12px"><span class="block">⛔</span> a violating write &nbsp;<span class="u">→ blocked, with instructions</span></div>
-      <div><span class="block">⛔</span> a NEW finding &nbsp;<span class="u">→ blocked · the 19,000 old ones are not</span></div>
-      <div><span class="block">⛔</span> a <span class="mono">mv</span> into a gated path &nbsp;<span class="u">→ the side door, caught</span></div>
-      <div><span class="block">⛔</span> a stop with work still open &nbsp;<span class="u">→ sent back</span></div>
-      <div><span style="color:#7Fd0a0">✓</span> same rule, Claude write + Codex patch &nbsp;<span class="u">→ same verdict</span></div>
+  <!-- 16 · payoff first — the one loop, in plain words -->
+  <section class="slide" data-notes="Payoff before plumbing, but keep it to ONE idea. Say: before I explain how any of it works, here's the whole thing in three lines. The agent goes to write a banned pattern. The gate stops it before it saves. And it hands the agent the fix, so the agent rewrites it correctly. That's the loop. Everything in the rest of this talk is how that loop works, and how it survives a real ten-year codebase. And you don't take my word for it: it's one command in the repo, no agent, no network.">
+    <div class="kicker">What we're building</div>
+    <h2>The gate stops bad code as the agent writes it, and tells it how to fix it.</h2>
+    <div class="term" style="margin-top:26px">
+      <div>the agent writes a banned pattern</div>
+      <div style="margin-top:6px"><span class="block">→ the gate blocks it before it saves</span></div>
+      <div style="margin-top:6px"><span style="color:#7Fd0a0">→ the agent rewrites it correctly</span></div>
     </div>
-    <div class="src">Deterministic · no agent · no network · runs the shipped engine. Every claim in this talk is behind this command.</div>
+    <div class="src">Everything after this is how that works. You can run it yourself: <span class="mono">bun demos/talk-proof/proof.ts</span> — no agent, no network.</div>
   </section>
 
   <!-- 17 · what a hook is -->
@@ -750,8 +748,8 @@ bunx portable-hooks add android-architecture</pre>
   <!-- 41 · ego flip -->
   <section class="slide cream" data-notes="The closing thought, aimed at the most skeptical person in the room. Say: here's what this actually does to your job. A review comment fixes one PR. A rule you write reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention. That isn't less senior than writing the code was. It's more. And notice what kind of change that is: not a tooling change, a staffing one.">
     <div class="kicker">What this does to seniority</div>
-    <h2>A review comment fixes one PR. A rule reviews every future attempt.</h2>
-    <div class="sub" style="margin-top:26px;max-width:42ch">And it keeps working after you've stopped paying attention. Encoding your taste as rules is senior work, not less of it.</div>
+    <h2>A review comment fixes one PR. A rule you write keeps reviewing after you've stopped paying attention.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">Turning your judgement into rules the whole team's agents follow is senior work.</div>
   </section>
 
   <!-- 42 · one habit -->
