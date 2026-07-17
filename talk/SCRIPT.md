@@ -69,19 +69,29 @@ sixty seconds, because it explains everything after it.
 
 **[Slide 6 · the mechanics of forgetting]**
 
+Probability explains why the bad pattern shows up. This explains why the rule
+you wrote to stop it doesn't, and it's mechanical, nothing mysterious.
+
 Models pay attention unevenly across their context. Text near where they're
-working right now pulls hard. Text from an hour ago barely pulls at all.
+working right now pulls hard. Text from an hour ago barely pulls at all. Your
+CLAUDE.md is minute-one text. The agent reads it once, at the start, and then
+the session starts filling up: file reads, tool output, diffs, test results.
+Watch the strip. The rules never change. They just get farther and farther
+from where the model is working, and their pull gets weaker with every block
+that lands in between.
 
-Your CLAUDE.md is minute-one text. The agent reads it once, at the start, and
-then the session starts filling up: file reads, tool output, diffs, test
-results. Watch the strip. The rules never change. They just get farther and
-farther from where the model is working, and their pull gets weaker with
-every block that lands in between. And when the context window fills and the
-harness compacts it to make room, that minute-one text can drop out entirely.
-Not deprioritized. Gone.
+And every model does this a little differently. Some concentrate almost
+entirely on the last few thousand tokens and let the rest fade. Some hold the
+start and the end and lose the middle, which is exactly where a long rules
+file ends up. Some slide a fixed window and drop anything past it outright.
+And when the harness compacts the session to make room, early text can vanish
+entirely. Not deprioritized. Gone. Different context lengths, different
+compaction rules, different ways to forget.
 
-That's why the fix can't be a better prompt. You can write the best rules
-file in the industry and it's still fighting distance, and distance wins.
+So the fix can't be a better prompt. You'd be rewriting it for every model's
+idea of forgetting, and distance wins every time. The only place a rule
+behaves the same on all of them is outside the model entirely. Hold onto
+that. It's the whole reason part three exists.
 
 **[Slide 7 · refrain]**
 
@@ -200,12 +210,15 @@ own, so nothing gets judged twice.
 
 **[Slide 20 · step three, parse]**
 
-Step three, scanning. The whole scanning step is one process call into a tool
-called ast-grep. It parses code into a syntax tree and matches rules against
-the structure, and it speaks twenty-five-plus languages, so nothing here is
+Step three, scanning. The whole scanning step is one call into ast-grep, a
+Rust-based code search engine that understands language structure, not just
+text. It parses the code into a syntax tree and matches rules against the
+structure, and it speaks twenty-five-plus languages, so nothing here is
 Android-specific. The difference from grep matters: a regex cannot tell a
 Context parameter from the word Context in a comment. A syntax tree can. And
-don't worry about memorizing any of this. The packs ship it.
+don't worry about memorizing any of this, the packs ship it. A pack is just a
+bundle of rules for one domain, like the Android one we're using: install it
+and you get the rules and their tests.
 
 **[Slide 21 · step four, one rule]**
 
@@ -218,6 +231,11 @@ boundary itself is part of the rule. Lint checks a file's style. This checks
 the layering. And then the pattern: a parameter whose declared type is
 Context. In a comment, it doesn't fire. In a string, it doesn't fire. As an
 actual parameter in a domain module, it fires.
+
+And this is a good moment to give you the ladder in my head. A tenet is the
+principle: domain code stays Android-free. A rule is that principle written
+so a machine can check it. This YAML is the rule, and the hook is what makes
+it a gate.
 
 **[Slide 22 · the rule has tests]**
 
@@ -244,6 +262,9 @@ domain stays clean. The bad code never touched the disk. The correction cost
 nobody any attention. That's the fix loop moving from code review, which is
 expensive and human and takes days, to generation time, which is milliseconds
 and automatic.
+
+And that FavoritesScreen the agent wrote at the start? Every one of those
+three patterns is a blocked write now. It never gets to disk.
 
 **[Slide 25 · isn't this just lint]**
 
@@ -281,11 +302,15 @@ after each edit, and only new violations block. The nineteen thousand never
 bother anyone. We migrate them out at our own pace, safely, behind the gate.
 Finding nineteen thousand and one, though? That one gets stopped.
 
+We call that the ratchet: debt only goes down. New violations can't land, and
+the old ones drain out as we migrate.
+
 **[Slide 28 · design decision two]**
 
-Second decision: there is no bypass. The suppression comment that normally
-silences the scanner is itself a blocked pattern. And if the scanner isn't
-installed, we deny edits rather than wave them through. A gate with a side
+Second decision: there is no bypass. The suppression comment, the Suppress
+annotation you'd normally drop in to make a linter look the other way, is
+itself a blocked pattern. And if the scanner isn't installed, we deny edits
+rather than wave them through. A gate with a side
 door isn't a gate, especially for an agent that will eventually find the
 side door.
 
@@ -357,22 +382,27 @@ the table.
 
 **[Slide 36 · the stop hook]**
 
-So here's a real capture. The backlog file has two tasks. The agent does the
-easy one, marks it done, and tries to stop. And the stop hook reads the
-backlog, sees an open task, and blocks the stop, with the list of what's
+So here's a real capture, with one quick piece of setup. The agent works from
+a small task file, we call it the backlog, and it keeps that file current
+through one tiny CLI as it goes. The backlog here has two tasks. The agent
+does the easy one, marks it done, and tries to stop. And the stop hook reads
+the backlog, sees an open task, and blocks the stop, with the list of what's
 left. Read the reply on screen: you're about to stop, but one task is still
 open. That instruction, don't stop until you're done, used to be a hope in
 the prompt. Now it's a check.
 
 **[Slide 37 · why this shape works]**
 
-Two properties make this trustworthy. The backlog is a file the agent
-updates through one small CLI, so the tracker is an input to the system. You
-can't lie to it, an open item is mechanically visible. And the nudge rides
-the agent's own stop, so there is nothing for the model to remember. Rules
-in a prompt decay with distance, we established that. A hook fires every
-time, on every model, no matter what the context forgot. It honors the
-harness's loop guard too, so the agent can never get trapped.
+Two properties make this trustworthy. The tracker is a file, not a promise.
+An open task is mechanically visible, so the agent can't just say it's done.
+And the check rides the agent's own stop, so there is nothing for the model
+to remember.
+
+And here's where part one pays off. Remember that every model forgets
+differently? This is the other half of that. A hook fires the same way on
+every one of them, because it lives outside the model. That's the bridge to
+the last idea. It honors the harness's loop guard too, so the agent can
+never get trapped.
 
 **[Slide 38 · tenets that travel]**
 
@@ -393,9 +423,9 @@ packs you want, or take everything.
 
 **[Slide 40 · running in production]**
 
-And it isn't a demo repo dressed up for a conference. At Realtor, nineteen
-thousand legacy findings never block anyone, zero new ones land, and old
-code keeps migrating out safely. We're slop-free.
+And it isn't a demo repo dressed up for a conference. It's been running in
+production at Realtor for months, across the whole Android team, and in that
+whole time, zero new findings have landed. We're slop-free.
 
 ---
 
@@ -412,7 +442,8 @@ One closing thought, for the most skeptical person in the room. Here's what
 this actually does to your job. A review comment fixes one PR. A rule you
 write reviews every PR the agent will ever write, and it keeps working after
 you've stopped paying attention. That is not less senior than writing the
-code was. It's more.
+code was. It's more. And notice what kind of change that is. Not a tooling
+change. A staffing one.
 
 **[Slide 43 · the homework]**
 

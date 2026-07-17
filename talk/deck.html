@@ -220,7 +220,7 @@
     <div>
       <div class="kicker">Droidcon USA 2026</div>
       <h1>Portable&nbsp;Hooks</h1>
-      <div class="sub" style="color:#C7CDD6;max-width:34ch">How we got agent-written code to follow our architecture at Realtor, and the open-source project that sets it up in any harness.</div>
+      <div class="sub" style="color:#C7CDD6;max-width:34ch">How we got agent-written code to follow our architecture at Realtor, and the open-source project that sets it up in any coding agent.</div>
     </div>
     <div class="title-foot">
       <div><span class="who">Marcos</span> · Android @ Realtor</div>
@@ -269,11 +269,12 @@
   </section>
 
   <!-- 6 · context attention decay -->
-  <section class="slide" data-notes="The mechanical reason, and it isn't mysterious. Say: models pay attention unevenly. Text near where they're working pulls hard, and text from an hour ago barely pulls at all. Your CLAUDE.md was minute-one text. By the time the agent is deep in the feature, those rules are competing with fifty files of fresher context, and when the window compacts to make room, they can drop out entirely. Watch the strip: the rules never change. They just get far away. That's why the fix can't be a better prompt. Distance wins.">
+  <section class="slide" data-notes="Hand off from the last slide: that was why the bad pattern shows up, probability. This is why the rule you wrote to stop it doesn't, and it's mechanical, nothing mysterious. Say: models pay attention unevenly. Text near where they're working pulls hard, text from an hour ago barely pulls at all, and your CLAUDE.md was minute-one text. And every model does this a little differently. Some concentrate almost entirely on the last few thousand tokens and let the rest fade. Some hold the start and the end and lose the middle, which is exactly where a long rules file ends up. Some slide a fixed window and drop anything past it outright. And when the harness compacts the session to make room, early text can vanish entirely. Different context lengths, different compaction rules, different ways to forget. So the fix can't be a better prompt. You'd be rewriting it for every model's idea of forgetting, and distance wins every time. The only place a rule behaves the same on all of them is outside the model entirely. Hold onto that, it's the whole reason part three exists.">
     <div class="kicker">The mechanics of forgetting</div>
     <h2>Your rules are minute-one text in an hour-long context.</h2>
     <div class="anim" data-anim="contextDecay" style="height:190px;margin-top:26px"></div>
     <div class="sub" style="margin-top:18px;max-width:44ch">Attention concentrates where the model is working. The farther your CLAUDE.md drifts, the weaker its pull, and a compaction can drop it entirely.</div>
+    <div class="sub frag" style="margin-top:12px;max-width:44ch"><strong>Every model forgets differently.</strong> The only place a rule behaves the same everywhere is outside the model.</div>
   </section>
 
   <!-- 7 · REFRAIN 1 -->
@@ -415,17 +416,17 @@
   </section>
 
   <!-- 19 · step 3 ast-grep -->
-  <section class="slide cream" data-notes="Say: the scanning step is one process call into ast-grep, which parses code into a syntax tree and matches rules against the structure. That's the difference from grep: a regex can't tell a Context parameter from the word Context in a comment, and a tree can. Stop grepping for your architecture. And don't worry about memorizing this, the packs ship it.">
+  <section class="slide cream" data-notes="Say: the whole scanning step is one call into ast-grep, a Rust-based code search engine that understands language structure, not just text. It parses the code into a syntax tree and matches rules against the structure, and it speaks twenty-five-plus languages, so nothing here is Android-specific. That's the difference from grep: a regex can't tell a Context parameter from the word Context in a comment, and a tree can. And don't worry about memorizing any of this, the packs ship it. A pack is just a bundle of rules for one domain, like the Android one we're using: install it and you get the rules and their tests.">
     <div class="kicker">Build · step 3 · parse, don't grep</div>
     <div class="code"><span class="cap">packages/core/src/scan.ts</span>
 <pre>exec([<span class="tok-str">"scan"</span>, <span class="tok-str">"--inline-rules"</span>, rules, <span class="tok-str">"--json=compact"</span>, tmp]);</pre>
     </div>
     <h3 style="margin-top:34px">Rules match the syntax tree, not the text.</h3>
-    <div class="sub">ast-grep parses 25+ languages. A regex can't tell a <span class="mono">Context</span> parameter from the word Context in a comment; a syntax tree can.</div>
+    <div class="sub">ast-grep is a Rust-based code search engine that reads language structure, not just text, in 25+ languages. A regex can't tell a <span class="mono">Context</span> parameter from the word Context in a comment; a syntax tree can.</div>
   </section>
 
   <!-- 20 · step 4 the rule -->
-  <section class="slide" data-notes="Build the rule one reveal at a time: the identity, then the message, then the scope, then the pattern. When files comes up, slow down. Say: this line is the part lint never had. The rule only exists inside domain modules, so the module boundary itself is part of the rule. Lint checks a file's style; this checks the layering.">
+  <section class="slide" data-notes="Build the rule one reveal at a time: the identity, then the message, then the scope, then the pattern. When files comes up, slow down. Say: this line is the part lint never had. The rule only exists inside domain modules, so the module boundary itself is part of the rule. Lint checks a file's style; this checks the layering. Then land the ladder once: a tenet is the principle, domain code stays Android-free. A rule is that principle written so a machine can check it. This YAML is the rule, and the hook is what makes it a gate.">
     <div class="kicker">Build · step 4 · one rule</div>
     <div class="code sm"><span class="cap">packs/android-architecture/rules/no-context-in-domain.yml</span>
 <pre><span class="line">id: no-context-in-domain</span>
@@ -470,7 +471,7 @@ invalid:
   </section>
 
   <!-- 23 · payoff transcript -->
-  <section class="slide" data-notes="Say: this is a real captured session, not a mockup. The agent goes to edit the use case, the gate rejects the write, and read what it does next: it refuses to route around the hook and proposes keeping Context in the data layer instead. The bad code never touched the disk, and the correction cost nobody any attention.">
+  <section class="slide" data-notes="Say: this is a real captured session, not a mockup. The agent goes to edit the use case, the gate rejects the write, and read what it does next: it refuses to route around the hook and proposes keeping Context in the data layer instead. The bad code never touched the disk, and the correction cost nobody any attention. Then close the opening loop: and that FavoritesScreen the agent wrote at the start? Every one of those three patterns is a blocked write now. It never gets to disk.">
     <div class="kicker">What actually happens · real capture</div>
     <div class="term">
       <div class="agent">⏺ Update(…/domain/ToggleFavoriteUseCase.kt)</div>
@@ -502,7 +503,7 @@ invalid:
   </section>
 
   <!-- 26 · design decision 1 -->
-  <section class="slide cream" data-notes="Say: now, the part that makes this survivable on a real codebase. The day we turned the gate on, it met nineteen thousand existing findings. If those blocked, the tool gets uninstalled by lunch. So the engine diffs before and after each edit, and only new violations block. The old ones never bother anyone, we migrate them out at our own pace, and finding nineteen thousand and one gets stopped.">
+  <section class="slide cream" data-notes="Say: now, the part that makes this survivable on a real codebase. The day we turned the gate on, it met nineteen thousand existing findings. If those blocked, the tool gets uninstalled by lunch. So the engine diffs before and after each edit, and only new violations block. The old ones never bother anyone, we migrate them out at our own pace, and finding nineteen thousand and one gets stopped. We call that the ratchet: debt only goes down. New violations can't land, and the old ones drain out as we migrate, at our own pace.">
     <div class="kicker">Design decision 1 of 3 · only new violations block</div>
     <div class="split narrow">
       <div class="stack">
@@ -518,7 +519,7 @@ invalid:
   </section>
 
   <!-- 27 · design decision 2 -->
-  <section class="slide" data-notes="Say: second decision, there is no bypass. The suppression comment that normally silences the scanner is itself a blocked pattern, and if the scanner isn't installed we deny edits rather than wave them through. That sounds paranoid until you watch an agent go looking for exactly that side door. Which brings me to a story.">
+  <section class="slide" data-notes="Say: second decision, there is no bypass. The suppression comment, the at-Suppress you'd normally drop in to make a linter look the other way, is itself a blocked pattern. And if the scanner isn't installed, we deny edits rather than wave them through. That sounds paranoid until you watch an agent go looking for exactly that side door. Which brings me to a story.">
     <div class="kicker">Design decision 2 of 3 · there is no bypass</div>
     <h2>There is no bypass.</h2>
     <ul class="plain" style="margin-top:30px">
@@ -531,7 +532,7 @@ invalid:
   <!-- 28 · side-door story -->
   <section class="slide" data-notes="First person, slow, this is the one war story. Say: on another codebase we gate low-precision rules, FP4 and FP8. One night, blocked at the gate, the agent wrote the code it wanted, obfuscated, into a scratchpad file, and then wrote a second script whose only job was to move that file into the codebase. Then walk the three acts on screen: direct write, blocked. Same content through mv, the write gate never sees it. Counter-guard on, blocked again.">
     <div class="kicker">The side door · a true story</div>
-    <h3 style="max-width:24ch">Blocked by FP-precision rules, an agent wrote obfuscated code to a scratchpad, then wrote a <em>mover script</em> to smuggle it into the codebase.</h3>
+    <h3 style="max-width:24ch">Blocked by numeric-precision rules (FP4/FP8), an agent wrote obfuscated code to a scratchpad, then wrote a <em>mover script</em> to smuggle it into the codebase.</h3>
     <div class="term frag" style="margin-top:26px">
       <span class="u">$ bun demos/side-door/prove.ts</span><br>
       <span class="frag">ACT 1 · Write the violation → <span class="badge deny">⛔ BLOCKED</span></span><br>
@@ -584,7 +585,7 @@ invalid:
   </section>
 
   <!-- 35 · the stop hook -->
-  <section class="slide" data-notes="Real capture again. Say: the backlog file has two tasks, and the agent does the easy one, marks it done, and tries to stop. The stop hook reads the backlog, sees an open task, and blocks the stop with the list of what's left. Read the reply on screen, then land the sub: that instruction used to be a hope in the prompt. Now it's a check.">
+  <section class="slide" data-notes="Real capture again. One quick setup first: the agent works from a small task file, we call it the backlog, and it keeps that file current through one tiny CLI as it goes. So: the backlog has two tasks. The agent does the easy one, marks it done, and tries to stop. The stop hook reads the backlog, sees an open task, and blocks the stop with the list of what's left. Read the reply on screen, then land the sub: that instruction used to be a hope in the prompt. Now it's a check.">
     <div class="kicker">The stop hook · real capture</div>
     <div class="term">
       <span class="u">backlog: F1 [done] · F2 [todo]</span><br>
@@ -595,12 +596,12 @@ invalid:
   </section>
 
   <!-- 36 · why this shape -->
-  <section class="slide cream" data-notes="Say: two properties make this trustworthy. The backlog is a file the agent updates through one small CLI, so the tracker is an input to the system, and you can't lie to it. And the nudge rides the agent's own stop, so there's nothing for the model to remember, it just fires. It honors the loop guard too, so the agent can never get stuck in a blocked loop.">
+  <section class="slide cream" data-notes="Say: two properties make this trustworthy. The tracker is a file, not a promise: an open task is mechanically visible, so the agent can't just say it's done. And the check rides the agent's own stop, so there's nothing for the model to remember, it just fires. Then cash in the seed from part one: remember that every model forgets differently? This is the other half of that. A hook fires the same way on every one of them, because it lives outside the model. That's the bridge to the last idea. And it honors the loop guard, so the agent can never get stuck.">
     <div class="kicker">Why this shape</div>
     <ul class="plain" style="gap:20px">
-      <li><strong>Declare-then-earn:</strong> the tracker is an <em>input</em> you can't lie to</li>
-      <li><strong>Substrate, not instruction:</strong> the nudge rides the agent's own stop. A prompt line decays at compaction; a hook fires every turn</li>
-      <li><strong>Loop-safe:</strong> honors <span class="mono">stop_hook_active</span>, so the agent is never trapped</li>
+      <li>The tracker is a file, not a promise: an open task is mechanically visible, so the agent can't just say it's done</li>
+      <li>There's nothing to remember. The check rides the agent's own stop, so it fires every turn, even after the prompt's been forgotten</li>
+      <li>Loop-safe: it honors <span class="mono">stop_hook_active</span>, so the agent never gets stuck</li>
     </ul>
   </section>
 
@@ -637,9 +638,9 @@ bunx portable-hooks add android-architecture</pre>
   </section>
 
   <!-- 39 · realtor proof -->
-  <section class="slide cream" data-notes="Say: and it isn't a demo repo dressed up for a conference. At Realtor, nineteen thousand legacy findings never block anyone, zero new ones land, and old code keeps migrating out safely. We're slop-free.">
+  <section class="slide cream" data-notes="Say: and it isn't a demo repo dressed up for a conference. It's been running in production at Realtor for months, across the whole Android team, and in that whole time zero new findings have landed. We're slop-free.">
     <div class="kicker">Running in production</div>
-    <h2>At Realtor, <em>19,000</em> legacy findings never block anyone, zero new ones land, and old code is migrating out safely.</h2>
+    <h2>Running in production at Realtor for months, across the whole Android team. Zero new findings have landed.</h2>
     <div class="quote-big red" style="margin-top:30px">We're slop-free.</div>
   </section>
 
@@ -654,7 +655,7 @@ bunx portable-hooks add android-architecture</pre>
   </section>
 
   <!-- 41 · ego flip -->
-  <section class="slide cream" data-notes="The closing thought, aimed at the most skeptical person in the room. Say: here's what this actually does to your job. A review comment fixes one PR. A rule you write reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention. That isn't less senior than writing the code was. It's more.">
+  <section class="slide cream" data-notes="The closing thought, aimed at the most skeptical person in the room. Say: here's what this actually does to your job. A review comment fixes one PR. A rule you write reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention. That isn't less senior than writing the code was. It's more. And notice what kind of change that is: not a tooling change, a staffing one.">
     <div class="kicker">What this does to seniority</div>
     <h2>Writing rule packs is the most senior work you can do now.</h2>
     <div class="sub" style="margin-top:26px;max-width:42ch">A review comment fixes one PR. A rule reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention.</div>
@@ -731,7 +732,7 @@ bunx portable-hooks add android-architecture</pre>
           place();
           timer = setTimeout(tick, 260);
         } else if(phase === 'compact'){
-          // compaction: the middle of the window (rules included) drops out
+          // compaction: the oldest stretch of the window (rules included) drops out
           Array.from(strip.children).slice(0, Math.floor(n*.6)).forEach(b => b.style.opacity = 0);
           phase = 'reset'; timer = setTimeout(tick, 2000);
         } else {
