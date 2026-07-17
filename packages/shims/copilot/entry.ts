@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Run the portable-hooks PreToolUse gate against GitHub Copilot's file tools.
+ * Run the gateward PreToolUse gate against GitHub Copilot's file tools.
  *
  * Copilot (the CLI, the cloud coding agent, and VS Code agent mode) reads
  * `preToolUse` command hooks from `.github/hooks/*.json`; the hook receives
@@ -168,7 +168,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
   const out = stdout.trim();
   if (!out) {
     if (exitCode !== 0) {
-      return ["deny", `portable-hooks core exited ${exitCode} with no verdict`];
+      return ["deny", `gateward core exited ${exitCode} with no verdict`];
     }
     return ["allow", null];
   }
@@ -177,7 +177,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
   try {
     data = JSON.parse(out);
   } catch {
-    return ["deny", `portable-hooks core printed unparseable output: ${JSON.stringify(out)}`];
+    return ["deny", `gateward core printed unparseable output: ${JSON.stringify(out)}`];
   }
 
   const hookOutput =
@@ -200,7 +200,7 @@ function classifyCoreOutput(stdout: string, exitCode: number | null): [string, u
 async function invokeCore(mapped: MappedCall): Promise<[string, unknown]> {
   const engine = await resolveEnginePretooluse();
   if (engine === null) {
-    return ["deny", "portable-hooks core could not run: engine entrypoint not found in any known layout"];
+    return ["deny", "gateward core could not run: engine entrypoint not found in any known layout"];
   }
   const stdinPayload = JSON.stringify({ tool_name: mapped.name, tool_input: mapped.input });
   let result: ReturnType<typeof Bun.spawnSync>;
@@ -211,7 +211,7 @@ async function invokeCore(mapped: MappedCall): Promise<[string, unknown]> {
       timeout: SUBPROCESS_TIMEOUT_MS,
     });
   } catch (exc) {
-    return ["deny", `portable-hooks core could not run: ${(exc as Error).message}`];
+    return ["deny", `gateward core could not run: ${(exc as Error).message}`];
   }
 
   return classifyCoreOutput(result.stdout?.toString() ?? "", result.exitCode);
@@ -226,7 +226,7 @@ function autofixVerdict(args: Record<string, unknown>, mapped: MappedCall, detai
   if (typeof fixed !== "string") {
     // Core promised a rewrite but the payload carries none: refusing beats
     // allowing content that was judged fixable-but-not-fixed.
-    return denyVerdict("portable-hooks core returned an autofix verdict without the rewritten content");
+    return denyVerdict("gateward core returned an autofix verdict without the rewritten content");
   }
   return { permissionDecision: "allow", modifiedArgs: { ...args, [mapped.writeBackKey]: fixed } };
 }
@@ -242,7 +242,7 @@ export async function evaluate(
 ): Promise<Record<string, unknown> | null> {
   const invoke = options.invokeCore ?? invokeCore;
   if (typeof payload !== "object" || payload === null) {
-    return denyVerdict("portable-hooks received an unreadable preToolUse payload; refusing to allow an unjudged edit");
+    return denyVerdict("gateward received an unreadable preToolUse payload; refusing to allow an unjudged edit");
   }
   const typed = payload as CopilotPayload;
   const toolName = gatedToolName(typed);
@@ -251,20 +251,20 @@ export async function evaluate(
   const args = rawArgs(typed);
   if (args === null) {
     return denyVerdict(
-      `portable-hooks could not read the arguments of this ${toolName} call; refusing to allow an unjudged edit`,
+      `gateward could not read the arguments of this ${toolName} call; refusing to allow an unjudged edit`,
     );
   }
   const mapped = mapToClaudeCall(args);
   if (mapped === null) {
     return denyVerdict(
-      `portable-hooks could not map this ${toolName} call's arguments (got keys: ${Object.keys(args).sort().join(", ")}); ` +
+      `gateward could not map this ${toolName} call's arguments (got keys: ${Object.keys(args).sort().join(", ")}); ` +
         "refusing to allow an unjudged edit",
     );
   }
 
   const [kind, detail] = await invoke(mapped);
   if (kind === "deny") {
-    return denyVerdict(typeof detail === "string" && detail ? detail : "portable-hooks denied this edit");
+    return denyVerdict(typeof detail === "string" && detail ? detail : "gateward denied this edit");
   }
   if (kind === "autofix") {
     return autofixVerdict(args, mapped, detail);
@@ -279,7 +279,7 @@ async function main(): Promise<void> {
   } catch {
     // Matcher-scoped: every invocation of this hook IS a file-tool call, so
     // unreadable stdin means an unjudgeable edit — fail closed.
-    console.log(JSON.stringify(denyVerdict("portable-hooks received unparseable hook input on stdin")));
+    console.log(JSON.stringify(denyVerdict("gateward received unparseable hook input on stdin")));
     return;
   }
   const result = await evaluate(payload);

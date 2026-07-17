@@ -59,8 +59,8 @@ async function check(root: string): Promise<DoctorCheck> {
     return {
       name: "harness:opencode",
       status: "warn",
-      message: "OpenCode detected, but portable-hooks has no OpenCode plugin yet.",
-      remedy: "upgrade portable-hooks once the OpenCode plugin ships; not fixable today",
+      message: "OpenCode detected, but gateward has no OpenCode plugin yet.",
+      remedy: "upgrade gateward once the OpenCode plugin ships; not fixable today",
     };
   }
   const pluginPath = path.join(root, ".opencode", "plugins", basename);
@@ -68,8 +68,8 @@ async function check(root: string): Promise<DoctorCheck> {
     return {
       name: "harness:opencode",
       status: "fail",
-      message: "OpenCode detected but the portable-hooks plugin is not installed.",
-      remedy: "run `portable-hooks init`",
+      message: "OpenCode detected but the gateward plugin is not installed.",
+      remedy: "run `gateward init`",
     };
   }
   const lock = await readLock(tenetsDir(root));
@@ -79,7 +79,7 @@ async function check(root: string): Promise<DoctorCheck> {
       name: "harness:opencode",
       status: "warn",
       message: "OpenCode runtime plugin differs from the lock-covered engine copy.",
-      remedy: `re-run \`portable-hooks init\` to refresh .opencode/plugins/${basename}`,
+      remedy: `re-run \`gateward init\` to refresh .opencode/plugins/${basename}`,
     };
   }
   return { name: "harness:opencode", status: "pass", message: "OpenCode plugin installed." };

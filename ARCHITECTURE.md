@@ -1,6 +1,6 @@
 # Architecture
 
-portable-hooks is three cooperating pieces, all TypeScript on Bun:
+gateward is three cooperating pieces, all TypeScript on Bun:
 
 1. **The gate engine** (`packages/core/`) — evaluates every attempted write in a gated project and answers allow/deny. Vendored verbatim into target projects as `.tenets/engine/`; runs there with `bun`, no install step, no node_modules. **Zero dependencies, structurally**: a vendored copy has nothing to import from.
 2. **The installer CLI** (`packages/cli/`) — vendors rule packs + engine into a project and wires them into detected harnesses. Runs from TypeScript source; there is no build step anywhere in this repository. Carries exactly one runtime dependency — [valibot](https://valibot.dev), used only in `boundaries.ts` to parse the JSON the CLI reads ("parse, don't validate"); everything past that edge is trusted, cast-free types.

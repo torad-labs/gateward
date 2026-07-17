@@ -52,7 +52,7 @@ function countVendoredFilesAndCheckLock(dir: string, prefix: string, lockKeys: S
 
 // biome-ignore lint/complexity/noExcessiveLinesPerFunction: one end-to-end story, reads top-to-bottom
 test("integration: init -y --packs all vendors 5 packs + engine, merges Claude settings, and is idempotent on rerun", async () => {
-  const projectRoot = path.join(os.tmpdir(), `portable-hooks-integration-${crypto.randomUUID()}`);
+  const projectRoot = path.join(os.tmpdir(), `gateward-integration-${crypto.randomUUID()}`);
   await Bun.$`mkdir -p ${projectRoot}`.quiet();
   try {
     // A realistic target project: an existing user hook Claude Code already

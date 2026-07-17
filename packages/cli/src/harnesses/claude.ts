@@ -49,7 +49,7 @@ async function check(root: string): Promise<DoctorCheck> {
       name: "harness:claude",
       status: "fail",
       message: ".claude/ detected but settings.json is missing.",
-      remedy: "run `portable-hooks init`",
+      remedy: "run `gateward init`",
     };
   }
   const text = await settingsFile.text();
@@ -60,7 +60,7 @@ async function check(root: string): Promise<DoctorCheck> {
     name: "harness:claude",
     status: "fail",
     message: "Claude Code detected but the PreToolUse hook is not wired.",
-    remedy: "run `portable-hooks init`",
+    remedy: "run `gateward init`",
   };
 }
 

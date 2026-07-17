@@ -90,9 +90,9 @@ export function parseFlags(args: string[], spec: ParseSpec = {}): ParsedFlags {
   return { values, positionals };
 }
 
-export const HELP_TEXT = `portable-hooks — vendor ast-grep rule packs + engine into a project and wire them into AI coding harnesses.
+export const HELP_TEXT = `gateward — vendor ast-grep rule packs + engine into a project and wire them into AI coding harnesses.
 
-Usage: portable-hooks <command> [options]
+Usage: gateward <command> [options]
 
 Commands:
   init                 Detect harnesses, select packs, vendor rules + engine, wire hooks.

@@ -16,8 +16,8 @@
  * other signal) leaves exitCode null. exec() keys its failure detection on
  * exactly that.
  *
- * `PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS` (a test-only escape hatch alongside
- * the existing `PORTABLE_HOOKS_AST_GREP` binary override) lets these tests
+ * `GATEWARD_AST_GREP_TIMEOUT_MS` (a test-only escape hatch alongside
+ * the existing `GATEWARD_AST_GREP` binary override) lets these tests
  * force a real, fast timeout-kill instead of waiting on the 30s production
  * default.
  */
@@ -114,7 +114,7 @@ rule:
 test("exec() throws AstGrepFailed on a real timeout-kill, not a silent empty result", async () => {
   const root = await freshRoot();
   const slowBinary = await writeSlowFakeBinary(root);
-  await withEnv({ PORTABLE_HOOKS_AST_GREP: slowBinary, PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS: "100" }, () => {
+  await withEnv({ GATEWARD_AST_GREP: slowBinary, GATEWARD_AST_GREP_TIMEOUT_MS: "100" }, () => {
     expect(() => exec(["scan", "--json=compact", "whatever"])).toThrow(AstGrepFailed);
   });
 });
@@ -129,7 +129,7 @@ test("scan() throws AstGrepFailed on a nonzero exit with empty stdout (broken/in
   await Bun.$`chmod +x ${brokenBinary}`.quiet();
   const { project, config } = await minimalConfig(root);
   const filePath = path.join(project, "A.kt");
-  await withEnv({ PORTABLE_HOOKS_AST_GREP: brokenBinary }, async () => {
+  await withEnv({ GATEWARD_AST_GREP: brokenBinary }, async () => {
     await expect(scan("val a = x!!\n", filePath, config)).rejects.toThrow(AstGrepFailed);
   });
 });
@@ -149,7 +149,7 @@ test("scan() returns [] (allow) when no rules are enabled, without invoking ast-
   );
   const config = await find(project);
   if (!config) throw new Error("config should resolve");
-  await withEnv({ PORTABLE_HOOKS_AST_GREP: neverCalled }, async () => {
+  await withEnv({ GATEWARD_AST_GREP: neverCalled }, async () => {
     expect(await scan("val a = x!!\n", path.join(project, "A.kt"), config)).toEqual([]);
   });
 });
@@ -159,7 +159,7 @@ test("scan() propagates AstGrepFailed on a timeout instead of returning zero mat
   const slowBinary = await writeSlowFakeBinary(root);
   const { project, config } = await minimalConfig(root);
   const filePath = path.join(project, "A.kt");
-  await withEnv({ PORTABLE_HOOKS_AST_GREP: slowBinary, PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS: "100" }, async () => {
+  await withEnv({ GATEWARD_AST_GREP: slowBinary, GATEWARD_AST_GREP_TIMEOUT_MS: "100" }, async () => {
     await expect(scan("val a = x!!\n", filePath, config)).rejects.toThrow(AstGrepFailed);
   });
 });
@@ -169,7 +169,7 @@ test("applyFix() throws AstGrepFailed instead of returning unverified temp-file 
   const slowBinary = await writeSlowFakeBinary(root);
   const { project, config } = await minimalConfig(root);
   const filePath = path.join(project, "A.kt");
-  await withEnv({ PORTABLE_HOOKS_AST_GREP: slowBinary, PORTABLE_HOOKS_AST_GREP_TIMEOUT_MS: "100" }, async () => {
+  await withEnv({ GATEWARD_AST_GREP: slowBinary, GATEWARD_AST_GREP_TIMEOUT_MS: "100" }, async () => {
     await expect(applyFix("val a = x!!\n", filePath, config)).rejects.toThrow(AstGrepFailed);
   });
 });

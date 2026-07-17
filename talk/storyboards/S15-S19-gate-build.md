@@ -179,6 +179,6 @@ why finding 19,001 stops you. The ratchet is nine characters of comparison."
 ## Deck-freeze checks
 
 - [ ] Confirm the vendored engine path in the S15a settings frame matches what
-      `portable-hooks init` actually writes at release.
+      `gateward init` actually writes at release.
 - [ ] Re-run `bun run verify` the week of the talk; refresh any excerpt that drifted.
 - [ ] Every frame ≤15 LOC (currently: max 12). Pacing-QA per-frame PDF pass.

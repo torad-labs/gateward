@@ -35,5 +35,5 @@ Come join me in this talk and learn how to prepare your codebase for modern agen
 - [ ] Block-and-instruct: bad code never lands on disk; agent told what to do instead
 - [ ] Decision-level hooks: tenet nudges, don't-stop-early ("verify acceptance criteria"), backlog-continuation script
 - [ ] "Much more": the three design decisions (only-new-blocks, no-bypass, everything-is-error), CI thresholds at write time
-- [ ] Finale: open-source RELEASE of portable-hooks — few commands, any harness (Claude Code / Codex / Antigravity / OpenCode), pick your rule packs
+- [ ] Finale: open-source RELEASE of gateward — few commands, any harness (Claude Code / Codex / Antigravity / OpenCode), pick your rule packs
 - [ ] Realtor mention: exactly the abstract's line — implemented at Realtor, "slop-free" (no deeper internal detail)

@@ -29,7 +29,7 @@ export async function runRemove(root: string, packId: string): Promise<CommandOu
   const configPath = configTomlPath(root);
   const configFile = Bun.file(configPath);
   if (!(await configFile.exists())) {
-    runtimeError(`${configPath} not found; run \`portable-hooks init\` first.`);
+    runtimeError(`${configPath} not found; run \`gateward init\` first.`);
   }
 
   const parsed = parseConfigToml(await configFile.text());
@@ -58,7 +58,7 @@ export async function runRemove(root: string, packId: string): Promise<CommandOu
   const files = existingLock
     ? Object.fromEntries(Object.entries(existingLock.files).filter(([key]) => !key.startsWith(prefix)))
     : {};
-  const source = existingLock?.source ?? `portable-hooks@${await readCliVersion()}`;
+  const source = existingLock?.source ?? `gateward@${await readCliVersion()}`;
   await writeIfChanged(lockPath(tDir), serializeLock(buildLock(source, files)));
 
   const newEnabledIds = parsed.packs.enabled.filter((id) => id !== packId);
