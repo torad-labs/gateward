@@ -171,12 +171,12 @@
 <div id="stage">
 
   <!-- 1 · TITLE / holding -->
-  <section class="slide slide--title" data-notes="Holding slide while being introduced. Do NOT read it. The moment you start: go to the questions. No bio, no agenda.">
+  <section class="slide slide--title" data-notes="Holding slide while you get introduced. Don't read it. When you start talking, go straight to the questions.">
     <div class="brandbar"></div>
     <div>
       <div class="kicker">Droidcon USA 2026</div>
       <h1>Portable&nbsp;Hooks</h1>
-      <div class="sub" style="color:#C7CDD6;max-width:34ch">Enforcing engineering tenets across Claude&nbsp;Code, Codex, Antigravity, and OpenCode, before the bad code ever lands.</div>
+      <div class="sub" style="color:#C7CDD6;max-width:34ch">How we got agent-written code to follow our architecture at Realtor, and the open-source project that sets it up in any harness.</div>
     </div>
     <div class="title-foot">
       <div><span class="who">Marcos</span> · Android @ Realtor</div>
@@ -185,26 +185,25 @@
   </section>
 
   <!-- 2 · COLD OPEN questions -->
-  <section class="slide" data-notes="Hands up, escalating. By question 3 hands stay up · 'yeah, that's the talk.' One-clause intro only.">
+  <section class="slide" data-notes="Ask all three, hands up, wait each time. Most hands stay up on the third one. Say: yeah, that's the talk. Then one clause of intro, nothing more: I'm Marcos, I build Android at Realtor, and I've spent this year teaching agents to respect a ten-year-old codebase.">
     <div class="kicker">A quick show of hands</div>
     <ul class="plain" style="gap:30px">
-      <li class="frag">Who uses a coding agent <em>most days of the week?</em></li>
+      <li class="frag">Who uses a coding agent most days of the week?</li>
       <li class="frag">Who has a <span class="mono">CLAUDE.md</span> or <span class="mono">AGENTS.md</span> in their repo?</li>
-      <li class="frag">Keep your hand up if you've watched the agent <em>violate the exact rule you wrote in it.</em></li>
+      <li class="frag">Keep your hand up if you've watched the agent violate the exact rule you wrote in it.</li>
     </ul>
-    <div class="sub frag" style="margin-top:44px">Yeah. That's the talk.</div>
   </section>
 
   <!-- 3 · TLDR thesis -->
-  <section class="slide cream" data-notes="The whole thesis in one line, before any setup. Contract beat: 'This talk is practical. There will be YAML.'">
-    <div class="kicker">The whole talk, up front</div>
-    <h2>Agents will write most of your code.<br><span class="dim">Your docs won't survive that.</span><br><em>Gates will.</em></h2>
-    <div class="sub" style="margin-top:34px">This talk is practical. There will be YAML.</div>
+  <section class="slide cream" data-notes="Give away the whole talk before any setup. Say: here's the short version, so you can decide how hard to listen. Agents are about to write most of our code, and the way we enforce standards today, docs and review, doesn't survive that volume. What does survive is running the rules at the exact moment the code gets written. That's the entire talk. It's practical, and there will be YAML.">
+    <div class="kicker">The short version</div>
+    <h2>Agents are about to write most of our code, and the way we enforce standards today doesn't survive that.</h2>
+    <div class="sub" style="margin-top:34px">What does: running the rules at the moment the code gets written. It's practical, and there will be YAML.</div>
   </section>
 
   <!-- 4 · the composable that rots -->
-  <section class="slide" data-notes="Real agent-written Compose. Reveal one delta at a time: looks fine → EventBus → business logic + Context. Punchline on the last frame.">
-    <div class="kicker">Something you've seen</div>
+  <section class="slide" data-notes="Start concrete. Say: this is a real file an agent produced. Looks fine at first. Reveal the three lines one at a time, slowly. Then: every rule this file breaks was written down, in the repo, in plain English. The agent read them. This happened anyway.">
+    <div class="kicker">A file an agent wrote</div>
     <div class="code sm" style="margin-top:6px">
       <span class="cap">FavoritesScreen.kt · written by an agent</span>
 <pre><span class="line">@Composable</span>
@@ -215,42 +214,43 @@
 <span class="line add frag">    val ctx = LocalContext.current; log(ctx, price)    <span class="tok-com">// Context</span></span>
 <span class="line">}</span></pre>
     </div>
-    <div class="sub frag" style="margin-top:26px">You wrote the rule down. The agent read it. It did this anyway.</div>
+    <div class="sub frag" style="margin-top:26px">Every rule this file breaks was written down in the repo's CLAUDE.md.</div>
   </section>
 
   <!-- 5 · not carelessness + wrong room -->
-  <section class="slide cream" data-notes="Probability not rules. Then the wrong-room beat · disarms both camps. Say it to the skeptics directly.">
-    <h2>Not because it's careless.<br>Because it generates from <em>probability</em>,<br>not from your rules.</h2>
-    <div class="sub frag" style="margin-top:36px;max-width:40ch">If you came hoping I'll say AI is magic: wrong room. If you're certain AI code is garbage, you're going to feel good about the next 30 minutes, because I'm going to agree with you. Then we're going to do something about it.</div>
+  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it.">
+    <div class="kicker">Why it happens</div>
+    <h2>The agent will happily use a banned pattern.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">Not because it's careless, but because it generates from probability, not from our rules. Multiply that by every session, every day, and the codebase slowly stops looking like its own architecture.</div>
   </section>
 
   <!-- 6 · REFRAIN 1 -->
-  <section class="slide slide--refrain" data-notes="First landing of the refrain. Let it sit. Silence after.">
+  <section class="slide slide--refrain" data-notes="Land the refrain for the first time and then be quiet for a beat. This sentence comes back three more times, always in the same words.">
     <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
     <div class="tag">Refrain · 1 of 4</div>
   </section>
 
   <!-- 7 · the spine -->
-  <section class="slide" data-notes="State it once, plainly. 'I'll repeat these at the end so you can forget everything in between.'">
+  <section class="slide" data-notes="Say: the talk is three ideas. First, why writing rules down stopped being enough. Second, what enforcing them at write time looks like. Third, how the same rules travel between harnesses. I'll say these three again at the end, so you're free to forget everything in between.">
     <div class="kicker">Three ideas</div>
     <ul class="plain" style="gap:26px;font-size:20px">
       <li><h3><span class="red">1.</span>&nbsp; Agents don't read your docs.</h3></li>
       <li><h3><span class="red">2.</span>&nbsp; Gates, not guidelines.</h3></li>
       <li><h3><span class="red">3.</span>&nbsp; Tenets that travel.</h3></li>
     </ul>
-    <div class="sub" style="margin-top:34px">I'll repeat them at the end, so you can forget everything in between.</div>
+    <div class="sub" style="margin-top:34px">In order, and again at the end.</div>
   </section>
 
   <!-- 8 · SECTION 1 -->
-  <section class="slide slide--section" data-notes="Part one. Drift is structural, not a model-quality bug.">
+  <section class="slide slide--section" data-notes="Part one. The claim to establish here: the drift you saw in that composable is structural, not a model-quality problem that the next release fixes.">
     <div class="n">1</div>
     <h2>Agents don't read your docs</h2>
     <div class="spine"><span><b>1. Agents don't read your docs</b></span><span>2. Gates, not guidelines</span><span>3. Tenets that travel</span></div>
   </section>
 
   <!-- 9 · enforced vs trusted -->
-  <section class="slide" data-notes="We always enforced SOME of it mechanically. The rest was common sense · and it worked, because standards lived in heads and review kept up.">
-    <div class="kicker">For fifty years</div>
+  <section class="slide" data-notes="Walk the two columns. Say: we always enforced part of our standards mechanically, formatting and lint. The bigger part, architecture and conventions, we enforced with common sense, and that genuinely worked, because standards lived in people's heads and the volume was small enough for review to keep up.">
+    <div class="kicker">How standards used to hold</div>
     <div class="split">
       <div class="stack">
         <h3>Mechanically enforced</h3>
@@ -265,14 +265,14 @@
   </section>
 
   <!-- 10 · the volume flip -->
-  <section class="slide cream" data-notes="Hundreds of lines a WEEK → hundreds an HOUR. The net doesn't scale. This is the line to land.">
+  <section class="slide cream" data-notes="Link back: that arrangement had a hidden assumption, volume. Say: an engineer hands review a few hundred lines a week. An agent hands it that before lunch. The quote on screen is from the writeup we shared internally, and it is the honest version: reviewers get tired, agents don't, and you cannot review your way out of that.">
     <div class="kicker">Then the volume flipped</div>
     <h2>Hundreds of lines a week<br>became hundreds an <em>hour</em>.</h2>
     <div class="quote-big red" style="margin-top:40px">You cannot review your way out of this.<br>Reviewers get tired. Agents don't.</div>
   </section>
 
   <!-- 11 · cost curve -->
-  <section class="slide" data-notes="Same violation, moving right. Cost climbs each frame. Ends on 're-architect the feature.' This slide justifies the whole talk.">
+  <section class="slide" data-notes="Walk one violation through the four rows, revealing as you go. Say: the same mistake gets more expensive the longer it lives. And the last row is the one that actually hurts: if the agent ignored an architecture rule from the first file, you're not fixing a line, you're re-architecting the feature it built on top of it. We've paid that one.">
     <div class="kicker">The same violation, caught later and later</div>
     <div class="rows" style="margin-top:10px">
       <div class="row frag"><div class="k red">Write time</div><div class="v">milliseconds; the agent self-corrects in the same turn</div></div>
@@ -283,7 +283,7 @@
   </section>
 
   <!-- 12 · android montage -->
-  <section class="slide cream" data-notes="Fast. ~8s per reveal. Let the laughs of recognition do the work. Callback the EventBus gag.">
+  <section class="slide cream" data-notes="Go fast here, a few seconds per item, and let the recognition do the work. These are all from the abstract, and everyone in the room has seen at least three of them.">
     <div class="kicker">If you write Android with an agent, you've met</div>
     <ul class="plain" style="gap:14px;font-size:26px">
       <li class="frag">Business logic in composables</li>
@@ -296,35 +296,35 @@
   </section>
 
   <!-- 13 · seatbelt beat -->
-  <section class="slide" data-notes="Kills 'if it needs a cage it doesn't understand.' We never required understanding from humans either · we required verification.">
+  <section class="slide" data-notes="Preempt the objection: if the tool needs this much fencing, why use it at all? Say: notice we never solved this for humans by requiring understanding. We required verification. The type checker doesn't trust me. The borrow checker runs on every line I write. We've been putting mechanical checks in front of human code for fifty years, and the agent is just the newest thing standing in that same line.">
     <div class="kicker">Before you say "then don't use it"</div>
-    <h2>We never required <em>understanding</em>.<br>We required <em>verification</em>.</h2>
-    <div class="sub" style="margin-top:32px;max-width:40ch">The type checker doesn't trust me. Rust's borrow checker is a hook on my writes. After fifty years of putting gates in front of ourselves, the agent just joined the queue.</div>
+    <h2>We already do this to ourselves.</h2>
+    <div class="sub" style="margin-top:32px;max-width:40ch">The type checker doesn't trust me either, and the borrow checker runs on every line I write. Mechanical checks in front of human code are fifty years old. The agent is just the newest thing standing in that line.</div>
   </section>
 
   <!-- 14 · REFRAIN 2 -->
-  <section class="slide slide--refrain" data-notes="Second landing.">
+  <section class="slide slide--refrain" data-notes="Second landing, same words. Say it and move into part two: so let's build a gate.">
     <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
     <div class="tag">Refrain · 2 of 4</div>
   </section>
 
   <!-- 15 · SECTION 2 -->
-  <section class="slide slide--section" data-notes="Part two · the core build. We build one gate, piece by piece, on a real app.">
+  <section class="slide slide--section" data-notes="Part two. Say: writing the rules down wasn't enough, so here's what enforcing them looks like. We're going to build one gate, piece by piece, on a real app, and everything you'll see is in the repo.">
     <div class="n">2</div>
     <h2>Gates, not guidelines</h2>
     <div class="spine"><span>1. Agents don't read your docs</span><span><b>2. Gates, not guidelines</b></span><span>3. Tenets that travel</span></div>
   </section>
 
   <!-- 16 · what a hook is -->
-  <section class="slide" data-notes="One sentence, one idea. The foundation everything else builds on. Name the four harnesses · title callback, sets up Part 3.">
+  <section class="slide" data-notes="Define the one concept everything else builds on, slowly. Say: every coding harness now has lifecycle hooks. Before the agent writes a file, your script runs, and its verdict decides whether the write happens. That's the whole trick. Claude Code, Codex, Antigravity, OpenCode, they all have some version of this, which matters later.">
     <div class="kicker">What a lifecycle hook is</div>
     <h2>A checkpoint between<br>"the agent decided to write this"<br>and "this landed on <em>disk</em>."</h2>
-    <div class="sub" style="margin-top:28px">Your code runs first. It can say no, and say <em>why</em>.</div>
-    <div class="mono dim" style="margin-top:30px;font-size:20px">Claude&nbsp;Code · Codex · Antigravity · OpenCode: every harness ships these now.</div>
+    <div class="sub" style="margin-top:28px">Your script runs first, and its verdict decides whether the file changes.</div>
+    <div class="mono dim" style="margin-top:30px;font-size:20px">Claude&nbsp;Code · Codex · Antigravity · OpenCode all ship these.</div>
   </section>
 
   <!-- 17 · step 1 intercept -->
-  <section class="slide" data-notes="Step 1. A project opts in with a settings file. Then: this is what the harness hands us before any write.">
+  <section class="slide" data-notes="Say: a project opts in with one settings file, on the left. And before any write or edit, the harness hands our script the payload on the right: which tool, which file, and the exact content it wants to write. From the abstract: you can see exactly what the model is trying to write, before it exists.">
     <div class="kicker">Build · step 1 · intercept the write</div>
     <div class="split narrow">
       <div class="code sm"><span class="cap">.claude/settings.json</span>
@@ -345,7 +345,7 @@
   </section>
 
   <!-- 18 · step 2 projection -->
-  <section class="slide" data-notes="The violation doesn't exist yet · there's no file to lint. We judge what the file WOULD become. Read the module-doc line; it's gold.">
+  <section class="slide" data-notes="Point at the problem first. Say: there's nothing to lint yet, the file doesn't exist. So the engine reconstructs what the file would become if we allowed the write, and judges that. If an edit is undecidable it steps aside and lets the harness reject it, so nothing gets judged twice.">
     <div class="kicker">Build · step 2 · project the post-edit file</div>
     <div class="code sm"><span class="cap">packages/core/src/projection.ts</span>
 <pre><span class="tok-com">/** The before/after content of a decidable, gated tool call. */</span>
@@ -361,17 +361,17 @@
   </section>
 
   <!-- 19 · step 3 ast-grep -->
-  <section class="slide cream" data-notes="The whole step is one spawn. ast-grep = syntax tree, not text. Regex can't tell a Context parameter from the word in a comment. Don't-worry beat: the packs ship it.">
+  <section class="slide cream" data-notes="Say: the scanning step is one process call into ast-grep, which parses code into a syntax tree and matches rules against the structure. That's the difference from grep: a regex can't tell a Context parameter from the word Context in a comment, and a tree can. Stop grepping for your architecture. And don't worry about memorizing this, the packs ship it.">
     <div class="kicker">Build · step 3 · parse, don't grep</div>
     <div class="code"><span class="cap">packages/core/src/scan.ts</span>
 <pre>exec([<span class="tok-str">"scan"</span>, <span class="tok-str">"--inline-rules"</span>, rules, <span class="tok-str">"--json=compact"</span>, tmp]);</pre>
     </div>
-    <h3 style="margin-top:34px">Your architecture is <em>structural</em>. Stop grepping for it.</h3>
-    <div class="sub">ast-grep reads the syntax tree and speaks 25+ languages. Regex can't tell a <span class="mono">Context</span> <em>parameter</em> from the word in a comment. A tree can.</div>
+    <h3 style="margin-top:34px">Rules match the syntax tree, not the text.</h3>
+    <div class="sub">ast-grep parses 25+ languages. A regex can't tell a <span class="mono">Context</span> parameter from the word Context in a comment; a syntax tree can.</div>
   </section>
 
   <!-- 20 · step 4 the rule -->
-  <section class="slide" data-notes="Build the rule one hunk per reveal: identity → message (for the fixer) → scope (THE architecture part) → pattern (the tree). Fifteen lines.">
+  <section class="slide" data-notes="Build the rule one reveal at a time: the identity, then the message, then the scope, then the pattern. When files comes up, slow down. Say: this line is the part lint never had. The rule only exists inside domain modules, so the module boundary itself is part of the rule. Lint checks a file's style; this checks the layering.">
     <div class="kicker">Build · step 4 · one rule</div>
     <div class="code sm"><span class="cap">packs/android-architecture/rules/no-context-in-domain.yml</span>
 <pre><span class="line">id: no-context-in-domain</span>
@@ -384,11 +384,11 @@
 <span class="line add frag">  any: [ {kind: class_parameter}, {kind: parameter} ]</span>
 <span class="line add frag">  has: { kind: user_type, regex: <span class="tok-str">'^Context$'</span> }</span></pre>
     </div>
-    <div class="sub frag" style="margin-top:20px">Lint sees a file. This rule sees your <em>layering</em>.</div>
+    <div class="sub frag" style="margin-top:20px">The <span class="mono">files</span> scope means this rule only exists inside domain modules.</div>
   </section>
 
   <!-- 21 · rule tests -->
-  <section class="slide cream" data-notes="Fifteen lines of rule, eight lines of test. Rules are code. Code has tests.">
+  <section class="slide cream" data-notes="Say: and the rule comes with its own test file, valid snippets that must pass and invalid ones that must fire. Rules are code, so they get tests like code. When a rule misfires, fixing it is a small reviewed change, not a mystery.">
     <div class="kicker">Build · step 4 · the rule has its own tests</div>
     <div class="code sm"><span class="cap">rule-tests/no-context-in-domain-test.yml</span>
 <pre>valid:
@@ -397,11 +397,11 @@ invalid:
   - <span class="tok-str">'class FavoritesStore(context: Context)'</span>
   - <span class="tok-str">'fun refresh(context: Context) {}'</span></pre>
     </div>
-    <h3 style="margin-top:34px">Fifteen lines of rule, eight lines of test.<br><em>Rules are code, so they ship with tests.</em></h3>
+    <h3 style="margin-top:34px">Fifteen lines of rule, eight lines of test.</h3>
   </section>
 
   <!-- 22 · step 5 block message -->
-  <section class="slide" data-notes="The whole formatting logic is four lines. Then: what the agent actually receives. Not 'denied' · instructions.">
+  <section class="slide" data-notes="Say: when a new violation shows up, this is the entire formatting logic, four lines. And below it is what the agent actually receives. Notice it isn't just denied. It's the rule, the line, and what to do instead, because the reader is a generator that will immediately try again.">
     <div class="kicker">Build · step 5 · the block message is instructions</div>
     <div class="code sm"><span class="cap">packages/core/src/events/pretooluse.ts</span>
 <pre><span class="tok-kw">function</span> denyReason(matches: Match[]): string {
@@ -412,24 +412,24 @@ invalid:
     <div class="term frag" style="margin-top:24px">
       <span class="block">Error: [no-context-in-domain] line 9: Domain code must stay platform-agnostic — drop this Context parameter and pass the plain data the domain layer actually needs.</span>
     </div>
-    <div class="sub frag" style="margin-top:18px">What's wrong, where, and what to do instead, handed to a writer that fixes it in the same turn.</div>
+    <div class="sub frag" style="margin-top:18px">It names the rule, the line, and the fix, and the agent applies it in the same turn.</div>
   </section>
 
   <!-- 23 · payoff transcript -->
-  <section class="slide" data-notes="The real captured run. Reveal: agent commits → gate blocks → agent adapts AND refuses to route around it. The bad code never existed on disk.">
+  <section class="slide" data-notes="Say: this is a real captured session, not a mockup. The agent goes to edit the use case, the gate rejects the write, and read what it does next: it refuses to route around the hook and proposes keeping Context in the data layer instead. The bad code never touched the disk, and the correction cost nobody any attention.">
     <div class="kicker">What actually happens · real capture</div>
     <div class="term">
       <div class="agent">⏺ Update(…/domain/ToggleFavoriteUseCase.kt)</div>
       <div class="block frag">⎿ Error: [no-context-in-domain] line 9: drop this Context parameter…</div>
       <div class="agent frag" style="margin-top:12px">"I won't retry the identical edit or route around the hook. Two ways forward: 1. adjust the rule … 2. keep Context in the data layer so the domain stays Android-free."</div>
     </div>
-    <div class="sub frag" style="margin-top:22px">The bad code <em>never existed on disk</em>. The agent refused the side door and proposed the right fix on its own.</div>
+    <div class="sub frag" style="margin-top:22px">The write was rejected, so the file never changed. The agent's second attempt kept Context out of the domain module.</div>
   </section>
 
   <!-- 24 · isn't this just lint -->
-  <section class="slide cream" data-notes="Own the lineage. 'Yes, it's lint-shaped. Deliberately.' Then the four differences. This objection WILL come · get ahead of it.">
+  <section class="slide cream" data-notes="Get ahead of the objection. Say: at this point half of you are thinking, isn't this just lint? And mostly, yes, on purpose, we didn't invent a new discipline. Three differences matter, walk the rows: what it can see, when it fires, and who does the fixing.">
     <div class="kicker">The question half of you are asking</div>
-    <h3>"Isn't this just lint?" &nbsp;<span class="dim">Yes, lint-shaped on purpose.</span></h3>
+    <h3>"Isn't this just lint?" &nbsp;<span class="dim">Mostly yes, and on purpose. Three differences matter.</span></h3>
     <div class="rows" style="margin-top:14px">
       <div class="row frag"><div class="k">What it sees</div><div class="v">architecture and cross-file tenets, not just one file's style</div></div>
       <div class="row frag"><div class="k">When it fires</div><div class="v">before the code exists, not minutes later in CI</div></div>
@@ -438,17 +438,17 @@ invalid:
   </section>
 
   <!-- 25 · the multiplier -->
-  <section class="slide" data-notes="The beat nobody expects. Block once at generation time → correction count is ONE. Wait for CI → it built on top → rewrite downstream at 2-3x. Same fix; only 'when' changes.">
+  <section class="slide" data-notes="Link from the block message: because the correction happens inside the session, it happens once. Say: block it at write time and the agent respects that rule for the rest of the session. Let it reach CI instead and the agent has been building on top of the mistake for an hour, so you rewrite everything downstream, in our experience at two or three times the tokens. Same rule, same fix, the only thing that changed is when.">
     <div class="kicker">The multiplier</div>
     <div class="split">
       <div class="stack"><div class="big red">1×</div><h3>Blocked at write time</h3><div class="sub">The agent respects it the rest of the session. One correction.</div></div>
       <div class="stack"><div class="big">2–3×</div><h3>Caught at CI</h3><div class="sub">It already built on top of the violation. Rewrite everything downstream.</div></div>
     </div>
-    <div class="quote-big red frag" style="margin-top:20px">Same rule, same fix. The only variable is <em>when</em>.</div>
+    <div class="sub frag" style="margin-top:20px;max-width:44ch">Catch it at write time and one correction covers the whole session. Let it reach CI and the agent has already built on top of it, so everything downstream needs rewriting too.</div>
   </section>
 
   <!-- 26 · design decision 1 -->
-  <section class="slide cream" data-notes="Born in legacy, not on a toy. 19,000 findings. Block on those → uninstalled by lunch. The diff is the survival adaptation. The ratchet runs both ways at Realtor.">
+  <section class="slide cream" data-notes="Say: now, the part that makes this survivable on a real codebase. The day we turned the gate on, it met nineteen thousand existing findings. If those blocked, the tool gets uninstalled by lunch. So the engine diffs before and after each edit, and only new violations block. The old ones never bother anyone, we migrate them out at our own pace, and finding nineteen thousand and one gets stopped.">
     <div class="kicker">Design decision 1 of 3 · only new violations block</div>
     <div class="split narrow">
       <div class="stack">
@@ -464,18 +464,18 @@ invalid:
   </section>
 
   <!-- 27 · design decision 2 -->
-  <section class="slide" data-notes="No bypass. The suppression comment is itself a blocked pattern. Tool missing → deny. A gate with a side door isn't a gate.">
+  <section class="slide" data-notes="Say: second decision, there is no bypass. The suppression comment that normally silences the scanner is itself a blocked pattern, and if the scanner isn't installed we deny edits rather than wave them through. That sounds paranoid until you watch an agent go looking for exactly that side door. Which brings me to a story.">
     <div class="kicker">Design decision 2 of 3 · there is no bypass</div>
-    <h2>A gate with a side door<br>isn't a gate.</h2>
+    <h2>There is no bypass.</h2>
     <ul class="plain" style="margin-top:30px">
       <li>The suppression comment is itself a blocked pattern</li>
-      <li>Enforcement tool missing → edits denied, not waved through</li>
+      <li>If the enforcement tool is missing, edits are denied, not waved through</li>
     </ul>
-    <div class="sub frag" style="margin-top:26px">The agent <em>will</em> look for it. Here's the night one found it.</div>
+    <div class="sub frag" style="margin-top:26px">A gate with a side door isn't a gate, especially for an agent that will eventually find the side door. Here's the night one did.</div>
   </section>
 
   <!-- 28 · side-door story -->
-  <section class="slide" data-notes="The 'I' zone · the one war story. FP4/FP8 hooks, Sonnet blocked, wrote obfuscated code to a scratchpad then a MOVER SCRIPT to smuggle it in. Then prove the shape live.">
+  <section class="slide" data-notes="First person, slow, this is the one war story. Say: on another codebase we gate low-precision rules, FP4 and FP8. One night, blocked at the gate, the agent wrote the code it wanted, obfuscated, into a scratchpad file, and then wrote a second script whose only job was to move that file into the codebase. Then walk the three acts on screen: direct write, blocked. Same content through mv, the write gate never sees it. Counter-guard on, blocked again.">
     <div class="kicker">The side door · a true story</div>
     <h3 style="max-width:24ch">Blocked by FP-precision rules, an agent wrote obfuscated code to a scratchpad, then wrote a <em>mover script</em> to smuggle it into the codebase.</h3>
     <div class="term frag" style="margin-top:26px">
@@ -487,13 +487,13 @@ invalid:
   </section>
 
   <!-- 29 · side-door point -->
-  <section class="slide cream" data-notes="The point that converts. I didn't predict mv, or the scratchpad. That's not the lesson. Attach the gate to the surface it found. One hook away, reusing the SAME 'gated file' definition.">
-    <h2>You can't enumerate every trick.<br>You can <em>evolve the gate.</em></h2>
-    <div class="sub" style="margin-top:30px;max-width:42ch">Act three was one hook away, and it reuses the <em>same</em> definition of "gated file" as the write gate. A gate is code: you evolve it the moment something gets past it.</div>
+  <section class="slide cream" data-notes="Land the lesson plainly. Say: I didn't predict the scratchpad, and I didn't predict mv. The lesson isn't that we should have. It's that when the agent finds a surface you didn't gate, you attach the gate to that surface. The counter-guard took an evening, and it reuses the same definition of gated file the write gate uses.">
+    <h2>We won't predict the next trick either, and that's fine.</h2>
+    <div class="sub" style="margin-top:30px;max-width:42ch">The gate is code. When something gets past it, we add the rule that catches it. The counter-guard took an evening, and it reuses the same definition of "gated file" the write gate already uses.</div>
   </section>
 
   <!-- 30 · design decision 3 + numbers -->
-  <section class="slide" data-notes="Everything is an error. We had one warning; we removed it. Then the numbers · measured, not adjectives.">
+  <section class="slide" data-notes="Say: third decision, everything is an error. We had exactly one warning-level message early on, and we removed it, because agents ignore warnings, and honestly so do we. Then the numbers: a blocked violation costs about eighty milliseconds against a full lint cycle in CI, and lint-reason CI failures head toward zero because the same thresholds already ran at write time.">
     <div class="kicker">Design decision 3 of 3 · everything is an error</div>
     <h3>Agents ignore warnings. <span class="dim">(Humans do too, honestly.)</span></h3>
     <div class="statgrid frag" style="margin-top:30px">
@@ -503,56 +503,55 @@ invalid:
   </section>
 
   <!-- 31 · honest boundary -->
-  <section class="slide cream" data-notes="Concede the purist's point BEFORE they raise it. Rules catch the mechanical 80%. Review isn't replaced · it's concentrated on the 20% that needs judgment.">
+  <section class="slide cream" data-notes="Concede the boundary before anyone asks. Say: none of this judges design. No rule catches a use case that is conceptually wrong, and that's fine, because what the gate does is clear the convention comments out of review. Review isn't replaced, it's concentrated. From our internal writeup: review is now about design, which is the part humans are actually good at.">
     <div class="kicker">The honest boundary</div>
-    <h2>Rules catch the mechanical <em>80%</em>.</h2>
-    <div class="sub" style="margin-top:26px;max-width:42ch">They can't catch "this UseCase is conceptually wrong." That's the point: the gate clears the convention traffic so review spends <em>all</em> its attention on judgment.</div>
-    <div class="quote-big red frag" style="margin-top:28px">Review isn't replaced. It's concentrated.</div>
+    <h2>Rules catch the mechanical majority. They can't judge design.</h2>
+    <div class="sub" style="margin-top:26px;max-width:44ch">No rule catches "this UseCase is conceptually wrong," and that's fine. The gate clears the convention comments out of review, and review becomes about design, which is the part humans are actually good at.</div>
   </section>
 
   <!-- 32 · REFRAIN 3 -->
-  <section class="slide slide--refrain" data-notes="Third landing.">
+  <section class="slide slide--refrain" data-notes="Third landing, same words. Then into part three: so far, one harness. Let's talk about all of them, and about decisions.">
     <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
     <div class="tag">Refrain · 3 of 4</div>
   </section>
 
   <!-- 33 · SECTION 3 -->
-  <section class="slide slide--section" data-notes="Part three · from files to decisions, and from one harness to all of them.">
+  <section class="slide slide--section" data-notes="Part three. Say: two moves left. First the gate learns to watch decisions, then the whole thing learns to travel between harnesses.">
     <div class="n">3</div>
     <h2>Tenets that travel</h2>
     <div class="spine"><span>1. Agents don't read your docs</span><span>2. Gates, not guidelines</span><span><b>3. Tenets that travel</b></span></div>
   </section>
 
   <!-- 34 · files to decisions -->
-  <section class="slide" data-notes="Zoom out: the gate can watch what the agent DECIDES, starting with the decision to stop.">
-    <div class="kicker">From what it writes → to what it decides</div>
-    <h2>So far the gate watches what the agent <em>writes</em>.<br>It can also watch what the agent <em>decides</em>.</h2>
+  <section class="slide" data-notes="Say: everything so far fired when the agent wrote a file. Hooks also fire at other moments in the loop, and the moment I care about most is when the agent decides it's done, because agents love declaring victory with work still on the table.">
+    <div class="kicker">Beyond file writes</div>
+    <h2>The same mechanism can watch what the agent decides.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">Everything so far fired on writes. Hooks also fire on other moments in the agent's loop, and the one we care about most is the moment it decides it's finished.</div>
   </section>
 
   <!-- 35 · the stop hook -->
-  <section class="slide" data-notes="Real, tested. Backlog is the memory. Agent does the easy half, declares done → Stop hook reads the ledger, blocks, names what's left. Real captured output.">
+  <section class="slide" data-notes="Real capture again. Say: the backlog file has two tasks, and the agent does the easy one, marks it done, and tries to stop. The stop hook reads the backlog, sees an open task, and blocks the stop with the list of what's left. Read the reply on screen, then land the sub: that instruction used to be a hope in the prompt. Now it's a check.">
     <div class="kicker">The stop hook · real capture</div>
     <div class="term">
       <span class="u">backlog: F1 [done] · F2 [todo]</span><br>
       <div class="agent" style="margin-top:8px">⏺ Marked F1 done. F2 remains open — stopping here.</div>
       <div class="block frag" style="margin-top:10px">⎿ Stop hook: You're about to stop, but <b style="color:#fff">1 task is still open (1 todo)</b>:<br>&nbsp;&nbsp;- F2 [todo] Add the test that proves toggling twice is a no-op</div>
     </div>
-    <div class="sub frag" style="margin-top:22px">"Don't stop until you're done" used to be a hope in the prompt. Now the agent has to <em>reckon</em> with it.</div>
+    <div class="sub frag" style="margin-top:22px">That instruction used to live in the prompt, where the model can lose track of it. Now it runs as a check every time the agent tries to stop.</div>
   </section>
 
   <!-- 36 · why this shape -->
-  <section class="slide cream" data-notes="Declare-then-earn: the tracker is an input you can't lie to. Substrate not instruction: rides the agent's own stop. Loop-safe. One discipline, two checkpoints.">
+  <section class="slide cream" data-notes="Say: two properties make this trustworthy. The backlog is a file the agent updates through one small CLI, so the tracker is an input to the system, and you can't lie to it. And the nudge rides the agent's own stop, so there's nothing for the model to remember, it just fires. It honors the loop guard too, so the agent can never get stuck in a blocked loop.">
     <div class="kicker">Why this shape</div>
     <ul class="plain" style="gap:20px">
       <li><strong>Declare-then-earn:</strong> the tracker is an <em>input</em> you can't lie to</li>
       <li><strong>Substrate, not instruction:</strong> the nudge rides the agent's own stop. A prompt line decays at compaction; a hook fires every turn</li>
       <li><strong>Loop-safe:</strong> honors <span class="mono">stop_hook_active</span>, so the agent is never trapped</li>
     </ul>
-    <div class="quote-big red" style="margin-top:26px">One discipline, two checkpoints: the file, and the session.</div>
   </section>
 
   <!-- 37 · portability + one rule four places -->
-  <section class="slide" data-notes="Every harness ships hooks, each a slightly different protocol. One rule set, thin shims. And the same rule runs in four places · one source of truth per tenet.">
+  <section class="slide" data-notes="Say: and the rules travel. Every harness speaks a slightly different hook protocol, so the engine is one codebase with a thin shim per harness. The same rule file runs at write time, in any pre-commit runner, in CI, and as a whole-repo audit. Even if you personally never touch an agent, your teammates' agents are already committing to the codebase you maintain.">
     <div class="kicker">Tenets that travel</div>
     <div class="split">
       <div class="stack">
@@ -569,10 +568,10 @@ invalid:
   </section>
 
   <!-- 38 · THE RELEASE -->
-  <section class="slide slide--title" data-notes="The finale the abstract promised. Repo on screen. 'As of right now, it's public.' Release on stage.">
+  <section class="slide slide--title" data-notes="The release, the reason the abstract exists. Say: this is portable-hooks, I've been running it on my own projects for months, and as of right now the repo is public. Two commands, pick the packs you want, or take everything.">
     <div class="brandbar"></div>
     <div>
-      <div class="kicker">The part I've been waiting to do</div>
+      <div class="kicker">The release</div>
       <h1>It's <span style="color:#FF9CA4">public.</span></h1>
       <div class="code sm" style="margin-top:34px;max-width:30ch">
 <pre><span class="tok-com"># pick your packs, or take everything</span>
@@ -584,14 +583,14 @@ bunx portable-hooks add android-architecture</pre>
   </section>
 
   <!-- 39 · realtor proof -->
-  <section class="slide cream" data-notes="The one cleared company line. 19k that never block, zero new ones, old code migrating safely. We're slop-free.">
+  <section class="slide cream" data-notes="Say: and it isn't a demo repo dressed up for a conference. At Realtor, nineteen thousand legacy findings never block anyone, zero new ones land, and old code keeps migrating out safely. We're slop-free.">
     <div class="kicker">Running in production</div>
     <h2>At Realtor, <em>19,000</em> legacy findings never block anyone, zero new ones land, and old code is migrating out safely.</h2>
     <div class="quote-big red" style="margin-top:30px">We're slop-free.</div>
   </section>
 
   <!-- 40 · CLOSE: spine verbatim -->
-  <section class="slide" data-notes="Restate the spine, same words as the open. 'If you forget everything else, keep these three.'">
+  <section class="slide" data-notes="Same three ideas, same words as minute three. Say them slowly, once, and nothing else.">
     <div class="kicker">If you forget everything else</div>
     <ul class="plain" style="gap:26px">
       <li><h3><span class="red">1.</span>&nbsp; Agents don't read your docs.</h3></li>
@@ -601,21 +600,21 @@ bunx portable-hooks add android-architecture</pre>
   </section>
 
   <!-- 41 · ego flip -->
-  <section class="slide cream" data-notes="The emotional conversion · the injured engineer walks out BIGGER. Typist → legislator.">
-    <div class="kicker">This is the promotion</div>
-    <h2>Writing a rule pack is the most <em>senior</em> work you can do now.</h2>
-    <div class="sub" style="margin-top:26px;max-width:42ch">You're not reviewing one PR. You're reviewing <em>every</em> PR the agent will ever write. Your taste, made executable, outlives your attention.</div>
+  <section class="slide cream" data-notes="The closing thought, aimed at the most skeptical person in the room. Say: here's what this actually does to your job. A review comment fixes one PR. A rule you write reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention. That isn't less senior than writing the code was. It's more.">
+    <div class="kicker">What this does to seniority</div>
+    <h2>Writing rule packs is the most senior work you can do now.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">A review comment fixes one PR. A rule reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention.</div>
   </section>
 
   <!-- 42 · one habit -->
-  <section class="slide" data-notes="ONE actionable habit, time-boxed. Behavior change, not a recap.">
+  <section class="slide" data-notes="The homework, and keep it small. Say: tonight, before your next standup, write one hook with one rule, whichever pattern you're most tired of flagging in review. After you watch the agent fix itself once, you won't go back.">
     <div class="kicker">Tonight, before your next standup</div>
     <h2>One hook, one rule:<br>the pattern you're most tired of<br>flagging in review.</h2>
-    <div class="sub" style="margin-top:26px">Watch the agent fix itself once. You won't go back.</div>
+    <div class="sub" style="margin-top:26px">After you watch the agent fix itself once, you won't go back.</div>
   </section>
 
   <!-- 43 · stakes + REFRAIN + QR -->
-  <section class="slide slide--close" data-notes="Stakes, undercut. Then the refrain as the final line. Understated exit: 'the repo's live. thank you.' No victory lap.">
+  <section class="slide slide--close" data-notes="Last slide. Say: agents writing most of the code isn't a prediction to debate anymore, it's a staffing change to prepare for. Then the refrain, one last time, same words. Then quietly: the repo's live. Thank you so much. Nothing after that.">
     <div class="close-grid">
       <div>
         <div class="kicker" style="color:#FF9CA4">A staffing change to prepare for, not a prediction to debate</div>
