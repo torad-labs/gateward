@@ -96,9 +96,9 @@
 
   /* code -------------------------------------------------------------------- */
   .code{background:var(--code-bg);color:var(--code-fg);border-radius:14px;
-    padding:30px 34px;font-family:var(--mono);font-size:23px;line-height:1.55;
+    padding:30px 34px;font-family:var(--mono);font-size:26px;line-height:1.55;
     box-shadow:0 26px 60px rgba(0,0,0,.28);overflow:hidden}
-  .code.sm{font-size:20px;line-height:1.5}
+  .code.sm{font-size:21px;line-height:1.45}
   .code .cap{display:block;color:#8A929E;font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;margin-bottom:16px;font-family:var(--sans);font-weight:700}
   pre{white-space:pre-wrap;word-break:break-word;font-family:var(--mono)}
@@ -128,7 +128,7 @@
 
   /* transcript quote -------------------------------------------------------- */
   .term{background:var(--code-bg);color:var(--code-fg);border-radius:14px;padding:28px 32px;
-    font-family:var(--mono);font-size:22px;line-height:1.5;box-shadow:0 26px 60px rgba(0,0,0,.28)}
+    font-family:var(--mono);font-size:24px;line-height:1.5;box-shadow:0 26px 60px rgba(0,0,0,.28)}
   .term .agent{color:#9FB4D6}
   .term .block{color:#FF9CA4}
   .term .u{color:#8A929E}
@@ -170,12 +170,12 @@
     justify-content:space-between;font-family:var(--mono);font-size:15px;color:var(--ink-3)}
   /* context decay */
   .ctx-strip{position:absolute;left:0;right:0;bottom:34px;display:flex;gap:5px;align-items:flex-end}
-  .ctx-block{width:34px;height:56px;border-radius:6px;background:#E4DCD8;flex:0 0 auto;
+  .ctx-block{width:34px;height:76px;border-radius:6px;background:#E4DCD8;flex:0 0 auto;
     transition:opacity .5s ease,transform .5s ease,background .5s ease}
   .ctx-block.rules{background:var(--red);position:relative}
   .ctx-block.rules::after{content:"your rules";position:absolute;top:-26px;left:0;
     font-family:var(--mono);font-size:14px;color:var(--red);white-space:nowrap}
-  .ctx-cursor{position:absolute;bottom:34px;width:34px;height:76px;border-radius:6px;
+  .ctx-cursor{position:absolute;bottom:34px;width:34px;height:100px;border-radius:6px;
     border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;
     font-family:var(--mono);font-size:12px;color:var(--ink);background:#fff;
     transition:left .28s linear}
@@ -222,6 +222,15 @@
   .fm-b.ghost.rules{border-color:var(--red);background:none}
   .fm-sum{width:64px;height:30px;border-radius:4px;flex:0 0 auto;
     background:repeating-linear-gradient(45deg,#E4DCD8 0 6px,#F6F0ED 6px 12px)}
+  /* persistent five-box pipeline for the Part 2 build */
+  .pipe{display:flex;gap:10px;margin-top:26px;align-items:stretch}
+  .pipe .p{flex:1;padding:13px 8px;border:2px solid var(--line);border-radius:9px;
+    font-family:var(--mono);font-size:16px;color:var(--ink-3);text-align:center}
+  .pipe .p.on{border-color:var(--red);color:var(--red-deep);font-weight:700;background:var(--red-soft)}
+  /* measurement-source captions */
+  .src{margin-top:16px;font-family:var(--mono);font-size:15px;color:var(--ink-3)}
+  /* hide navigation chrome when presenting fullscreen */
+  html:fullscreen #hud, html:fullscreen #help{display:none}
 </style>
 </head>
 <body>
@@ -250,21 +259,14 @@
   <section class="slide" data-notes="Ask all three, hands up, wait each time. Most hands stay up on the third one. Say: yeah, that's the talk. Then one clause of intro, nothing more: I'm Marcos, I build Android at Realtor, and I've spent this year teaching agents to respect a ten-year-old codebase.">
     <div class="kicker">A quick show of hands</div>
     <ul class="plain" style="gap:30px">
-      <li class="frag">Who uses a coding agent most days of the week?</li>
+      <li>Who uses a coding agent most days of the week?</li>
       <li class="frag">Who has a <span class="mono">CLAUDE.md</span> or <span class="mono">AGENTS.md</span> in their repo?</li>
       <li class="frag">Keep your hand up if you've watched the agent violate the exact rule you wrote in it.</li>
     </ul>
   </section>
 
-  <!-- 3 · TLDR thesis -->
-  <section class="slide cream" data-notes="Give away the whole talk before any setup. Say: here's the short version, so you can decide how hard to listen. Agents are about to write most of our code, and the way we enforce standards today, docs and review, doesn't survive that volume. What does survive is running the rules at the exact moment the code gets written. That's the entire talk. It's practical, and there will be YAML.">
-    <div class="kicker">The short version</div>
-    <h2>Agents are about to write most of our code, and the way we enforce standards today doesn't survive that.</h2>
-    <div class="sub" style="margin-top:34px">What does: running the rules at the moment the code gets written. It's practical, and there will be YAML.</div>
-  </section>
-
-  <!-- 4 · the composable that rots -->
-  <section class="slide" data-notes="Start concrete. Say: this is a real file an agent produced. Looks fine at first. Reveal the three lines one at a time, slowly. Then: every rule this file breaks was written down, in the repo, in plain English. The agent read them. This happened anyway.">
+  <!-- 3 · the composable that rots -->
+  <section class="slide" data-notes="Straight from the hands to the evidence, no thesis yet. Say: before I tell you what this talk is, let me show you why it exists. This is a real file an agent produced. Looks fine at first. Reveal the three lines one at a time, slowly. Then: every rule this file breaks was written down, in the repo, in plain English. The agent read them. This happened anyway.">
     <div class="kicker">A file an agent wrote</div>
     <div class="code sm" style="margin-top:6px">
       <span class="cap">FavoritesScreen.kt · written by an agent</span>
@@ -279,11 +281,18 @@
     <div class="sub frag" style="margin-top:26px">Every rule this file breaks was written down in the repo's CLAUDE.md.</div>
   </section>
 
-  <!-- 5 · not carelessness + wrong room -->
-  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it. Then land the refrain.">>
+  <!-- 4 · not carelessness + wrong room -->
+  <section class="slide cream" data-notes="This is the diagnosis, so slow down. Then turn to the skeptics directly and say: if you came hoping I'll tell you AI is magic, you're in the wrong room. And if you're certain AI code is garbage, you're going to enjoy the next half hour, because I'm going to agree with you, and then we're going to do something about it.">
     <div class="kicker">Why it happens</div>
     <h2>The agent will happily use a banned pattern.</h2>
     <div class="sub" style="margin-top:26px;max-width:42ch">Not because it's careless, but because it generates from probability, not from our rules. Multiply that by every session, every day, and the codebase slowly stops looking like its own architecture.</div>
+  </section>
+
+  <!-- 5 · TLDR thesis (after the audience has paid the cost) -->
+  <section class="slide cream" data-notes="Now that they've seen it, give away the whole talk. Say: so here's the short version, so you can decide how hard to listen. Agents are about to write most of our code, and the way we enforce standards today, docs and review, doesn't survive that. What does survive is running the rules at the exact moment the code gets written. That's the entire talk. It's practical, and there will be YAML. Then the refrain.">
+    <div class="kicker">The short version</div>
+    <h2>Agents are about to write most of our code, and the way we enforce standards today doesn't survive that.</h2>
+    <div class="sub" style="margin-top:34px">What does: running the rules at the moment the code gets written. It's practical, and there will be YAML.</div>
   </section>
 
   <!-- 6 · REFRAIN 1 -->
@@ -426,13 +435,27 @@
   </section>
 
   <!-- 15 · SECTION 2 -->
-  <section class="slide slide--section" data-notes="Part two. Say: writing the rules down wasn't enough, so here's what enforcing them looks like. We're going to build one gate, piece by piece, on a real app, and everything you'll see is in the repo.">
+  <section class="slide slide--section" data-notes="Part two. Say: writing the rules down wasn't enough, so here's what enforcing them looks like. I'll show you the whole thing working first, in one command, then we'll take it apart.">
     <div class="n">2</div>
     <h2>Gates, not guidelines</h2>
     <div class="spine"><span>1. Agents don't read your docs</span><span><b>2. Gates, not guidelines</b></span><span>3. Tenets that travel</span></div>
   </section>
 
-  <!-- 16 · what a hook is -->
+  <!-- 16 · payoff first — the whole thing, proven, in one command -->
+  <section class="slide" data-notes="Payoff before plumbing. Say: before I explain a single line, here's the whole idea working. This is one command in the repo, no agent, no network, it runs the shipped code. Walk the acts as they sit on screen: a violating write is blocked with instructions. An old finding is tolerated but a new one is stopped. The mv side-door is caught. A stop with open work is blocked. And the same rule fires the same way through two different harness protocols. Everything I'm about to explain is behind this one command, and so is every number in this talk. Now let's take it apart.">
+    <div class="kicker">The whole idea, in one command</div>
+    <div class="term sm">
+      <span class="u">$ bun demos/talk-proof/proof.ts</span>
+      <div style="margin-top:12px"><span class="block">⛔</span> a violating write &nbsp;<span class="u">→ blocked, with instructions</span></div>
+      <div><span class="block">⛔</span> a NEW finding &nbsp;<span class="u">→ blocked · the 19,000 old ones are not</span></div>
+      <div><span class="block">⛔</span> a <span class="mono">mv</span> into a gated path &nbsp;<span class="u">→ the side door, caught</span></div>
+      <div><span class="block">⛔</span> a stop with work still open &nbsp;<span class="u">→ sent back</span></div>
+      <div><span style="color:#7Fd0a0">✓</span> same rule, Claude write + Codex patch &nbsp;<span class="u">→ same verdict</span></div>
+    </div>
+    <div class="src">Deterministic · no agent · no network · runs the shipped engine. Every claim in this talk is behind this command.</div>
+  </section>
+
+  <!-- 17 · what a hook is -->
   <section class="slide" data-notes="Define the one concept everything else builds on, slowly, and let the animation carry it: a clean write passes the gate and lands, a violating write gets stopped and sent back. Say: every coding harness now has lifecycle hooks. Before the agent writes a file, your script runs, and its verdict decides whether the write happens. That's the whole trick. Claude Code, Codex, Antigravity, OpenCode, they all have some version of this, which matters later.">
     <div class="kicker">What a lifecycle hook is</div>
     <h2>A checkpoint between<br>"the agent decided to write this"<br>and "this landed on <em>disk</em>."</h2>
@@ -459,7 +482,8 @@
     <span class="tok-str">"new_string"</span>: <span class="tok-str">"…(context: Context)"</span> }}</pre>
       </div>
     </div>
-    <div class="sub frag" style="margin-top:24px">You see exactly what the model is trying to write, before it exists on disk.</div>
+    <div class="sub frag" style="margin-top:22px">You see exactly what the model is trying to write, before it exists on disk.</div>
+    <div class="pipe"><div class="p on">intercept</div><div class="p">project</div><div class="p">match</div><div class="p">verdict</div><div class="p">correct</div></div>
   </section>
 
   <!-- 18 · step 2 projection -->
@@ -476,6 +500,7 @@
 }</pre>
     </div>
     <div class="sub frag" style="margin-top:22px">The gate judges the <em>projected</em> content, never the raw edit. When the outcome is undecidable, it declines to judge rather than double-judging.</div>
+    <div class="pipe"><div class="p">intercept</div><div class="p on">project</div><div class="p">match</div><div class="p">verdict</div><div class="p">correct</div></div>
   </section>
 
   <!-- 19 · step 3 ast-grep -->
@@ -486,6 +511,7 @@
     </div>
     <h3 style="margin-top:34px">Rules match the syntax tree, not the text.</h3>
     <div class="sub">ast-grep is a Rust-based code search engine that reads language structure, not just text, in 25+ languages. A regex can't tell a <span class="mono">Context</span> parameter from the word Context in a comment; a syntax tree can.</div>
+    <div class="pipe"><div class="p">intercept</div><div class="p">project</div><div class="p on">match</div><div class="p">verdict</div><div class="p">correct</div></div>
   </section>
 
   <!-- 20 · step 4 the rule -->
@@ -493,16 +519,15 @@
     <div class="kicker">Build · step 4 · one rule</div>
     <div class="code sm"><span class="cap">packs/android-architecture/rules/no-context-in-domain.yml</span>
 <pre><span class="line">id: no-context-in-domain</span>
-<span class="line">language: kotlin</span>
-<span class="line frag">message: &gt;-</span>
-<span class="line frag">  Domain code must stay platform-agnostic — drop this</span>
-<span class="line frag">  Context parameter and pass the plain data it needs.</span>
-<span class="line add frag">files:  [ <span class="tok-str">'**/domain/**'</span> ]     <span class="tok-com"># fires by LAYER, not file</span></span>
+<span class="line frag">message: &gt;-  Domain code must stay platform-agnostic —</span>
+<span class="line frag">  drop this Context parameter, pass plain data.</span>
+<span class="line add frag">files:  [ <span class="tok-str">'**/domain/**'</span> ]   <span class="tok-com"># fires by LAYER, not file</span></span>
 <span class="line add frag">rule:</span>
 <span class="line add frag">  any: [ {kind: class_parameter}, {kind: parameter} ]</span>
 <span class="line add frag">  has: { kind: user_type, regex: <span class="tok-str">'^Context$'</span> }</span></pre>
     </div>
-    <div class="sub frag" style="margin-top:20px">The <span class="mono">files</span> scope means this rule only exists inside domain modules.</div>
+    <div class="sub frag" style="margin-top:16px">The <span class="mono">files</span> scope means this rule only exists inside domain modules.</div>
+    <div class="pipe"><div class="p">intercept</div><div class="p">project</div><div class="p on">match</div><div class="p">verdict</div><div class="p">correct</div></div>
   </section>
 
   <!-- 21 · rule tests -->
@@ -530,7 +555,8 @@ invalid:
     <div class="term frag" style="margin-top:24px">
       <span class="block">Error: [no-context-in-domain] line 9: Domain code must stay platform-agnostic — drop this Context parameter and pass the plain data the domain layer actually needs.</span>
     </div>
-    <div class="sub frag" style="margin-top:18px">It names the rule, the line, and the fix, and the agent applies it in the same turn.</div>
+    <div class="sub frag" style="margin-top:16px">It names the rule, the line, and the fix, and the agent applies it in the same turn.</div>
+    <div class="pipe"><div class="p">intercept</div><div class="p">project</div><div class="p">match</div><div class="p on">verdict</div><div class="p">correct</div></div>
   </section>
 
   <!-- 23 · payoff transcript -->
@@ -541,7 +567,8 @@ invalid:
       <div class="block frag">⎿ Error: [no-context-in-domain] line 9: drop this Context parameter…</div>
       <div class="agent frag" style="margin-top:12px">"I won't retry the identical edit or route around the hook. Two ways forward: 1. adjust the rule … 2. keep Context in the data layer so the domain stays Android-free."</div>
     </div>
-    <div class="sub frag" style="margin-top:22px">The write was rejected, so the file never changed. The agent's second attempt kept Context out of the domain module.</div>
+    <div class="sub frag" style="margin-top:18px">The write was rejected, so the file never changed. The agent's second attempt kept Context out of the domain module.</div>
+    <div class="pipe"><div class="p">intercept</div><div class="p">project</div><div class="p">match</div><div class="p">verdict</div><div class="p on">correct</div></div>
   </section>
 
   <!-- 24 · isn't this just lint -->
@@ -563,6 +590,7 @@ invalid:
       <div class="stack"><div class="big">2–3×</div><h3>Caught at CI</h3><div class="sub">It already built on top of the violation. Rewrite everything downstream.</div></div>
     </div>
     <div class="sub frag" style="margin-top:20px;max-width:44ch">Catch it at write time and one correction covers the whole session. Let it reach CI and the agent has already built on top of it, so everything downstream needs rewriting too.</div>
+    <div class="src">The 1× is one correction. The 2–3× is our observed rework on this codebase, not a controlled benchmark.</div>
   </section>
 
   <!-- 26 · design decision 1 -->
@@ -571,20 +599,21 @@ invalid:
     <div class="split narrow">
       <div class="stack">
         <div class="stat red">19,000</div>
-        <h3>legacy findings on day one</h3>
-        <div class="sub">Block on those and you're uninstalled by lunch.</div>
+        <h3>existing rule-matches on day one</h3>
+        <div class="sub">A 10-year Android codebase, our packs. Block on those and you're uninstalled by lunch.</div>
       </div>
       <div class="stack">
         <ul class="plain"><li>The 19,000 never block anyone</li><li>Finding <em>19,001</em> stops you</li><li>Old code migrates out safely behind the ratchet</li></ul>
         <div class="sub">Zero new debt lands, legacy stays workable, and it's running in production at Realtor.</div>
       </div>
     </div>
+    <div class="src">"Findings" = matches of these packs' rules across the repo, counted by the whole-repo audit — not a severity judgement.</div>
   </section>
 
   <!-- 27 · design decision 2 -->
   <section class="slide" data-notes="Say: second decision, there is no bypass. The suppression comment, the at-Suppress you'd normally drop in to make a linter look the other way, is itself a blocked pattern. And if the scanner isn't installed, we deny edits rather than wave them through. That sounds paranoid until you watch an agent go looking for exactly that side door. Which brings me to a story.">
     <div class="kicker">Design decision 2 of 3 · there is no bypass</div>
-    <h2>There is no bypass.</h2>
+    <h2>No bypass on the write surfaces we guard.</h2>
     <ul class="plain" style="margin-top:30px">
       <li>The suppression comment is itself a blocked pattern</li>
       <li>If the enforcement tool is missing, edits are denied, not waved through</li>
@@ -615,9 +644,10 @@ invalid:
     <div class="kicker">Design decision 3 of 3 · everything is an error</div>
     <h3>Agents ignore warnings. <span class="dim">(Humans do too, honestly.)</span></h3>
     <div class="statgrid frag" style="margin-top:30px">
-      <div class="s"><div class="n">~80 ms</div><div class="l">a blocked violation at write time, versus a full lint run, a red build, and a context switch</div></div>
-      <div class="s"><div class="n">→ 0</div><div class="l">lint-reason CI failures, once the same thresholds run before the code exists</div></div>
+      <div class="s"><div class="n">~80 ms</div><div class="l">one gate run on the golden app, versus a full lint run, a red build, and a context switch in CI</div></div>
+      <div class="s"><div class="n">trending↓</div><div class="l">lint-reason CI failures, once the same thresholds run before the code exists</div></div>
     </div>
+    <div class="src">~80 ms: median gate run on the golden app, warm process, one file. The CI comparison is the same lint config run in CI.</div>
   </section>
 
   <!-- 31 · honest boundary -->
@@ -704,7 +734,7 @@ bunx portable-hooks add android-architecture</pre>
   <section class="slide cream" data-notes="Say: and it isn't a demo repo dressed up for a conference. It's been running in production at Realtor for months, across the whole Android team, and in that whole time zero new findings have landed. We're slop-free.">
     <div class="kicker">Running in production</div>
     <h2>Running in production at Realtor for months, across the whole Android team. Zero new findings have landed.</h2>
-    <div class="quote-big red" style="margin-top:30px">We're slop-free.</div>
+    <div class="quote-big red" style="margin-top:30px">No new violation in these packs has reached the codebase.</div>
   </section>
 
   <!-- 40 · CLOSE: spine verbatim -->
@@ -720,19 +750,19 @@ bunx portable-hooks add android-architecture</pre>
   <!-- 41 · ego flip -->
   <section class="slide cream" data-notes="The closing thought, aimed at the most skeptical person in the room. Say: here's what this actually does to your job. A review comment fixes one PR. A rule you write reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention. That isn't less senior than writing the code was. It's more. And notice what kind of change that is: not a tooling change, a staffing one.">
     <div class="kicker">What this does to seniority</div>
-    <h2>Writing rule packs is the most senior work you can do now.</h2>
-    <div class="sub" style="margin-top:26px;max-width:42ch">A review comment fixes one PR. A rule reviews every PR the agent will ever write, and it keeps working after you've stopped paying attention.</div>
+    <h2>A review comment fixes one PR. A rule reviews every future attempt.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">And it keeps working after you've stopped paying attention. Encoding your taste as rules is senior work, not less of it.</div>
   </section>
 
   <!-- 42 · one habit -->
   <section class="slide" data-notes="The homework, and keep it small. Say: tonight, before your next standup, write one hook with one rule, whichever pattern you're most tired of flagging in review. After you watch the agent fix itself once, you won't go back.">
     <div class="kicker">Tonight, before your next standup</div>
     <h2>One hook, one rule:<br>the pattern you're most tired of<br>flagging in review.</h2>
-    <div class="sub" style="margin-top:26px">After you watch the agent fix itself once, you won't go back.</div>
+    <div class="sub" style="margin-top:26px">Watch it self-correct once, then decide whether it belongs in your workflow.</div>
   </section>
 
   <!-- 43 · stakes + REFRAIN + QR -->
-  <section class="slide slide--close" data-notes="Last slide. Say: agents writing most of the code isn't a prediction to debate anymore, it's a staffing change to prepare for. Then the refrain, one last time, same words. Then quietly: the repo's live. Thank you so much. Nothing after that.">
+  <section class="slide slide--close" data-notes="Last slide, and the refrain is the actual last thing you say. Say: agents writing most of the code isn't a prediction to debate anymore, it's a staffing change to prepare for. Then the logistics FIRST, quietly: the repo's live, scan the code, take one rule, try it before your next PR. Pause. Then the refrain, one last time, same words, and stop. Say nothing after it. Let it sit on screen through the applause.">
     <div class="close-grid">
       <div>
         <div class="kicker" style="color:#FF9CA4">A staffing change to prepare for, not a prediction to debate</div>
