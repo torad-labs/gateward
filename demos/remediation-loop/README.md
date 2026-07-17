@@ -17,7 +17,7 @@ demos/remediation-loop/harvest.sh no-event-bus          # just one
 HARVEST_MODEL=sonnet demos/remediation-loop/harvest.sh  # pick the model
 ```
 
-Requirements: `tmux`, the `claude` CLI (logged in), `ast-grep`, `python3`, `git`.
+Requirements: `tmux`, the `claude` CLI (logged in), `ast-grep`, `bun`, `git`.
 Each scenario is a short agent run — expect a couple of minutes and normal
 API usage for your account.
 

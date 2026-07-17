@@ -226,9 +226,17 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 ## Production checklist (rest of the 5 hours)
 
 - [ ] Deck skeleton: section headers + slide-by-slide beats (`talk/DECK.md`)
-- [x] Code-build storyboards: S20 payoff done (`talk/storyboards/S20-payoff-transcript.md`)
-      from real captures. Still TODO: Part 2 rule-build frames (S15–S19) and the
-      Part 3 stop-hook transcript (S31) — blocked on the G17 decision-hook gap below.
+- [x] Code-build storyboards: S20 payoff (`talk/storyboards/S20-payoff-transcript.md`)
+      and S31 stop-hook (`talk/storyboards/S31-stop-hook.md`) done from real/verified
+      output. Still TODO: Part 2 rule-build frames (S15–S19), S25 side-door.
+- [x] G17 RESOLVED: decision-level hooks are real. `demos/steer-feature/` ships a Bun
+      backlog CLI (declare-then-earn ledger, atomic writes, notes) + a Stop hook that
+      blocks a premature stop, 7 passing tests. Replicates the fleet's Python
+      manifest-CLI + stop-hook pattern (brain #945/#957/#959) in Bun. Graduates into
+      `packages/core` once the core Py→Bun migration settles.
+- [x] Python purge: `extract_blocks.py` → `extract_blocks.ts` (Bun, tested); harvest.sh
+      now requires bun not python3. (Remaining tracked .py = the core engine the user
+      is actively migrating — left untouched.)
 - [x] Harvest real material: `demos/remediation-loop/harvest.sh` drives a real agent
       against the golden app (worktree-isolated) and captures three live gate blocks
       (context-in-domain, event-bus, logic-in-composable) + the agent self-correcting.
