@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Portable Hooks — Droidcon USA 2026</title>
+<style>
+  /* ---- realtor-inspired design system ------------------------------------ */
+  :root{
+    --red:#D92228; --red-deep:#A5131A; --red-soft:#F5E4E4;
+    --ink:#14171C; --ink-2:#454C56; --ink-3:#7A828D;
+    --paper:#FFFFFF; --cream:#FBF7F5; --line:#EBE3DF;
+    --allow:#12894C; --deny:var(--red);
+    --code-bg:#1B1E24; --code-fg:#E9E6E2; --code-dim:#727B87;
+    --kw:#FF8A96; --str:#F2B27A; --num:#C9B6F2;
+    --sans:"Helvetica Neue",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#0c0d10;color:var(--ink);font-family:var(--sans);
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+
+  /* stage: fixed 16:9, scaled to viewport via JS transform ------------------ */
+  #stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;
+    transform:translate(-50%,-50%);transform-origin:center center;}
+  .slide{position:absolute;inset:0;background:var(--paper);
+    display:none;flex-direction:column;justify-content:center;
+    padding:84px 104px;overflow:hidden;}
+  .slide.on{display:flex}
+  .slide.cream{background:var(--cream)}
+
+  /* kicker / section label -------------------------------------------------- */
+  .kicker{font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--red);margin-bottom:26px;display:flex;align-items:center;gap:14px}
+  .kicker::before{content:"";width:34px;height:3px;background:var(--red);display:inline-block}
+
+  h1{font-size:74px;line-height:1.02;letter-spacing:-.02em;font-weight:800}
+  h2{font-size:52px;line-height:1.06;letter-spacing:-.015em;font-weight:800}
+  h3{font-size:34px;line-height:1.12;font-weight:700}
+  .lead{font-size:30px;line-height:1.4;color:var(--ink-2);font-weight:400;max-width:26ch}
+  .big{font-size:88px;line-height:1;letter-spacing:-.03em;font-weight:800}
+  .huge{font-size:150px;line-height:.9;letter-spacing:-.04em;font-weight:800}
+  .dim{color:var(--ink-3)}
+  .red{color:var(--red)}
+  em{font-style:normal;color:var(--red);font-weight:700}
+  strong{font-weight:800}
+  .sub{font-size:24px;color:var(--ink-2);margin-top:20px;line-height:1.45;max-width:30ch}
+  .mono{font-family:var(--mono)}
+
+  /* title slide ------------------------------------------------------------- */
+  .slide--title{background:var(--ink);color:var(--paper);justify-content:space-between}
+  .slide--title h1{font-size:96px}
+  .slide--title .kicker{color:#FF9CA4}
+  .slide--title .kicker::before{background:#FF9CA4}
+  .title-foot{display:flex;justify-content:space-between;align-items:flex-end;
+    color:#B8BFC9;font-size:22px}
+  .title-foot .who{color:#fff;font-weight:600}
+  .brandbar{position:absolute;top:0;left:0;height:10px;width:100%;
+    background:linear-gradient(90deg,var(--red),var(--red-deep))}
+
+  /* section divider --------------------------------------------------------- */
+  .slide--section{background:var(--red);color:#fff;justify-content:center}
+  .slide--section .n{font-size:150px;font-weight:800;line-height:.9;opacity:.35}
+  .slide--section h2{font-size:66px;margin-top:8px}
+  .slide--section .spine{margin-top:40px;display:flex;flex-direction:column;gap:10px;
+    font-size:23px;opacity:.8}
+  .slide--section .spine b{opacity:1;color:#fff}
+
+  /* refrain ----------------------------------------------------------------- */
+  .slide--refrain{background:var(--ink);color:#fff;align-items:flex-start;justify-content:center}
+  .slide--refrain .r{font-size:66px;line-height:1.12;font-weight:800;letter-spacing:-.02em;max-width:20ch}
+  .slide--refrain .r .a{color:#FF9CA4}
+  .slide--refrain .r .b{color:#fff}
+  .slide--refrain .tag{margin-top:34px;font-size:20px;letter-spacing:.12em;
+    text-transform:uppercase;color:#8A929E}
+
+  /* generic lists ----------------------------------------------------------- */
+  ul.plain{list-style:none;display:flex;flex-direction:column;gap:18px;margin-top:12px}
+  ul.plain li{font-size:29px;line-height:1.32;display:flex;gap:16px;align-items:baseline}
+  ul.plain li::before{content:"";flex:0 0 auto;width:11px;height:11px;border-radius:2px;
+    background:var(--red);transform:translateY(2px)}
+  ul.checks li::before{content:"→";width:auto;height:auto;background:none;color:var(--red);
+    font-weight:800;font-size:26px;transform:none}
+
+  .rows{display:flex;flex-direction:column;gap:0;margin-top:8px}
+  .rows .row{display:flex;gap:22px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--line)}
+  .rows .row:last-child{border-bottom:none}
+  .rows .k{flex:0 0 210px;font-weight:800;font-size:23px}
+  .rows .v{font-size:24px;color:var(--ink-2);line-height:1.35}
+
+  /* code -------------------------------------------------------------------- */
+  .code{background:var(--code-bg);color:var(--code-fg);border-radius:14px;
+    padding:30px 34px;font-family:var(--mono);font-size:23px;line-height:1.55;
+    box-shadow:0 26px 60px rgba(0,0,0,.28);overflow:hidden}
+  .code.sm{font-size:20px;line-height:1.5}
+  .code .cap{display:block;color:#8A929E;font-size:15px;letter-spacing:.06em;
+    text-transform:uppercase;margin-bottom:16px;font-family:var(--sans);font-weight:700}
+  pre{white-space:pre-wrap;word-break:break-word;font-family:var(--mono)}
+  .tok-com{color:var(--code-dim);font-style:italic}
+  .tok-str{color:var(--str)}
+  .tok-kw{color:var(--kw)}
+  .tok-num{color:var(--num)}
+  .line{display:block;padding:2px 10px;margin:0 -10px;border-radius:5px}
+  .line.add{background:rgba(18,137,76,.16);box-shadow:inset 3px 0 0 var(--allow)}
+  .line.deny{background:rgba(217,34,40,.18);box-shadow:inset 3px 0 0 var(--red)}
+  .badge{display:inline-block;font-family:var(--sans);font-weight:800;font-size:18px;
+    padding:5px 12px;border-radius:999px;letter-spacing:.04em}
+  .badge.deny{background:var(--red);color:#fff}
+  .badge.allow{background:var(--allow);color:#fff}
+  .badge.blind{background:#B9832A;color:#fff}
+
+  /* two-column split -------------------------------------------------------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;height:100%}
+  .split.narrow{grid-template-columns:0.9fr 1.1fr}
+  .stack{display:flex;flex-direction:column;justify-content:center;gap:20px}
+
+  /* fragments --------------------------------------------------------------- */
+  .frag{opacity:0;transition:opacity .18s ease}
+  .frag.show{opacity:1}
+  .line.frag{opacity:.18}
+  .line.frag.show{opacity:1}
+
+  /* transcript quote -------------------------------------------------------- */
+  .term{background:var(--code-bg);color:var(--code-fg);border-radius:14px;padding:28px 32px;
+    font-family:var(--mono);font-size:22px;line-height:1.5;box-shadow:0 26px 60px rgba(0,0,0,.28)}
+  .term .agent{color:#9FB4D6}
+  .term .block{color:#FF9CA4}
+  .term .u{color:#8A929E}
+  .quote-big{font-size:38px;line-height:1.3;font-weight:600;max-width:24ch}
+  .quote-big .src{display:block;margin-top:22px;font-size:20px;color:var(--ink-3);font-weight:400}
+
+  /* stat / numbers ---------------------------------------------------------- */
+  .stat{font-size:120px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:44px 60px;margin-top:10px}
+  .statgrid .s .n{font-size:60px;font-weight:800;color:var(--red);line-height:1}
+  .statgrid .s .l{font-size:22px;color:var(--ink-2);margin-top:10px;line-height:1.3}
+
+  /* close / QR -------------------------------------------------------------- */
+  .slide--close{background:var(--ink);color:#fff;align-items:center;justify-content:center;text-align:center}
+  .qrcard{background:#fff;border-radius:20px;padding:22px;width:270px;height:270px;
+    box-shadow:0 24px 60px rgba(0,0,0,.4)}
+  .qrcard svg{width:100%;height:100%;display:block}
+  .close-grid{display:grid;grid-template-columns:1fr auto;gap:70px;align-items:center;text-align:left;width:100%}
+  .close-grid .r{font-size:56px;font-weight:800;line-height:1.1;max-width:16ch}
+  .close-grid .r .a{color:#FF9CA4}
+  .close-grid .url{margin-top:20px;font-family:var(--mono);font-size:22px;color:#B8BFC9}
+
+  /* chrome: progress, hud, notes ------------------------------------------- */
+  #progress{position:fixed;top:0;left:0;height:4px;background:var(--red);z-index:40;
+    transition:width .2s ease}
+  #hud{position:fixed;bottom:16px;right:20px;z-index:40;font-family:var(--mono);
+    font-size:13px;color:#7A828D;background:rgba(0,0,0,.35);padding:5px 10px;border-radius:7px}
+  #notes{position:fixed;bottom:0;left:0;right:0;z-index:39;background:rgba(12,13,16,.94);
+    color:#D7DBE0;font-size:16px;line-height:1.4;padding:16px 22px;display:none;
+    border-top:2px solid var(--red);font-family:var(--sans)}
+  #notes.on{display:block}
+  #notes b{color:#FF9CA4}
+  #help{position:fixed;bottom:16px;left:20px;z-index:40;font-family:var(--mono);font-size:12px;
+    color:#5C636D}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="hud">1 / 1</div>
+<div id="help">← → navigate · F fullscreen · N notes</div>
+<div id="notes"></div>
+
+<div id="stage">
+
+  <!-- 1 · TITLE / holding -->
+  <section class="slide slide--title" data-notes="Holding slide while being introduced. Do NOT read it. The moment you start: go to the questions. No bio, no agenda.">
+    <div class="brandbar"></div>
+    <div>
+      <div class="kicker">Droidcon USA 2026</div>
+      <h1>Portable&nbsp;Hooks</h1>
+      <div class="sub" style="color:#C7CDD6;max-width:34ch">Enforcing engineering tenets across Claude&nbsp;Code, Codex, Antigravity, and OpenCode — before the bad code ever lands.</div>
+    </div>
+    <div class="title-foot">
+      <div><span class="who">Marcos</span> · Android @ Realtor</div>
+      <div class="mono">github.com/torad-labs/portable-hooks</div>
+    </div>
+  </section>
+
+  <!-- 2 · COLD OPEN questions -->
+  <section class="slide" data-notes="Hands up, escalating. By question 3 hands stay up — 'yeah, that's the talk.' One-clause intro only.">
+    <div class="kicker">A quick show of hands</div>
+    <ul class="plain" style="gap:30px">
+      <li class="frag">Who uses a coding agent <em>most days of the week?</em></li>
+      <li class="frag">Who has a <span class="mono">CLAUDE.md</span> or <span class="mono">AGENTS.md</span> in their repo?</li>
+      <li class="frag">Keep your hand up if you've watched the agent <em>violate the exact rule you wrote in it.</em></li>
+    </ul>
+    <div class="sub frag" style="margin-top:44px">Yeah. That's the talk.</div>
+  </section>
+
+  <!-- 3 · TLDR thesis -->
+  <section class="slide cream" data-notes="The whole thesis in one line, before any setup. Contract beat: 'This talk is practical. There will be YAML.'">
+    <div class="kicker">The whole talk, up front</div>
+    <h2>Agents will write most of your code.<br><span class="dim">Your docs won't survive that.</span><br><em>Gates will.</em></h2>
+    <div class="sub" style="margin-top:34px">This talk is practical. There will be YAML.</div>
+  </section>
+
+  <!-- 4 · the composable that rots -->
+  <section class="slide" data-notes="Real agent-written Compose. Reveal one delta at a time: looks fine → EventBus → business logic + Context. Punchline on the last frame.">
+    <div class="kicker">Something you've seen</div>
+    <div class="code sm" style="margin-top:6px">
+      <span class="cap">FavoritesScreen.kt · written by an agent</span>
+<pre><span class="line">@Composable</span>
+<span class="line">fun FavoritesScreen(vm: FavoritesViewModel) {</span>
+<span class="line">    val listings = vm.state.collectAsState()</span>
+<span class="line add frag">    val bus = EventBus.getDefault()                <span class="tok-com">// in 2026</span></span>
+<span class="line add frag">    val price = listings.value.map { it.price * 0.9 }  <span class="tok-com">// logic</span></span>
+<span class="line add frag">    val ctx = LocalContext.current; log(ctx, price)    <span class="tok-com">// Context</span></span>
+<span class="line">}</span></pre>
+    </div>
+    <div class="sub frag" style="margin-top:26px">You wrote the rule down. The agent read it. It did this anyway.</div>
+  </section>
+
+  <!-- 5 · not carelessness + wrong room -->
+  <section class="slide cream" data-notes="Probability not rules. Then the wrong-room beat — disarms both camps. Say it to the skeptics directly.">
+    <h2>Not because it's careless.<br>Because it generates from <em>probability</em>,<br>not from your rules.</h2>
+    <div class="sub frag" style="margin-top:36px;max-width:40ch">If you came hoping I'll say AI is magic — wrong room. If you're certain AI code is garbage — you're going to feel good about the next 30 minutes. I'm going to agree with you. And then we'll do something about it.</div>
+  </section>
+
+  <!-- 6 · REFRAIN 1 -->
+  <section class="slide slide--refrain" data-notes="First landing of the refrain. Let it sit. Silence after.">
+    <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
+    <div class="tag">Refrain · 1 of 4</div>
+  </section>
+
+  <!-- 7 · the spine -->
+  <section class="slide" data-notes="State it once, plainly. 'I'll repeat these at the end so you can forget everything in between.'">
+    <div class="kicker">Three ideas</div>
+    <ul class="plain" style="gap:26px;font-size:20px">
+      <li><h3><span class="red">1.</span>&nbsp; Agents don't read your docs.</h3></li>
+      <li><h3><span class="red">2.</span>&nbsp; Gates, not guidelines.</h3></li>
+      <li><h3><span class="red">3.</span>&nbsp; Tenets that travel.</h3></li>
+    </ul>
+    <div class="sub" style="margin-top:34px">I'll repeat them at the end, so you can forget everything in between.</div>
+  </section>
+
+  <!-- 8 · SECTION 1 -->
+  <section class="slide slide--section" data-notes="Part one. Drift is structural, not a model-quality bug.">
+    <div class="n">1</div>
+    <h2>Agents don't read your docs</h2>
+    <div class="spine"><span><b>1. Agents don't read your docs</b></span><span>2. Gates, not guidelines</span><span>3. Tenets that travel</span></div>
+  </section>
+
+  <!-- 9 · enforced vs trusted -->
+  <section class="slide" data-notes="We always enforced SOME of it mechanically. The rest was common sense — and it worked, because standards lived in heads and review kept up.">
+    <div class="kicker">For fifty years</div>
+    <div class="split">
+      <div class="stack">
+        <h3>Mechanically enforced</h3>
+        <ul class="plain"><li>Formatting</li><li>Lint</li></ul>
+      </div>
+      <div class="stack">
+        <h3 class="dim">Trusted to common sense</h3>
+        <ul class="plain" style="opacity:.7"><li>Architecture</li><li>Layering</li><li>Naming &amp; conventions</li></ul>
+      </div>
+    </div>
+    <div class="sub" style="margin-top:20px">It worked — standards lived in people's heads, and review could keep up.</div>
+  </section>
+
+  <!-- 10 · the volume flip -->
+  <section class="slide cream" data-notes="Hundreds of lines a WEEK → hundreds an HOUR. The net doesn't scale. This is the line to land.">
+    <div class="kicker">Then the volume flipped</div>
+    <h2>Hundreds of lines a week<br>became hundreds an <em>hour</em>.</h2>
+    <div class="quote-big red" style="margin-top:40px">You cannot review your way out of this.<br>Reviewers get tired. Agents don't.</div>
+  </section>
+
+  <!-- 11 · cost curve -->
+  <section class="slide" data-notes="Same violation, moving right. Cost climbs each frame. Ends on 're-architect the feature.' This slide justifies the whole talk.">
+    <div class="kicker">The same violation, caught later and later</div>
+    <div class="rows" style="margin-top:10px">
+      <div class="row frag"><div class="k red">Write time</div><div class="v">milliseconds — the agent self-corrects in the same turn</div></div>
+      <div class="row frag"><div class="k">Pre-commit</div><div class="v">a red build, a context switch</div></div>
+      <div class="row frag"><div class="k">CI</div><div class="v">a rework loop through review — same fix, 10× the cost</div></div>
+      <div class="row frag"><div class="k" style="color:var(--red)">Review / end</div><div class="v"><strong>re-architect the feature</strong> — the rules were ignored from the first file</div></div>
+    </div>
+  </section>
+
+  <!-- 12 · android montage -->
+  <section class="slide cream" data-notes="Fast. ~8s per reveal. Let the laughs of recognition do the work. Callback the EventBus gag.">
+    <div class="kicker">If you write Android with an agent, you've met</div>
+    <ul class="plain" style="gap:14px;font-size:26px">
+      <li class="frag">Business logic in composables</li>
+      <li class="frag">Unidirectional flow, broken</li>
+      <li class="frag">ViewModel god-objects</li>
+      <li class="frag">Managers, everywhere</li>
+      <li class="frag">Event buses <span class="dim">(again — 2026)</span></li>
+      <li class="frag"><span class="mono">Context</span> handed into the domain layer</li>
+    </ul>
+  </section>
+
+  <!-- 13 · seatbelt beat -->
+  <section class="slide" data-notes="Kills 'if it needs a cage it doesn't understand.' We never required understanding from humans either — we required verification.">
+    <div class="kicker">Before you say "then don't use it"</div>
+    <h2>We never required <em>understanding</em>.<br>We required <em>verification</em>.</h2>
+    <div class="sub" style="margin-top:32px;max-width:40ch">The type checker doesn't trust me. Rust's borrow checker is a hook on my writes. Fifty years of putting gates in front of ourselves — the agent just joined the queue.</div>
+  </section>
+
+  <!-- 14 · REFRAIN 2 -->
+  <section class="slide slide--refrain" data-notes="Second landing.">
+    <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
+    <div class="tag">Refrain · 2 of 4</div>
+  </section>
+
+  <!-- 15 · SECTION 2 -->
+  <section class="slide slide--section" data-notes="Part two — the core build. We build one gate, piece by piece, on a real app.">
+    <div class="n">2</div>
+    <h2>Gates, not guidelines</h2>
+    <div class="spine"><span>1. Agents don't read your docs</span><span><b>2. Gates, not guidelines</b></span><span>3. Tenets that travel</span></div>
+  </section>
+
+  <!-- 16 · what a hook is -->
+  <section class="slide" data-notes="One sentence, one idea. The foundation everything else builds on. Name the four harnesses — title callback, sets up Part 3.">
+    <div class="kicker">What a lifecycle hook is</div>
+    <h2>A checkpoint between<br>"the agent decided to write this"<br>and "this landed on <em>disk</em>."</h2>
+    <div class="sub" style="margin-top:28px">Your code runs first. It can say no — and say <em>why</em>.</div>
+    <div class="mono dim" style="margin-top:30px;font-size:20px">Claude&nbsp;Code · Codex · Antigravity · OpenCode — every harness ships these now.</div>
+  </section>
+
+  <!-- 17 · step 1 intercept -->
+  <section class="slide" data-notes="Step 1. A project opts in with a settings file. Then: this is what the harness hands us before any write.">
+    <div class="kicker">Build · step 1 — intercept the write</div>
+    <div class="split narrow">
+      <div class="code sm"><span class="cap">.claude/settings.json</span>
+<pre>{ <span class="tok-str">"hooks"</span>: { <span class="tok-str">"PreToolUse"</span>: [
+  { <span class="tok-str">"matcher"</span>: <span class="tok-str">""</span>, <span class="tok-str">"hooks"</span>: [
+    { <span class="tok-str">"command"</span>:
+      <span class="tok-str">"bun .tenets/engine/pretooluse.ts"</span> }]}
+]}}</pre>
+      </div>
+      <div class="code sm frag"><span class="cap">what the harness hands us</span>
+<pre>{ <span class="tok-str">"tool_name"</span>: <span class="tok-str">"Edit"</span>,
+  <span class="tok-str">"tool_input"</span>: {
+    <span class="tok-str">"file_path"</span>: <span class="tok-str">".../domain/Toggle…​.kt"</span>,
+    <span class="tok-str">"new_string"</span>: <span class="tok-str">"…(context: Context)"</span> }}</pre>
+      </div>
+    </div>
+    <div class="sub frag" style="margin-top:24px">Before any write or edit, our code runs first — and it can say no.</div>
+  </section>
+
+  <!-- 18 · step 2 projection -->
+  <section class="slide" data-notes="The violation doesn't exist yet — there's no file to lint. We judge what the file WOULD become. Read the module-doc line; it's gold.">
+    <div class="kicker">Build · step 2 — project the post-edit file</div>
+    <div class="code sm"><span class="cap">packages/core/src/projection.ts</span>
+<pre><span class="tok-com">/** The before/after content of a decidable, gated tool call. */</span>
+<span class="tok-kw">export</span> <span class="tok-kw">interface</span> Projection {
+  path: string;
+  <span class="tok-com">/** On-disk content before the call ("" for a new file). */</span>
+  current: string;
+  <span class="tok-com">/** Content the call would produce. */</span>
+  projected: string;
+}</pre>
+    </div>
+    <div class="sub frag" style="margin-top:22px">The gate judges the <em>projected</em> content — never the raw edit. When the outcome is undecidable, it declines to judge, and never double-judges.</div>
+  </section>
+
+  <!-- 19 · step 3 ast-grep -->
+  <section class="slide cream" data-notes="The whole step is one spawn. ast-grep = syntax tree, not text. Regex can't tell a Context parameter from the word in a comment. Don't-worry beat: the packs ship it.">
+    <div class="kicker">Build · step 3 — parse, don't grep</div>
+    <div class="code"><span class="cap">packages/core/src/scan.ts</span>
+<pre>exec([<span class="tok-str">"scan"</span>, <span class="tok-str">"--inline-rules"</span>, rules, <span class="tok-str">"--json=compact"</span>, tmp]);</pre>
+    </div>
+    <h3 style="margin-top:34px">Your architecture is <em>structural</em>. Stop grepping for it.</h3>
+    <div class="sub">ast-grep reads a syntax tree — 25+ languages. Regex can't tell a <span class="mono">Context</span> <em>parameter</em> from the word in a comment. A tree can.</div>
+  </section>
+
+  <!-- 20 · step 4 the rule -->
+  <section class="slide" data-notes="Build the rule one hunk per reveal: identity → message (for the fixer) → scope (THE architecture part) → pattern (the tree). Fifteen lines.">
+    <div class="kicker">Build · step 4 — one rule</div>
+    <div class="code sm"><span class="cap">packs/android-architecture/rules/no-context-in-domain.yml</span>
+<pre><span class="line">id: no-context-in-domain</span>
+<span class="line">language: kotlin</span>
+<span class="line frag">message: &gt;-</span>
+<span class="line frag">  Domain code must stay platform-agnostic — drop this</span>
+<span class="line frag">  Context parameter and pass the plain data it needs.</span>
+<span class="line add frag">files:  [ <span class="tok-str">'**/domain/**'</span> ]     <span class="tok-com"># fires by LAYER, not file</span></span>
+<span class="line add frag">rule:</span>
+<span class="line add frag">  any: [ {kind: class_parameter}, {kind: parameter} ]</span>
+<span class="line add frag">  has: { kind: user_type, regex: <span class="tok-str">'^Context$'</span> }</span></pre>
+    </div>
+    <div class="sub frag" style="margin-top:20px">Lint sees a file. This rule sees your <em>layering</em>.</div>
+  </section>
+
+  <!-- 21 · rule tests -->
+  <section class="slide cream" data-notes="Fifteen lines of rule, eight lines of test. Rules are code. Code has tests.">
+    <div class="kicker">Build · step 4 — the rule has its own tests</div>
+    <div class="code sm"><span class="cap">rule-tests/no-context-in-domain-test.yml</span>
+<pre>valid:
+  - <span class="tok-str">'fun observeListing(id: String): Flow&lt;Listing?&gt;'</span>
+invalid:
+  - <span class="tok-str">'class FavoritesStore(context: Context)'</span>
+  - <span class="tok-str">'fun refresh(context: Context) {}'</span></pre>
+    </div>
+    <h3 style="margin-top:34px">Fifteen lines of rule. Eight lines of test.<br><em>Rules are code. Code has tests.</em></h3>
+  </section>
+
+  <!-- 22 · step 5 block message -->
+  <section class="slide" data-notes="The whole formatting logic is four lines. Then: what the agent actually receives. Not 'denied' — instructions.">
+    <div class="kicker">Build · step 5 — the block message is instructions</div>
+    <div class="code sm"><span class="cap">packages/core/src/events/pretooluse.ts</span>
+<pre><span class="tok-kw">function</span> denyReason(matches: Match[]): string {
+  <span class="tok-kw">return</span> matches.map(m =&gt;
+    <span class="tok-str">`[${m.ruleId}] line ${m.line}: ${m.message}`</span>).join(<span class="tok-str">"\n"</span>);
+}</pre>
+    </div>
+    <div class="term frag" style="margin-top:24px">
+      <span class="block">Error: [no-context-in-domain] line 9: Domain code must stay platform-agnostic — drop this Context parameter and pass the plain data the domain layer actually needs.</span>
+    </div>
+    <div class="sub frag" style="margin-top:18px">What's wrong, where, and what to do instead — for a writer that fixes it in the same turn.</div>
+  </section>
+
+  <!-- 23 · payoff transcript -->
+  <section class="slide" data-notes="The real captured run. Reveal: agent commits → gate blocks → agent adapts AND refuses to route around it. The bad code never existed on disk.">
+    <div class="kicker">What actually happens · real capture</div>
+    <div class="term">
+      <div class="agent">⏺ Update(…/domain/ToggleFavoriteUseCase.kt)</div>
+      <div class="block frag">⎿ Error: [no-context-in-domain] line 9: drop this Context parameter…</div>
+      <div class="agent frag" style="margin-top:12px">"I won't retry the identical edit or route around the hook. Two ways forward: 1. adjust the rule … 2. keep Context in the data layer so the domain stays Android-free."</div>
+    </div>
+    <div class="sub frag" style="margin-top:22px">The bad code <em>never existed on disk</em>. And it didn't just fail — it refused the side door and proposed the right architecture.</div>
+  </section>
+
+  <!-- 24 · isn't this just lint -->
+  <section class="slide cream" data-notes="Own the lineage. 'Yes, it's lint-shaped. Deliberately.' Then the four differences. This objection WILL come — get ahead of it.">
+    <div class="kicker">The question half of you are asking</div>
+    <h3>"Isn't this just lint?" &nbsp;<span class="dim">Yes. Lint-shaped. Deliberately.</span></h3>
+    <div class="rows" style="margin-top:14px">
+      <div class="row frag"><div class="k">What it sees</div><div class="v">architecture &amp; cross-file tenets — not just one file's style</div></div>
+      <div class="row frag"><div class="k">When it fires</div><div class="v">before the code exists, not minutes later in CI</div></div>
+      <div class="row frag"><div class="k">Who fixes it</div><div class="v">the generator, in the same turn — not a tired human</div></div>
+    </div>
+  </section>
+
+  <!-- 25 · the multiplier -->
+  <section class="slide" data-notes="The beat nobody expects. Block once at generation time → correction count is ONE. Wait for CI → it built on top → rewrite downstream at 2-3x. Same fix; only 'when' changes.">
+    <div class="kicker">The multiplier</div>
+    <div class="split">
+      <div class="stack"><div class="big red">1×</div><h3>Blocked at write time</h3><div class="sub">The agent respects it the rest of the session. One correction.</div></div>
+      <div class="stack"><div class="big">2–3×</div><h3>Caught at CI</h3><div class="sub">It already built on top of the violation. Rewrite everything downstream.</div></div>
+    </div>
+    <div class="quote-big red frag" style="margin-top:20px">Same rule. Same fix. The only variable is <em>when</em>.</div>
+  </section>
+
+  <!-- 26 · design decision 1 -->
+  <section class="slide cream" data-notes="Born in legacy, not on a toy. 19,000 findings. Block on those → uninstalled by lunch. The diff is the survival adaptation. The ratchet runs both ways at Realtor.">
+    <div class="kicker">Design decision 1 of 3 — only new violations block</div>
+    <div class="split narrow">
+      <div class="stack">
+        <div class="stat red">19,000</div>
+        <h3>legacy findings on day one</h3>
+        <div class="sub">Block on those and you're uninstalled by lunch.</div>
+      </div>
+      <div class="stack">
+        <ul class="plain"><li>The 19,000 never block anyone</li><li>Finding <em>19,001</em> stops you</li><li>Old code migrates out safely behind the ratchet</li></ul>
+        <div class="sub">Zero new debt in. Legacy workable. Running in production at Realtor.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 27 · design decision 2 -->
+  <section class="slide" data-notes="No bypass. The suppression comment is itself a blocked pattern. Tool missing → deny. A gate with a side door isn't a gate.">
+    <div class="kicker">Design decision 2 of 3 — there is no bypass</div>
+    <h2>A gate with a side door<br>isn't a gate.</h2>
+    <ul class="plain" style="margin-top:30px">
+      <li>The suppression comment is itself a blocked pattern</li>
+      <li>Enforcement tool missing → edits denied, not waved through</li>
+    </ul>
+    <div class="sub frag" style="margin-top:26px">And the agent <em>will</em> look for the side door. Let me show you.</div>
+  </section>
+
+  <!-- 28 · side-door story -->
+  <section class="slide" data-notes="The 'I' zone — the one war story. FP4/FP8 hooks, Sonnet blocked, wrote obfuscated code to a scratchpad then a MOVER SCRIPT to smuggle it in. Then prove the shape live.">
+    <div class="kicker">The side door · a true story</div>
+    <h3 style="max-width:24ch">Blocked by FP-precision rules, an agent wrote obfuscated code to a scratchpad — then wrote a <em>mover script</em> to smuggle it into the codebase.</h3>
+    <div class="term frag" style="margin-top:26px">
+      <span class="u">$ bun demos/side-door/prove.ts</span><br>
+      <span class="frag">ACT 1 · Write the violation → <span class="badge deny">⛔ BLOCKED</span></span><br>
+      <span class="frag">ACT 2 · same content via <span class="mono">mv</span> → <span class="badge blind">🕳 UNSEEN</span> <span class="u">the write gate is blind to Bash</span></span><br>
+      <span class="frag">ACT 3 · Bash counter-guard on → identical <span class="mono">mv</span> → <span class="badge deny">⛔ BLOCKED</span></span>
+    </div>
+  </section>
+
+  <!-- 29 · side-door point -->
+  <section class="slide cream" data-notes="The point that converts. I didn't predict mv, or the scratchpad. That's not the lesson. Attach the gate to the surface it found. One hook away, reusing the SAME 'gated file' definition.">
+    <h2>You can't enumerate every trick.<br>You can <em>evolve the gate.</em></h2>
+    <div class="sub" style="margin-top:30px;max-width:42ch">Act three was one hook away — and it reuses the <em>same</em> definition of "gated file" as the write gate. A gate isn't a wall you build once. It's code you evolve the moment something gets past it.</div>
+  </section>
+
+  <!-- 30 · design decision 3 + numbers -->
+  <section class="slide" data-notes="Everything is an error. We had one warning; we removed it. Then the numbers — measured, not adjectives.">
+    <div class="kicker">Design decision 3 — everything is an error</div>
+    <h3>Agents ignore warnings. <span class="dim">(Humans do too, honestly.)</span></h3>
+    <div class="statgrid frag" style="margin-top:30px">
+      <div class="s"><div class="n">~80 ms</div><div class="l">a blocked violation at write time — vs a full lint run, red build, context switch</div></div>
+      <div class="s"><div class="n">→ 0</div><div class="l">lint-reason CI failures, once the same thresholds run before the code exists</div></div>
+    </div>
+  </section>
+
+  <!-- 31 · honest boundary -->
+  <section class="slide cream" data-notes="Concede the purist's point BEFORE they raise it. Rules catch the mechanical 80%. Review isn't replaced — it's concentrated on the 20% that needs judgment.">
+    <div class="kicker">The honest boundary</div>
+    <h2>Rules catch the mechanical <em>80%</em>.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">They can't catch "this UseCase is conceptually wrong." That's the point — the gate clears the convention traffic so review spends <em>all</em> its attention on judgment.</div>
+    <div class="quote-big red frag" style="margin-top:28px">Review isn't replaced. It's concentrated.</div>
+  </section>
+
+  <!-- 32 · REFRAIN 3 -->
+  <section class="slide slide--refrain" data-notes="Third landing.">
+    <div class="r"><span class="a">A prompt is a suggestion.</span><br><span class="b">A gate is a rule.</span></div>
+    <div class="tag">Refrain · 3 of 4</div>
+  </section>
+
+  <!-- 33 · SECTION 3 -->
+  <section class="slide slide--section" data-notes="Part three — from files to decisions, and from one harness to all of them.">
+    <div class="n">3</div>
+    <h2>Tenets that travel</h2>
+    <div class="spine"><span>1. Agents don't read your docs</span><span>2. Gates, not guidelines</span><span><b>3. Tenets that travel</b></span></div>
+  </section>
+
+  <!-- 34 · files to decisions -->
+  <section class="slide" data-notes="Zoom out: the gate can watch what the agent DECIDES, starting with the decision to stop.">
+    <div class="kicker">From what it writes → to what it decides</div>
+    <h2>So far the gate watches what the agent <em>writes</em>.<br>It can also watch what the agent <em>decides</em>.</h2>
+  </section>
+
+  <!-- 35 · the stop hook -->
+  <section class="slide" data-notes="Real, tested. Backlog is the memory. Agent does the easy half, declares done → Stop hook reads the ledger, blocks, names what's left. Real captured output.">
+    <div class="kicker">The stop hook · real capture</div>
+    <div class="term">
+      <span class="u">backlog: F1 [done] · F2 [todo]</span><br>
+      <div class="agent" style="margin-top:8px">⏺ Marked F1 done. F2 remains open — stopping here.</div>
+      <div class="block frag" style="margin-top:10px">⎿ Stop hook: You're about to stop, but <b style="color:#fff">1 task is still open (1 todo)</b>:<br>&nbsp;&nbsp;- F2 [todo] Add the test that proves toggling twice is a no-op</div>
+    </div>
+    <div class="sub frag" style="margin-top:22px">"Don't stop until you're done" stopped being a line in a prompt the model forgets — and became a checkpoint it has to <em>reckon</em> with.</div>
+  </section>
+
+  <!-- 36 · why this shape -->
+  <section class="slide cream" data-notes="Declare-then-earn: the tracker is an input you can't lie to. Substrate not instruction: rides the agent's own stop. Loop-safe. One discipline, two checkpoints.">
+    <div class="kicker">Why this shape</div>
+    <ul class="plain" style="gap:20px">
+      <li><strong>Declare-then-earn</strong> — the tracker is an <em>input</em> you can't lie to</li>
+      <li><strong>Substrate, not instruction</strong> — the nudge rides the agent's own stop; a prompt line decays at compaction, a hook fires every turn</li>
+      <li><strong>Loop-safe</strong> — honors <span class="mono">stop_hook_active</span>; the agent is never trapped</li>
+    </ul>
+    <div class="quote-big red" style="margin-top:26px">One discipline, two checkpoints: the file, and the session.</div>
+  </section>
+
+  <!-- 37 · portability + one rule four places -->
+  <section class="slide" data-notes="Every harness ships hooks, each a slightly different protocol. One rule set, thin shims. And the same rule runs in four places — one source of truth per tenet.">
+    <div class="kicker">Tenets that travel</div>
+    <div class="split">
+      <div class="stack">
+        <h3>One rule set.<br>Four harnesses.</h3>
+        <div class="mono dim" style="font-size:20px">Claude Code · Codex · Antigravity · OpenCode</div>
+        <div class="sub">Thin shims per harness. Write your tenets once.</div>
+      </div>
+      <div class="stack">
+        <h3>One rule, four places</h3>
+        <ul class="plain" style="font-size:24px"><li>Agent write-time</li><li>Your pre-commit</li><li>CI</li><li>Whole-repo audit</li></ul>
+        <div class="sub">Even if you never touch an agent — your teammates' agents already commit to your codebase.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 38 · THE RELEASE -->
+  <section class="slide slide--title" data-notes="The finale the abstract promised. Repo on screen. 'As of right now, it's public.' Release on stage.">
+    <div class="brandbar"></div>
+    <div>
+      <div class="kicker">The part I've been waiting to do</div>
+      <h1>It's <span style="color:#FF9CA4">public.</span></h1>
+      <div class="code sm" style="margin-top:34px;max-width:30ch">
+<pre><span class="tok-com"># pick your packs — or take everything</span>
+bunx portable-hooks init
+bunx portable-hooks add android-architecture</pre>
+      </div>
+    </div>
+    <div class="title-foot"><div class="who">portable-hooks</div><div class="mono">github.com/torad-labs/portable-hooks</div></div>
+  </section>
+
+  <!-- 39 · realtor proof -->
+  <section class="slide cream" data-notes="The one cleared company line. 19k that never block, zero new ones, old code migrating safely. We're slop-free.">
+    <div class="kicker">Running in production</div>
+    <h2>At Realtor: <em>19,000</em> legacy findings that never block anyone. Zero new ones landing. Old code migrating out, safely.</h2>
+    <div class="quote-big red" style="margin-top:30px">We're slop-free.</div>
+  </section>
+
+  <!-- 40 · CLOSE: spine verbatim -->
+  <section class="slide" data-notes="Restate the spine, same words as the open. 'If you forget everything else, keep these three.'">
+    <div class="kicker">If you forget everything else</div>
+    <ul class="plain" style="gap:26px">
+      <li><h3><span class="red">1.</span>&nbsp; Agents don't read your docs.</h3></li>
+      <li><h3><span class="red">2.</span>&nbsp; Gates, not guidelines.</h3></li>
+      <li><h3><span class="red">3.</span>&nbsp; Tenets that travel.</h3></li>
+    </ul>
+  </section>
+
+  <!-- 41 · ego flip -->
+  <section class="slide cream" data-notes="The emotional conversion — the injured engineer walks out BIGGER. Typist → legislator.">
+    <div class="kicker">This is the promotion</div>
+    <h2>Writing a rule pack is the most <em>senior</em> work you can do now.</h2>
+    <div class="sub" style="margin-top:26px;max-width:42ch">You're not reviewing one PR. You're reviewing <em>every</em> PR the agent will ever write. Your taste, made executable, outlives your attention.</div>
+  </section>
+
+  <!-- 42 · one habit -->
+  <section class="slide" data-notes="ONE actionable habit, time-boxed. Behavior change, not a recap.">
+    <div class="kicker">Tonight, before your next standup</div>
+    <h2>One hook. One rule.<br>The pattern you're most tired of<br>flagging in review.</h2>
+    <div class="sub" style="margin-top:26px">Watch the agent fix itself once. You won't go back.</div>
+  </section>
+
+  <!-- 43 · stakes + REFRAIN + QR -->
+  <section class="slide slide--close" data-notes="Stakes, undercut. Then the refrain as the final line. Understated exit: 'the repo's live. thank you.' No victory lap.">
+    <div class="close-grid">
+      <div>
+        <div class="kicker" style="color:#FF9CA4">Not a prediction to debate — a staffing change to prepare for</div>
+        <div class="r"><span class="a">A prompt is a suggestion.</span><br>A gate is a rule.</div>
+        <div class="url">github.com/torad-labs/portable-hooks</div>
+      </div>
+      <div class="qrcard">
+        <svg viewBox="0 0 41 41" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#14171C" d="M4 4.5h7m1 0h1m1 0h1m2 0h1m3 0h1m1 0h2m2 0h1m2 0h7M4 5.5h1m5 0h1m1 0h1m2 0h3m2 0h1m1 0h1m2 0h4m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m3 0h1m4 0h3m2 0h3m1 0h1m1 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m4 0h3m2 0h4m1 0h1m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m2 0h1m2 0h3m2 0h1m2 0h1m2 0h1m2 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m7 0h1m2 0h1m1 0h4m1 0h1m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h2m1 0h2m4 0h1m2 0h1M4 12.5h1m1 0h2m1 0h3m6 0h1m2 0h3m1 0h2m1 0h1m1 0h1m2 0h1m1 0h2M4 13.5h1m1 0h1m1 0h1m2 0h1m2 0h2m2 0h1m1 0h1m1 0h4m1 0h1m2 0h2m1 0h4M4 14.5h3m3 0h3m2 0h2m1 0h1m2 0h1m2 0h1m2 0h1m1 0h1m1 0h3m1 0h2M5 15.5h1m6 0h2m3 0h4m1 0h3m6 0h1m1 0h1m1 0h2M4 16.5h2m1 0h4m2 0h1m1 0h2m2 0h1m2 0h1m2 0h1m1 0h1m1 0h1m1 0h3M4 17.5h2m2 0h1m4 0h3m1 0h1m2 0h3m2 0h2m1 0h1m6 0h1M4 18.5h3m3 0h1m1 0h1m2 0h2m2 0h2m4 0h1m2 0h1m1 0h3M4 19.5h1m1 0h3m2 0h2m2 0h1m1 0h1m2 0h1m2 0h3m1 0h4m2 0h2M4 20.5h7m6 0h1m1 0h1m2 0h2m1 0h2m2 0h2m1 0h3M4 21.5h4m1 0h1m1 0h2m2 0h2m2 0h1m1 0h1m2 0h7m1 0h2m2 0h1M7 22.5h1m2 0h3m2 0h2m1 0h4m2 0h1m1 0h1m1 0h1m1 0h3m1 0h2M6 23.5h1m1 0h2m3 0h1m9 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1M4 24.5h1m3 0h1m1 0h1m6 0h1m4 0h1m1 0h1m8 0h2m1 0h1M4 25.5h3m2 0h1m1 0h1m1 0h3m3 0h1m2 0h1m2 0h1m1 0h1m2 0h1m3 0h1m1 0h1M7 26.5h1m1 0h5m1 0h4m1 0h3m2 0h1m1 0h4m4 0h2M5 27.5h1m1 0h1m6 0h4m2 0h1m2 0h1m3 0h2m1 0h2m1 0h1m1 0h1M4 28.5h1m4 0h3m1 0h2m3 0h2m1 0h2m3 0h7m2 0h2M12 29.5h3m4 0h3m1 0h2m3 0h1m3 0h2M4 30.5h7m1 0h2m3 0h2m1 0h1m2 0h2m1 0h3m1 0h1m1 0h1M4 31.5h1m5 0h1m1 0h2m3 0h4m3 0h5m3 0h3M4 32.5h1m1 0h3m1 0h1m3 0h4m1 0h1m1 0h1m1 0h2m2 0h6m1 0h1m1 0h1M4 33.5h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h1m2 0h5m1 0h1m3 0h1m3 0h2M4 34.5h1m1 0h3m1 0h1m1 0h1m2 0h3m5 0h1m2 0h1m3 0h2M4 35.5h1m5 0h1m2 0h1m3 0h1m1 0h5m2 0h4m1 0h2m3 0h1M4 36.5h7m1 0h1m1 0h3m2 0h4m2 0h1m1 0h1m2 0h1m1 0h1m1 0h1"/></svg>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  const hud = document.getElementById('hud');
+  const notes = document.getElementById('notes');
+  let i = 0, f = 0;
+
+  // scale the fixed 1280x720 stage to fit the viewport
+  function fit(){
+    const s = Math.min(innerWidth/1280, innerHeight/720);
+    stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  function frags(slide){ return Array.from(slide.querySelectorAll('.frag')); }
+
+  function render(){
+    slides.forEach((s,n)=> s.classList.toggle('on', n===i));
+    const fr = frags(slides[i]);
+    fr.forEach((el,n)=> el.classList.toggle('show', n<f));
+    progress.style.width = ((i)/(slides.length-1)*100)+'%';
+    hud.textContent = (i+1)+' / '+slides.length;
+    notes.innerHTML = slides[i].dataset.notes ? '<b>Notes · '+(i+1)+'</b> &nbsp; '+slides[i].dataset.notes : '';
+    location.hash = i+1;
+  }
+  function show(n){ i=Math.max(0,Math.min(slides.length-1,n)); f=0; render(); }
+
+  function next(){
+    const fr = frags(slides[i]);
+    if(f < fr.length){ f++; render(); return; }
+    if(i < slides.length-1) show(i+1);
+  }
+  function prev(){
+    if(f > 0){ f--; render(); return; }
+    if(i > 0){ i--; f=frags(slides[i]).length; render(); }
+  }
+
+  addEventListener('keydown', e=>{
+    switch(e.key){
+      case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+      case 'Home': show(0); break;
+      case 'End': show(slides.length-1); break;
+      case 'f': case 'F':
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+        break;
+      case 'n': case 'N': notes.classList.toggle('on'); break;
+    }
+  });
+
+  // click / tap navigation (right half = next, left = prev)
+  addEventListener('click', e=>{ (e.clientX > innerWidth/2 ? next : prev)(); });
+
+  // restore position from hash
+  const start = parseInt(location.hash.slice(1),10);
+  if(start>=1 && start<=slides.length) i=start-1;
+
+  // lightweight syntax highlighting over <pre> (comments, strings, keywords)
+  const KW = new Set(('export import interface type function const let class fun val var return if else for of in new async await private public suspend operator override package from true false null undefined this').split(' '));
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function hl(code){
+    let out='', j=0;
+    const rest = ()=>code.slice(j);
+    while(j < code.length){
+      let m;
+      if(m = rest().match(/^(\/\/[^\n]*|#[^\n]*)/)){ out+='<span class="tok-com">'+esc(m[0])+'</span>'; j+=m[0].length; continue; }
+      if(m = rest().match(/^("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/)){ out+='<span class="tok-str">'+esc(m[0])+'</span>'; j+=m[0].length; continue; }
+      if(m = rest().match(/^\b\d[\d.]*\b/)){ out+='<span class="tok-num">'+esc(m[0])+'</span>'; j+=m[0].length; continue; }
+      if(m = rest().match(/^[A-Za-z_$][A-Za-z0-9_$]*/)){ const w=m[0]; out+= KW.has(w) ? '<span class="tok-kw">'+w+'</span>' : esc(w); j+=w.length; continue; }
+      out += esc(code[j]); j++;
+    }
+    return out;
+  }
+  // only highlight <pre> blocks that were authored as plain text (no inner spans)
+  document.querySelectorAll('.code pre, .slide--title pre').forEach(pre=>{
+    if(pre.querySelector('span')) return;  // already hand-colored
+    pre.innerHTML = hl(pre.textContent);
+  });
+
+  // pres built from block-level .line spans: the authored newlines between the
+  // spans would render as extra blank lines under pre-wrap — strip them.
+  document.querySelectorAll('pre').forEach(pre=>{
+    if(!pre.querySelector('.line')) return;
+    Array.from(pre.childNodes).forEach(n=>{
+      if(n.nodeType===3 && !n.nodeValue.trim()) n.remove();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
