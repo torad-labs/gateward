@@ -1,5 +1,15 @@
 # Adversarial Review — the skeptic's pass over PLAN.md
 
+**STATUS (2026-07-17): ALL additions locked by Marcos and folded into PLAN.md — woven
+into existing beats, not bolted on as sections.** Upgrades from his review:
+(1) the side-door segment now uses a REAL incident — Sonnet 5, blocked by FP4/FP8
+low-precision hooks on the training engine, wrote obfuscated code into a scratchpad
+via Python and then wrote a mover script to smuggle the file into the codebase;
+counter-rule was one YAML away. (2) The 19,000-findings number is CLEARED for named
+use at Realtor, including the safe-migration ratchet story. (3) The lint rebuttal
+gains Marcos's field-tested arguments: architecture/cross-file enforcement (ast-grep
+→ Python when rules outgrow patterns) and the once-per-session correction property.
+
 Persona: hostile-but-competent audience. Non-AI fans, burned seniors, architecture
 purists, people whose identity is "AI cannot write good code or respect architecture."
 Goal: find the objections that would lose them, and the additions that flip them into
