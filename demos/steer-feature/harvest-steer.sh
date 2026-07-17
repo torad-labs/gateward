@@ -52,13 +52,15 @@ while :; do
   [ "$waited" -ge 60 ] && { echo "  REPL never appeared" >&2; exit 1; }
 done
 
-tmux send-keys -t "$SESSION" -l "$prompt$PROMPT"; sleep 1; tmux send-keys -t "$SESSION" Enter
+tmux send-keys -t "$SESSION" -l "$PROMPT"; sleep 1; tmux send-keys -t "$SESSION" Enter
 
 # Settle. Auto-answer any permission dialog with option 1 so the run proceeds.
 elapsed=0; stable=0; prev=""; cur=""
 while [ "$elapsed" -lt "$TIMEOUT" ]; do
   sleep 5; elapsed=$((elapsed + 5)); cur="$(pane)"
-  if grep -q 'Enter to select\|Enter to confirm' <<<"$cur"; then
+  # Auto-approve any dialog (mid-run questions AND Bash-approval prompts — the
+  # agent runs `bun backlog.ts` commands, which acceptEdits mode still gates).
+  if grep -qE 'Enter to select|Enter to confirm|Do you want to proceed|requires approval' <<<"$cur"; then
     tmux send-keys -t "$SESSION" 1 Enter; stable=0; prev=""; continue
   fi
   if [ "$cur" = "$prev" ] && ! grep -q 'esc to interrupt' <<<"$cur"; then
