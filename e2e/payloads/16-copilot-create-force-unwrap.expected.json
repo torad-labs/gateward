@@ -1,0 +1,5 @@
+{
+  "description": "Copilot-shaped create introducing a force-unwrap is denied through the Copilot shim.",
+  "verdict": "deny",
+  "contains": "no-force-unwrap"
+}

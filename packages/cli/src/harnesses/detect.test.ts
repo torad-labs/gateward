@@ -14,7 +14,7 @@ test("detectHarnesses: nothing present reports all undetected", async () => {
   const dir = await tmpdir();
   try {
     const detections = detectHarnesses(dir);
-    expect(detections.map((d) => d.detected)).toEqual([false, false, false]);
+    expect(detections.map((d) => d.detected)).toEqual([false, false, false, false]);
   } finally {
     await Bun.$`rm -rf ${dir}`.quiet();
   }
@@ -42,6 +42,20 @@ test("detectHarnesses: a bare .opencode directory signals OpenCode as detected",
     const detections = detectHarnesses(dir);
     const opencode = detections.find((d) => d.harness === "opencode");
     expect(opencode?.detected).toBeTruthy();
+  } finally {
+    await Bun.$`rm -rf ${dir}`.quiet();
+  }
+});
+
+test("detectHarnesses: a .github/copilot-instructions.md signals Copilot as detected", async () => {
+  const dir = await tmpdir();
+  try {
+    fs.mkdirSync(path.join(dir, ".github"));
+    await Bun.write(path.join(dir, ".github", "copilot-instructions.md"), "# instructions\n");
+    const detections = detectHarnesses(dir);
+    const copilot = detections.find((d) => d.harness === "copilot");
+    if (!copilot?.detected) throw new Error("copilot detection should exist and be detected");
+    expect(copilot.signals).toEqual([".github/copilot-instructions.md"]);
   } finally {
     await Bun.$`rm -rf ${dir}`.quiet();
   }

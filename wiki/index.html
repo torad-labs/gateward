@@ -309,15 +309,23 @@ translators at the edges:</p>
 <pre class="diagram">
  Claude Code ── native ─────────────┐
  Codex ── apply_patch shim ─────────┤──▶  ONE gate engine (.tenets/engine/)
- OpenCode ── plugin (throw/mutate) ─┤        rules edited once,
- Antigravity ── pending (schema) ───┘        enforced identically everywhere
+ Copilot ── preToolUse shim ────────┤        rules edited once,
+ OpenCode ── plugin (throw/mutate) ─┤        enforced identically everywhere
+ Antigravity ── pending (schema) ───┘
 </pre>
 <p><b>Claude Code</b> speaks the gate's native contract. <b>Codex</b> sends file
 edits as an <code>apply_patch</code> envelope — a <code>*** Begin Patch</code> text
 blob — so its shim parses the envelope, projects each touched file's full content,
 runs each through the same gate, and merges verdicts (any deny wins, each reason
 line prefixed with its file). Codex's own verdict JSON is Claude-compatible, so the
-output side needs no translation at all. <b>OpenCode</b> loads a small plugin whose
+output side needs no translation at all. <b>Copilot</b> (the CLI, the cloud coding
+agent, and VS Code agent mode) reads <code>preToolUse</code> hooks from
+<code>.github/hooks/</code>; its shim maps <code>create</code>/<code>edit</code>
+calls onto the gate's contract, answers in Copilot's flat verdict JSON, and passes
+the autofix tier through <code>modifiedArgs</code>. Its documented asymmetry — a
+crashed hook denies, a timed-out hook fails <em>open</em> — is why the shim budgets
+its engine subprocess well under the wired <code>timeoutSec</code>.
+<b>OpenCode</b> loads a small plugin whose
 <code>tool.execute.before</code> maps the write, shells the engine, throws to deny,
 and mutates <code>output.args</code> to apply the autofix tier. <b>Antigravity</b>
 gets block-only support once its verdict schema can be pinned against a real
@@ -393,16 +401,20 @@ the deployed shape is not green.</div>
 <h2 id="appendix">Appendix</h2>
 <h3>A · Harness matrix (verified July 2026, primary sources)</h3>
 <table>
-<tr><th></th><th>Claude Code</th><th>Codex CLI</th><th>Antigravity</th><th>OpenCode</th></tr>
-<tr><td>Config</td><td><code>settings.json</code> hooks (6 scopes)</td><td><code>hooks.json</code> / <code>config.toml</code></td><td><code>hooks.json</code> (<code>.agents/</code>)</td><td>JS/TS plugins</td></tr>
-<tr><td>Pre-write block</td><td>yes — PreToolUse</td><td>yes — PreToolUse</td><td>yes</td><td>yes — <code>tool.execute.before</code></td></tr>
-<tr><td>Deny mechanism</td><td>exit 2, or verdict JSON</td><td>same JSON as Claude Code</td><td class="flag">field names UNVERIFIED</td><td>throw an Error</td></tr>
-<tr><td>Reason reaches model</td><td>yes (documented)</td><td>yes (same fields)</td><td class="flag">plausible, UNVERIFIED</td><td class="flag">UNVERIFIED</td></tr>
-<tr><td>In-flight input rewrite</td><td>yes — <code>updatedInput</code></td><td>yes — documented precisely</td><td><b>no</b> (SDK: Decide hooks cannot modify)</td><td>yes — mutate <code>output.args</code></td></tr>
+<tr><th></th><th>Claude Code</th><th>Codex CLI</th><th>Copilot</th><th>Antigravity</th><th>OpenCode</th></tr>
+<tr><td>Config</td><td><code>settings.json</code> hooks (6 scopes)</td><td><code>hooks.json</code> / <code>config.toml</code></td><td><code>.github/hooks/*.json</code></td><td><code>hooks.json</code> (<code>.agents/</code>)</td><td>JS/TS plugins</td></tr>
+<tr><td>Pre-write block</td><td>yes — PreToolUse</td><td>yes — PreToolUse</td><td>yes — <code>preToolUse</code></td><td>yes</td><td>yes — <code>tool.execute.before</code></td></tr>
+<tr><td>Deny mechanism</td><td>exit 2, or verdict JSON</td><td>same JSON as Claude Code</td><td>flat verdict JSON, or exit 2</td><td class="flag">field names UNVERIFIED</td><td>throw an Error</td></tr>
+<tr><td>Reason reaches model</td><td>yes (documented)</td><td>yes (same fields)</td><td>yes (documented)</td><td class="flag">plausible, UNVERIFIED</td><td class="flag">UNVERIFIED</td></tr>
+<tr><td>In-flight input rewrite</td><td>yes — <code>updatedInput</code></td><td>yes — documented precisely</td><td>yes — <code>modifiedArgs</code></td><td><b>no</b> (SDK: Decide hooks cannot modify)</td><td>yes — mutate <code>output.args</code></td></tr>
 </table>
 <p class="dim">Notable trap: in Claude Code, exit code 2 blocks and exit 1 does not.
 Notable convergence: Codex sets <code>CLAUDE_PLUGIN_ROOT</code> for compatibility
-with existing Claude Code hooks. Also deliberate: nothing here relies on
+with existing Claude Code hooks. Notable asymmetry: a crashed Copilot
+<code>preToolUse</code> hook fails closed, a timed-out one fails open — and the arg
+names inside its <code>create</code>/<code>edit</code> calls are not pinned by its
+reference, so the shim maps every ecosystem spelling and fails closed on the rest.
+Also deliberate: nothing here relies on
 OpenCode's <code>permission.ask</code>, which is documented but has been broken in
 practice for months.</p>
 <h3>B · CLI</h3>
@@ -416,12 +428,12 @@ practice for months.</p>
 <h3>C · Repository map</h3>
 <pre class="diagram">
  packages/core/      the gate engine (zero-dependency TypeScript on Bun): events/, projection, scan, diff, verdict, config, audit
- packages/shims/     codex/ (apply_patch translator) · opencode/ (plugin)
+ packages/shims/     codex/ (apply_patch translator) · copilot/ (preToolUse shim) · opencode/ (plugin)
  packages/cli/       the installer (TypeScript, zero runtime deps)
  packs/              5 packs · 28 rules · every rule with tests · every pack standalone
  apps/golden/        the ideal — audits 0, and must stay there (CI-pinned)
  apps/broken/        the specimen — audits 52, exactly (CI-pinned)
- e2e/                payload replay: 15 cases through the real entrypoints
+ e2e/                payload replay: 17 cases through the real entrypoints
  wiki/               this book
 </pre>
 

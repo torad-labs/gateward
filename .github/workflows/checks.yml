@@ -59,6 +59,8 @@ jobs:
         run: bun test
       - name: Codex shim tests
         run: bun test packages/shims/codex/claude_compat.test.ts
+      - name: Copilot shim tests
+        run: bun test packages/shims/copilot/entry.test.ts
       - name: OpenCode plugin smoke test
         run: bun packages/shims/opencode/smoke-test.ts
       - name: Rule-pack tests

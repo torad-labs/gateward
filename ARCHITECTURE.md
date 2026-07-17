@@ -23,7 +23,8 @@ packages/cli/src/
                   tenetsConfig.ts (config.toml generate/parse).
   harnesses/      the extensibility seam: adapter.ts defines HarnessAdapter
                   {id, signals, wire(), check()}; claude.ts / codex.ts /
-                  opencode.ts implement it; index.ts is the registry.
+                  copilot.ts / opencode.ts implement it; index.ts is the
+                  registry.
   commands/       init/doctor/audit/add/remove/update — orchestrate domain +
                   harnesses; return {lines, status}; never print, never exit.
 ```

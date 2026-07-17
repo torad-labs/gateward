@@ -15,7 +15,11 @@
  * A payload whose `tool_name` is `apply_patch` is a Codex-shaped case: it is
  * piped through `packages/shims/codex/claude_compat.ts` instead of the core
  * entrypoint directly. That shim emits the same verdict JSON shape core
- * does, so classification below is unchanged either way.
+ * does, so classification below is unchanged either way. A payload carrying
+ * a camelCase `toolName` is a Copilot-shaped case: it goes through
+ * `packages/shims/copilot/entry.ts`, whose verdict is FLAT
+ * (`{permissionDecision, ...}`, no `hookSpecificOutput` nesting) — classify
+ * reads both nestings.
  *
  * Zero-dependency; no network. Run: `bun e2e/run.ts`.
  */
@@ -26,6 +30,7 @@ const HERE = import.meta.dir;
 const REPO = path.resolve(HERE, "..");
 const CORE = path.join(REPO, "packages", "core", "src", "events", "pretooluse.ts");
 const CODEX_SHIM = path.join(REPO, "packages", "shims", "codex", "claude_compat.ts");
+const COPILOT_SHIM = path.join(REPO, "packages", "shims", "copilot", "entry.ts");
 const PACKS = path.join(REPO, "packs");
 const PAYLOADS = path.join(HERE, "payloads");
 // biome-ignore lint/security/noSecrets: not a secret — a literal template placeholder substituted into test payloads
@@ -64,7 +69,8 @@ function classify(stdout: string): Classified {
   const text = stdout.trim();
   if (!text) return ["allow", null];
   const data = JSON.parse(text) as { hookSpecificOutput?: Record<string, unknown>; updatedInput?: unknown };
-  const hookOutput = data.hookSpecificOutput ?? {};
+  // Claude/Codex verdicts nest under hookSpecificOutput; Copilot's are flat.
+  const hookOutput = data.hookSpecificOutput ?? (data as Record<string, unknown>);
   const decision = hookOutput.permissionDecision;
   if (decision === "deny") {
     return ["deny", hookOutput.permissionDecisionReason ?? ""];
@@ -123,6 +129,7 @@ function judge(expected: Expected, kind: string, detail: unknown, stderr: string
 interface CasePayload {
   tool_name?: string;
   tool_input?: { file_path?: string };
+  toolName?: string;
 }
 
 interface LoadedCase {
@@ -147,11 +154,18 @@ async function loadCase(caseName: string, workspace: string): Promise<LoadedCase
   return { payload, expected };
 }
 
-/** Runs the right subprocess entrypoint for one payload: Codex's `apply_patch`
- * shape goes through the Codex shim, everything else goes straight through
- * core's PreToolUse entrypoint. */
+/** The right subprocess entrypoint for one payload: Codex's `apply_patch`
+ * shape goes through the Codex shim, a camelCase `toolName` goes through the
+ * Copilot shim, everything else goes straight through core's PreToolUse
+ * entrypoint. */
+function entrypointFor(payload: CasePayload): string {
+  if (payload.tool_name === "apply_patch") return CODEX_SHIM;
+  if (payload.toolName !== undefined) return COPILOT_SHIM;
+  return CORE;
+}
+
 function spawnEntrypoint(payload: CasePayload, env: Record<string, string | undefined>) {
-  const entrypoint = payload.tool_name === "apply_patch" ? CODEX_SHIM : CORE;
+  const entrypoint = entrypointFor(payload);
   return Bun.spawnSync({
     cmd: [process.execPath, entrypoint],
     stdin: new TextEncoder().encode(JSON.stringify(payload)),

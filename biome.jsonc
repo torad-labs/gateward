@@ -131,7 +131,8 @@
         "e2e/**",
         "packages/core/src/audit.ts",
         "packages/core/src/events/pretooluse.ts",
-        "packages/shims/codex/claude_compat.ts"
+        "packages/shims/codex/claude_compat.ts",
+        "packages/shims/copilot/entry.ts"
       ],
       "linter": {
         "rules": {
