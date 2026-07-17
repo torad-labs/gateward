@@ -52,7 +52,7 @@ const RULE_FILE_LINE_SPLIT_RE = /\r?\n/;
 /** Directories never descended into, at any depth. `node_modules` matters
  * once TypeScript is a gated language: vendored `.d.ts` files under it would
  * otherwise be scanned as project code. */
-export const SKIP_DIRS = new Set(["build", ".git", ".gradle", "node_modules"]);
+const SKIP_DIRS = new Set(["build", ".git", ".gradle", "node_modules"]);
 
 /**
  * The rule ids actually authored in `config`'s enabled packs.
@@ -107,7 +107,7 @@ export async function scanFile(filePath: string, config: Config): Promise<Match[
   return toMatches(raw, config);
 }
 
-export interface AuditResult {
+interface AuditResult {
   perRule: Map<string, number>;
   total: number;
   filesScanned: number;

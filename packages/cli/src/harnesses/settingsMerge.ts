@@ -6,11 +6,11 @@
  * JSON.parse/stringify untouched.
  */
 
-export interface JsonObject {
+interface JsonObject {
   [key: string]: unknown;
 }
 
-export function isJsonObject(value: unknown): value is JsonObject {
+function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

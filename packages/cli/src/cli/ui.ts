@@ -8,7 +8,7 @@ export function isInteractive(): boolean {
   return Boolean(process.stdin.isTTY && process.stdout.isTTY);
 }
 
-export interface SelectableItem {
+interface SelectableItem {
   id: string;
   label: string;
 }

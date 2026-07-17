@@ -54,19 +54,19 @@ const PACK_YML_LINE_SPLIT_RE = /\r?\n/;
 /** A line with leading whitespace (still inside an indented block). */
 const INDENTED_LINE_RE = /^\s/;
 
-export const TENETS_DIRNAME = ".tenets";
-export const CONFIG_FILENAME = "config.toml";
+const TENETS_DIRNAME = ".tenets";
+const CONFIG_FILENAME = "config.toml";
 
-export const TIER_DENY = "deny";
+const TIER_DENY = "deny";
 export const TIER_AUTOFIX = "autofix";
 
 /** Extensions gated for each language the packs support. */
-export const LANGUAGE_EXTENSIONS: Record<string, readonly string[]> = {
+const LANGUAGE_EXTENSIONS: Record<string, readonly string[]> = {
   kotlin: [".kt", ".kts"],
   typescript: [".ts", ".mts", ".cts"],
 };
 
-export interface RuleOverride {
+interface RuleOverride {
   tier?: string;
   enabled?: boolean;
 }

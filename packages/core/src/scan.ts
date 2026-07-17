@@ -17,7 +17,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { Config } from "./config";
 
-export const BINARY = "ast-grep";
+const BINARY = "ast-grep";
 /** Splits a rule file into lines, tolerating CRLF. */
 const RULE_FILE_LINE_SPLIT_RE = /\r?\n/;
 // Per-invocation ceiling for one ast-grep run over one file. A single-file

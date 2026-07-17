@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { tenetsDir } from "../paths";
 
-export interface AuditRun {
+interface AuditRun {
   status: number;
   /** For index.ts to print — the engine's own output streams straight
    * through via inherited stdio and never lands here. */

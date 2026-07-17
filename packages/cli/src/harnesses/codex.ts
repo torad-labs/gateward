@@ -1,7 +1,7 @@
 /** Codex adapter: vendors the Codex shim next to the engine and wires
  * `.codex/hooks.json`. Only wired when packages/shims/codex exists in source
  * at the moment init runs (checked fresh every run, never hardcoded — see
- * repo-structure.md's F1/decision-7 and settingsMerge.ts's doc comment).
+ * settingsMerge.ts's doc comment).
  * `node:fs` here is structural-only (directory existence + listing). */
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -13,8 +13,7 @@ import { type MergeResult, mergePreToolUseHook } from "./settingsMerge";
 
 /**
  * Wires the vendored Codex shim into .codex/hooks.json. Codex adopted Claude
- * Code's hook JSON (research/harness-hooks-matrix.md), so the entry mirrors
- * mergeClaudeSettings. The command is bun plus a project-relative path —
+ * Code's hook JSON, so the entry mirrors mergeClaudeSettings. The command is bun plus a project-relative path —
  * Codex documents no project-dir env var, so we rely on project hooks running
  * from the project root. Unconfirmed against a real Codex install; the shim's
  * own docstring carries the same flag.
