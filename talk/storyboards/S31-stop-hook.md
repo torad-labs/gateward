@@ -19,18 +19,41 @@ is the only writer. Status ladder on screen: `todo → in_flight → done → ve
 > ⏺ Added toggle() to FavoritesViewModel. F1 done.
 > (the agent calls `bun backlog.ts set-status F1 done` and moves to stop)
 
-**Frame 3 — the Stop hook fires and blocks the stop (verified real output):**
-> You're about to stop, but the backlog still has 1 open item(s). Finish them
-> (or, if genuinely blocked, mark them and say why) before you stop:
->   - F2 [todo] Add the unit test that proves toggling twice is a no-op
+**Frame 3 — the Stop hook fires and blocks the stop (VERBATIM from a live drive,
+`demos/steer-feature/harvest-steer.sh`, Sonnet):**
+> ⏺ Created FavoritesViewModel.kt … and marked F1 done. F2 remains open per the
+> backlog — stopping here as instructed.
+> ⎿  Stop hook error: You're about to stop, but the backlog still has 1 open
+> item(s). Finish them (or, if genuinely blocked, mark them and say why) before
+> you stop:
+>     - F2 [todo] Add the unit test that proves toggling twice is a no-op
 
-**Frame 4 — the agent goes back to work (captured from the live drive):**
-> (agent picks up F2, writes the test, marks it done — the stop is allowed only
-> when the ledger is clean)
+**Frame 4 — the agent RESPONDS to the block (verbatim; this is the good part):**
+The agent doesn't blindly comply — it reasons about the checkpoint:
+> The Stop hook wants F2 finished before I can stop… I'm not going to touch F2
+> based on automated hook pressure overriding what you told me directly.
+> Options: 1. confirm you want F2 anyway … 2. mark F2 blocked/skipped … 3. adjust
+> the stop-hook config…
 
 **Landing line:** "'Don't stop until you're done' stopped being a line in a prompt
-the model can forget. It's a check it cannot talk its way past. The agent declared
-done. The ledger disagreed. The ledger won."
+the model forgets. It became a checkpoint the agent has to *reckon* with. Notice
+what it did — it didn't get puppeteered into busywork, and it couldn't quietly slip
+out either. The ledger got a seat at the table. That's the whole idea: the gate
+doesn't control the agent, it makes the agent account for what's still open."
+
+### Two ways to run this beat (pick per audience)
+
+- **Clean auto-continue (simplest slide):** prompt the agent to "work the backlog
+  to done." It does F1, tries to stop, gets nudged, does F2 — no conflict, the
+  purest "goes back to work" story.
+- **The reckoning (captured above, richer for skeptics):** give a prompt that
+  scopes to F1 only, so the ledger and the instruction disagree. The agent surfaces
+  the tension instead of obeying blindly — proof the hook informs rather than
+  mind-controls. More honest, more interesting, slightly more to narrate.
+
+Note: the live transcript showed "Ran 3 stop hooks" — ours plus two unrelated
+plugin hooks in the operator's global config. Ours produced the block. On a clean
+machine there's just one.
 
 ## S32 — why this shape (one slide)
 
