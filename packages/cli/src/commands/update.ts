@@ -3,8 +3,8 @@ import { runtimeError } from "../cli/errors";
 import { buildLock, lockPath, readLock, serializeLock, sha256, sha256File } from "../domain/lock";
 import { listPacks } from "../domain/packs";
 import { parseConfigToml } from "../domain/tenetsConfig";
-import { listSourceFiles, writeIfChanged } from "../domain/vendor";
-import { CORE_SRC, configTomlPath, engineDestDir, PACKS_ROOT, packsDestDir, tenetsDir } from "../paths";
+import { listSourceFiles, looksLikeTestFile, writeIfChanged } from "../domain/vendor";
+import { CORE_SRC, configTomlPath, engineDestDir, PACKS_ROOT, packsDestDir, SHIMS_ROOT, tenetsDir } from "../paths";
 import type { CommandOutcome } from "../types";
 
 type SyncOutcome = "added" | "updated" | "skipped" | "unchanged";
@@ -44,6 +44,54 @@ async function syncOneFile(
 
   const result = await writeIfChanged(destPath, sourceContent);
   return { outcome: result === "updated" ? "updated" : "unchanged", hash: sourceHash };
+}
+
+/** The distinct harness shim names already vendored into this project,
+ * derived from lock keys shaped `engine/shims/<name>/...`. Update refreshes
+ * exactly the shims a prior init/add installed — never introduces new ones. */
+function installedShims(lockedFiles: Record<string, string>): string[] {
+  const prefix = "engine/shims/";
+  const names = new Set<string>();
+  for (const key of Object.keys(lockedFiles)) {
+    if (!key.startsWith(prefix)) continue;
+    const rest = key.slice(prefix.length);
+    const slash = rest.indexOf("/");
+    if (slash > 0) names.add(rest.slice(0, slash));
+  }
+  return [...names].sort();
+}
+
+type SyncTree = (
+  srcDir: string,
+  destDir: string,
+  keyPrefix: string,
+  exclude?: (name: string) => boolean,
+) => Promise<void>;
+
+/**
+ * Re-vendors every harness shim already installed (present in the lock under
+ * `engine/shims/<name>/`), so a stale Codex/OpenCode shim doesn't keep running
+ * old logic after an engine bump. Test-shaped files are excluded, matching
+ * what the adapters vendor at init. Wiring itself (hooks.json / settings.json)
+ * stays init's job; update only syncs on-disk source for what's installed.
+ */
+async function syncInstalledShims(
+  root: string,
+  lockedFiles: Record<string, string>,
+  syncTree: SyncTree,
+): Promise<void> {
+  const names = installedShims(lockedFiles);
+  const present = await Promise.all(names.map((name) => Bun.file(path.join(SHIMS_ROOT, name)).exists()));
+  for (const [i, name] of names.entries()) {
+    if (!present[i]) continue;
+    // biome-ignore lint/performance/noAwaitInLoops: one shim tree finishes before the next so the report reflects one consistent pass
+    await syncTree(
+      path.join(SHIMS_ROOT, name),
+      path.join(engineDestDir(root), "shims", name),
+      `engine/shims/${name}/`,
+      looksLikeTestFile,
+    );
+  }
 }
 
 /** Formats the `Updated`/`Added`/`Skipped` report lines from one update pass. */
@@ -89,8 +137,9 @@ export async function runUpdate(root: string): Promise<CommandOutcome> {
   const added: string[] = [];
   const skipped: string[] = [];
 
-  const syncTree = async (srcDir: string, destDir: string, keyPrefix: string) => {
+  const syncTree = async (srcDir: string, destDir: string, keyPrefix: string, exclude?: (name: string) => boolean) => {
     for (const { relPath, absPath } of await listSourceFiles(srcDir)) {
+      if (exclude?.(path.basename(relPath))) continue;
       const key = `${keyPrefix}${relPath}`;
       const destPath = path.join(destDir, relPath);
       // biome-ignore lint/performance/noAwaitInLoops: each file's write must land before the next file's exists()/hash check reads the same destDir
@@ -107,6 +156,7 @@ export async function runUpdate(root: string): Promise<CommandOutcome> {
     await syncTree(pack.dir, packsDestDir(root, pack.id), `packs/${pack.id}/`);
   }
   await syncTree(CORE_SRC, engineDestDir(root), "engine/");
+  await syncInstalledShims(root, existingLock.files, syncTree);
 
   const newLock = buildLock(existingLock.source, files);
   const lockResult = await writeIfChanged(lockPath(tDir), serializeLock(newLock));

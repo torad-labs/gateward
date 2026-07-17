@@ -10,11 +10,17 @@ export const CLAUDE_HOOK_MARKER = ".tenets/engine/events/pretooluse.ts";
 /** Merges the PreToolUse -> pretooluse.ts entry into a Claude Code settings.json.
  * The command runs the vendored entrypoint through bun explicitly: exec
  * bits do not survive every transport (zip downloads, some git configs), and
- * a hook that fails with exit 126 is a silently dead gate. */
+ * a hook that fails with exit 126 is a silently dead gate.
+ *
+ * `timeout` (30s) must exceed the engine's internal scan budget so the
+ * engine's own fail-closed deny fires first. The engine runs up to two scans
+ * plus an optional autofix, each bounded by scan.ts's DEFAULT_TIMEOUT_MS (8s);
+ * if the harness killed the hook first it would treat that as non-blocking
+ * (fail open), so this ceiling is a security parameter. */
 export function mergeClaudeSettings(existingText: string | null): MergeResult {
   return mergePreToolUseHook(existingText, CLAUDE_HOOK_MARKER, {
     matcher: "Write|Edit",
-    hooks: [{ type: "command", command: `bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 10 }],
+    hooks: [{ type: "command", command: `bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 30 }],
   });
 }
 

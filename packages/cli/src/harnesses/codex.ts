@@ -18,11 +18,24 @@ import { type MergeResult, mergePreToolUseHook } from "./settingsMerge";
  * Codex documents no project-dir env var, so we rely on project hooks running
  * from the project root. Unconfirmed against a real Codex install; the shim's
  * own docstring carries the same flag.
+ *
+ * The matcher is `apply_patch`, NOT Claude's `Write|Edit`: Codex edits files
+ * through its single `apply_patch` tool, and the shim only translates that
+ * tool. A `Write|Edit` matcher would never fire on Codex's actual tool call,
+ * silently leaving Codex ungated (fail open) — matching the tool the shim
+ * projects is what makes the gate run at all.
+ *
+ * `timeout` must exceed the engine's own internal scan budget so the engine's
+ * fail-closed deny fires before the harness kills the hook. The engine runs
+ * up to two scans plus an optional autofix, each bounded by scan.ts's
+ * DEFAULT_TIMEOUT_MS (8s); 30s leaves comfortable headroom. A harness that
+ * kills the hook first would treat it as non-blocking (fail open), so this
+ * ceiling is a security parameter, not a nicety.
  */
 export function mergeCodexHooks(existingText: string | null, relEntrypoint: string): MergeResult {
   return mergePreToolUseHook(existingText, relEntrypoint, {
-    matcher: "Write|Edit",
-    hooks: [{ type: "command", command: `bun ${JSON.stringify(relEntrypoint)}`, timeout: 10 }],
+    matcher: "apply_patch",
+    hooks: [{ type: "command", command: `bun ${JSON.stringify(relEntrypoint)}`, timeout: 30 }],
   });
 }
 
@@ -57,7 +70,9 @@ async function wire({ root }: WireContext): Promise<WireReport> {
   const lockEntries: Record<string, string> = {};
   let changed = false;
   const dest = path.join(engineDestDir(root), "shims", "codex");
-  const shimResults = await vendorInto(shimSrc, dest);
+  // Exclude test-shaped files (e.g. claude_compat.test.ts): the vendored
+  // engine ships the shim, not its test suite. Mirrors the OpenCode adapter.
+  const shimResults = await vendorInto(shimSrc, dest, { exclude: looksLikeTestFile });
   for (const r of shimResults) {
     lockEntries[`engine/shims/codex/${r.relPath}`] = r.hash;
     if (r.result !== "unchanged") changed = true;

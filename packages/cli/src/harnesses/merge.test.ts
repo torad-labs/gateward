@@ -9,7 +9,7 @@ test("mergeClaudeSettings: no existing file creates settings.json with just our 
   expect(parsed.hooks.PreToolUse.length).toBe(1);
   expect(parsed.hooks.PreToolUse[0].matcher).toBe("Write|Edit");
   expect(parsed.hooks.PreToolUse[0].hooks[0].command).toBe(`bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`);
-  expect(parsed.hooks.PreToolUse[0].hooks[0].timeout).toBe(10);
+  expect(parsed.hooks.PreToolUse[0].hooks[0].timeout).toBe(30);
 });
 
 test("mergeClaudeSettings: an existing user hook survives byte-for-byte except our addition", () => {
@@ -31,7 +31,7 @@ test("mergeClaudeSettings: an existing user hook survives byte-for-byte except o
   };
   expectedObj.hooks.PreToolUse.push({
     matcher: "Write|Edit",
-    hooks: [{ type: "command", command: `bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 10 }],
+    hooks: [{ type: "command", command: `bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 30 }],
   });
   const expectedText = `${JSON.stringify(expectedObj, null, 2)}\n`;
 
@@ -73,7 +73,7 @@ test("mergeClaudeSettings: detects our marker regardless of which other keys sit
         { matcher: "Bash", hooks: [{ type: "command", command: "./scripts/lint.sh" }] },
         {
           matcher: "Write|Edit",
-          hooks: [{ type: "command", command: `"$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 10 }],
+          hooks: [{ type: "command", command: `"$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 30 }],
         },
       ],
     },
@@ -90,4 +90,14 @@ test("mergeCodexHooks: creates from scratch and is idempotent on a second merge 
   const second = mergeCodexHooks(first.text, marker);
   expect(second.changed).toBe(false);
   expect(second.text).toBe(first.text);
+});
+
+test("mergeCodexHooks: matches Codex's apply_patch tool, not Claude's Write|Edit", () => {
+  // Codex edits files through its single `apply_patch` tool; a Write|Edit
+  // matcher would never fire on the real tool call, leaving Codex ungated.
+  const parsed = JSON.parse(mergeCodexHooks(null, ".tenets/engine/shims/codex/claude_compat.ts").text);
+  expect(parsed.hooks.PreToolUse[0].matcher).toBe("apply_patch");
+  // Timeout must exceed the engine's internal scan budget so the engine's own
+  // fail-closed deny fires before the harness would kill the hook (fail open).
+  expect(parsed.hooks.PreToolUse[0].hooks[0].timeout).toBe(30);
 });

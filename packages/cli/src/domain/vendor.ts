@@ -14,14 +14,20 @@ const SKIP_NAMES = new Set([".gitkeep"]);
 const TEST_PREFIX_RE = /^test[-_]/i;
 /** A name ending in `-test.<ext>`/`_test.<ext>` (case-insensitive). */
 const TEST_SUFFIX_RE = /[-_]test\.[^.]+$/i;
+/** A name with a `.test.`/`.spec.` infix — the bun:test / Jest convention
+ * this repo's own shims use (e.g. `claude_compat.test.ts`). Without this the
+ * predicate only caught the older `test_*.py` / `*-test.js` shapes and would
+ * silently vendor a `.test.ts` companion into the engine. */
+const TEST_INFIX_RE = /\.(test|spec)\.[^.]+$/i;
 
 /** True for filenames that are clearly a test/smoke-test companion rather
- * than the real entrypoint (e.g. `test_claude_compat.py`, `smoke-test.js`).
- * Used only for harness shims, which colocate implementation + test in one
- * flat directory — unlike packs (rules/ vs. rule-tests/) or the engine
- * (src/ vs. tests/), whose tests are already vendored deliberately. */
+ * than the real entrypoint (e.g. `test_claude_compat.py`, `smoke-test.js`,
+ * `claude_compat.test.ts`). Used only for harness shims, which colocate
+ * implementation + test in one flat directory — unlike packs (rules/ vs.
+ * rule-tests/) or the engine (src/ vs. tests/), whose tests are already
+ * vendored deliberately. */
 export function looksLikeTestFile(name: string): boolean {
-  return TEST_PREFIX_RE.test(name) || TEST_SUFFIX_RE.test(name);
+  return TEST_PREFIX_RE.test(name) || TEST_SUFFIX_RE.test(name) || TEST_INFIX_RE.test(name);
 }
 
 export interface VendorOptions {
