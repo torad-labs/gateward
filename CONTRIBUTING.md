@@ -16,8 +16,8 @@ bun run verify
 ```
 
 `bun run verify` runs every layer CI runs, in order: typecheck (both
-packages), Biome format+lint, the three bun:test suites, the OpenCode plugin
-smoke test, `ast-grep test` for every rule pack, the 15-case e2e payload
+packages), Biome format+lint, the four bun:test suites, the OpenCode plugin
+smoke test, `ast-grep test` for every rule pack, the 17-case e2e payload
 replay, and the three audit pins (golden=0, broken=52, repo self-audit=0).
 
 ## The test layers

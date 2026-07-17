@@ -20,7 +20,7 @@ export interface PackMeta {
   rules: RuleMeta[];
 }
 
-export type HarnessName = "claude" | "codex" | "opencode";
+export type HarnessName = "claude" | "codex" | "opencode" | "copilot";
 
 export interface HarnessDetection {
   harness: HarnessName;

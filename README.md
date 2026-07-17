@@ -7,11 +7,18 @@
 Engineering tenets enforced at write time, portably across coding-agent
 harnesses. When an agent tries to write code that breaks your architecture,
 your conventions, or your taste, the write is denied before it lands on disk —
-with a reason the model reads and corrects from in the same turn.
+with a reason the model reads and corrects from in the same turn. Four
+harnesses are wired today: Claude Code natively, and GitHub Copilot, Codex,
+and OpenCode through thin shims that translate each harness's dialect to the
+same gate engine.
 
 Rules are declarative ast-grep YAML, ~15 lines each, with their own tests.
 Only new violations block: legacy findings never stop anyone, and finding
 N+1 is impossible. There is no warning tier and there are no side doors.
+Anything the gate cannot judge — a missing scanner, a broken rule, a timeout,
+a payload it cannot map — denies rather than allows; three adversarial review
+passes (two of them external) are folded into that stance, and
+[SECURITY.md](SECURITY.md) scopes what counts as a bypass.
 
 Everything here is TypeScript running directly on [Bun](https://bun.com) —
 the CLI, the gate engine, the shims, the scripts. There is no build step
@@ -50,13 +57,15 @@ bun packages/cli/src/index.ts audit
 | Path | What it is |
 |---|---|
 | `packages/core/` | The gate engine — zero-dependency TypeScript on Bun: projection, only-new diff, verdicts, canonical audit |
-| `packages/shims/` | Codex (`apply_patch` translator) and OpenCode (plugin) |
+| `packages/shims/` | Codex (`apply_patch` translator), GitHub Copilot (`preToolUse` shim), and OpenCode (plugin) |
 | `packages/cli/` | The installer — layered TypeScript, one runtime dependency (valibot, for JSON boundary validation; [ARCHITECTURE.md](ARCHITECTURE.md)) |
 | `packs/` | 5 rule packs, 28 rules, every rule tested, every pack standalone |
 | `apps/golden/` | The ideal architecture — audits **0**, CI-pinned |
 | `apps/broken/` | The same app done wrong — audits **52**, CI-pinned |
-| `e2e/` | Payload replay through the real entrypoints (15 cases) |
+| `e2e/` | Payload replay through the real entrypoints (17 cases) |
 | `wiki/` | The book |
+| `demos/` | Stage demos: the remediation loop, the Bash side-door counter-guard, backlog harvesting |
+| `talk/` | The conference talk this repo was built for — deck, script, presenter view |
 | `scripts/verify.ts` | Every CI layer in one local command: `bun run verify` |
 
 ## Contributing
@@ -71,6 +80,14 @@ covers setup, the test layers, and how to add a rule, a pack, or a harness.
 Pre-release; the name is a codename. Kotlin/Android packs shipped first, and
 the `bun-best-practices` pack gates this repo's own TypeScript; ast-grep
 speaks 25+ languages, so nothing in the engine is language-specific.
+
+Harness notes: the Copilot wiring (`.github/hooks/portable-hooks.json`)
+covers the Copilot CLI, the cloud coding agent, and VS Code agent mode, and
+supports the autofix tier through `modifiedArgs` — but Copilot's hook
+reference does not pin the arg names inside its `create`/`edit` tools, so the
+shim maps every ecosystem spelling and fails closed on anything else, pending
+confirmation against a live install. The Codex and OpenCode wirings carry the
+same unconfirmed-against-a-live-install flag in their docstrings.
 
 Deliberately not built yet: npm publishing and compiled single-binary
 releases (both blocked on a packaging step that bundles packs + engine into

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { CLAUDE_HOOK_MARKER, mergeClaudeSettings } from "./claude";
 import { mergeCodexHooks } from "./codex";
+import { COPILOT_HOOK_MARKER, copilotHooksFileText } from "./copilot";
 
 test("mergeClaudeSettings: no existing file creates settings.json with just our hook", () => {
   const { text, changed } = mergeClaudeSettings(null);
@@ -100,4 +101,24 @@ test("mergeCodexHooks: matches Codex's apply_patch tool, not Claude's Write|Edit
   // Timeout must exceed the engine's internal scan budget so the engine's own
   // fail-closed deny fires before the harness would kill the hook (fail open).
   expect(parsed.hooks.PreToolUse[0].hooks[0].timeout).toBe(30);
+});
+
+test("copilotHooksFileText: Copilot's hooks-file schema, matching its file tools on every surface", () => {
+  const parsed = JSON.parse(copilotHooksFileText());
+  expect(parsed.version).toBe(1);
+  const [entry] = parsed.hooks.preToolUse;
+  expect(entry.type).toBe("command");
+  // Native Copilot CLI tool names AND the Claude-compat names VS Code's hook
+  // bridge may emit; a matcher missing the real tool name leaves that surface
+  // ungated (the Codex apply_patch lesson).
+  expect(entry.matcher).toBe("create|edit|Write|Edit");
+  // Both interpreters carry the same bun command, per Copilot's cross-OS hook
+  // guidance.
+  expect(entry.bash).toBe(`bun ${COPILOT_HOOK_MARKER}`);
+  expect(entry.powershell).toBe(`bun ${COPILOT_HOOK_MARKER}`);
+  // Copilot preToolUse TIMEOUTS fail open (crashes fail closed): timeoutSec
+  // must exceed the shim's internal 30s engine budget so a hung engine
+  // surfaces as the shim's explicit deny, never as a fail-open timeout.
+  expect(entry.timeoutSec).toBe(60);
+  expect(entry.cwd).toBe(".");
 });

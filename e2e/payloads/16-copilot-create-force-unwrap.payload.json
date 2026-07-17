@@ -1,0 +1,7 @@
+{
+  "toolName": "create",
+  "toolArgs": {
+    "filePath": "{{WORKSPACE}}/CopilotForce.kt",
+    "content": "fun demo(x: String?) {\n    val y = x!!\n    println(y)\n}\n"
+  }
+}

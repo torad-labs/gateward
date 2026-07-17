@@ -63,6 +63,7 @@ const NODE_ALLOWLIST: Record<string, ReadonlySet<string> | "test-and-source"> = 
   "node:fs": new Set([
     "domain/vendor.ts",
     "harnesses/codex.ts",
+    "harnesses/copilot.ts",
     "harnesses/index.ts",
     "harnesses/opencode.ts",
     // Tests build real on-disk directory fixtures.

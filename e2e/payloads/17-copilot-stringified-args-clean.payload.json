@@ -1,0 +1,4 @@
+{
+  "toolName": "create",
+  "toolArgs": "{\"filePath\": \"{{WORKSPACE}}/CopilotClean.kt\", \"content\": \"fun demo(x: String?) {\\n    val y = x ?: return\\n    println(y)\\n}\\n\"}"
+}
