@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Presenter · Portable Hooks</title>
+<style>
+  :root{
+    --red:#F5385A; --ink:#0E1013; --panel:#171A1F; --line:#2A2F37;
+    --fg:#EDEFF2; --dim:#8A929E; --dim2:#5C636D;
+    --sans:"Helvetica Neue",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--ink);color:var(--fg);font-family:var(--sans);
+    display:flex;flex-direction:column;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+  /* top bar: slide counter, kicker, timer, link status */
+  .bar{display:flex;align-items:center;gap:20px;padding:14px 24px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .count{font-family:var(--mono);font-size:26px;font-weight:700}
+  .count .of{color:var(--dim2)}
+  .kicker{font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
+  .spacer{flex:1}
+  .timer{font-family:var(--mono);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+  .reveal{font-family:var(--mono);font-size:14px;color:var(--dim);padding:4px 10px;border:1px solid var(--line);border-radius:7px}
+  .link{width:11px;height:11px;border-radius:50%;background:var(--dim2);flex:0 0 auto}
+  .link.on{background:#12B76A;box-shadow:0 0 10px rgba(18,183,106,.6)}
+
+  /* main: the current notes, big */
+  main{flex:1;display:flex;flex-direction:column;padding:30px 40px;overflow:hidden}
+  .now-label{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);margin-bottom:14px}
+  .notes{font-size:34px;line-height:1.5;overflow-y:auto;flex:1;padding-right:12px}
+  .notes.title{color:var(--dim);font-style:italic}
+  .notes b{color:var(--red)}
+
+  /* next-up peek */
+  .next{flex:0 0 auto;border-top:1px solid var(--line);padding:16px 40px 8px;max-height:26vh;overflow:hidden}
+  .next .nlabel{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px;display:flex;gap:12px;align-items:center}
+  .next .nkicker{color:var(--red)}
+  .next .ntext{font-size:19px;line-height:1.4;color:var(--dim)}
+
+  /* controls */
+  .ctrls{flex:0 0 auto;display:flex;gap:12px;align-items:center;padding:14px 24px;border-top:1px solid var(--line)}
+  button{font-family:var(--sans);font-size:17px;font-weight:600;color:var(--fg);background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:12px 22px;cursor:pointer}
+  button:hover{border-color:var(--dim)}
+  button.big{flex:1;font-size:20px;padding:16px}
+  button.red{background:var(--red);border-color:var(--red);color:#fff}
+  .hint{font-family:var(--mono);font-size:12px;color:var(--dim2)}
+
+  .setup{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:40px;z-index:10}
+  .setup .card{max-width:640px}
+  .setup h1{font-size:34px;margin-bottom:18px}
+  .setup p{font-size:18px;line-height:1.6;color:var(--dim);margin-bottom:14px}
+  .setup code{font-family:var(--mono);background:var(--panel);padding:2px 8px;border-radius:5px;color:var(--fg)}
+  .setup button{margin-top:14px}
+  .setup.hide{display:none}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="count"><span id="idx">–</span><span class="of"> / <span id="total">–</span></span></div>
+    <div class="kicker" id="kicker"></div>
+    <div class="reveal" id="reveal" style="display:none"></div>
+    <div class="spacer"></div>
+    <div class="link" id="link" title="link to deck"></div>
+    <div class="timer" id="timer">00:00</div>
+  </div>
+
+  <main>
+    <div class="now-label">Now · speaking notes</div>
+    <div class="notes" id="notes">Waiting for the deck…</div>
+  </main>
+
+  <div class="next">
+    <div class="nlabel">Next <span class="nkicker" id="nkicker"></span></div>
+    <div class="ntext" id="ntext"></div>
+  </div>
+
+  <div class="ctrls">
+    <button class="big" id="prev">← Prev</button>
+    <button class="big red" id="next">Next →</button>
+    <button id="tstart">Start timer</button>
+    <button id="treset">Reset</button>
+    <span class="spacer"></span>
+    <span class="hint">← → drive the deck · space = next · this window can stay focused</span>
+  </div>
+
+  <div class="setup" id="setup">
+    <div class="card">
+      <h1>Presenter view</h1>
+      <p>This mirrors your speaker notes and stays in sync with <code>deck.html</code>.
+         Put the deck on the projector (press <code>F</code> there for fullscreen) and keep this on your laptop.</p>
+      <p><b>To link them:</b> open <code>deck.html</code> and this <code>presenter.html</code> from the
+         <b>same browser</b> (both as <code>file://</code>, or both served from the same local server).
+         Navigate with the arrow keys in <i>either</i> window — they move together.</p>
+      <p>If the dot up top stays grey, your browser is blocking cross-window messaging for local files;
+         serve the folder with <code>bunx serve talk</code> (or any static server) and open both from
+         <code>http://localhost</code>.</p>
+      <button class="red" id="dismiss">Got it — connect</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  let chan = null;
+  try { chan = new BroadcastChannel('ph-deck'); } catch { chan = null; }
+
+  // ---- timer ----
+  let t0 = null, tick = null;
+  function fmt(ms){ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+  function paint(){ $('timer').textContent = t0 ? fmt(Date.now()-t0) : '00:00'; }
+  function startTimer(){ if(!t0){ t0 = Date.now(); tick = setInterval(paint, 500); } }
+  function resetTimer(){ t0 = Date.now(); paint(); }
+  $('tstart').onclick = startTimer;
+  $('treset').onclick = ()=>{ resetTimer(); if(!tick){ tick = setInterval(paint,500); } };
+
+  // ---- render incoming state ----
+  let linkedAt = 0;
+  function markLinked(){ linkedAt = Date.now(); $('link').classList.add('on'); }
+  setInterval(()=>{ if(Date.now()-linkedAt > 4000) $('link').classList.remove('on'); }, 1500);
+
+  function fmtNotes(s){
+    if(!s) return '';
+    // pull a leading "Say:" style directive into a lead, keep the rest plain
+    return s.replace(/\b(Say:|Then:|Beat:|Pause\.)/g, '<b>$1</b>');
+  }
+  function apply(st){
+    if(!st || st.type !== 'state') return;
+    markLinked();
+    $('idx').textContent = st.index+1;
+    $('total').textContent = st.total;
+    $('kicker').textContent = st.kicker || '';
+    const notesEl = $('notes');
+    if(st.notes){ notesEl.innerHTML = fmtNotes(st.notes); notesEl.classList.remove('title'); }
+    else { notesEl.textContent = '(no notes on this slide — just show it)'; notesEl.classList.add('title'); }
+    // fragment reveal indicator
+    if(st.fragTotal > 0){ $('reveal').style.display=''; $('reveal').textContent = 'reveal '+st.fragShown+' / '+st.fragTotal; }
+    else $('reveal').style.display='none';
+    // next up
+    $('nkicker').textContent = st.nextKicker ? '· '+st.nextKicker : '';
+    $('ntext').innerHTML = st.nextNotes ? fmtNotes(st.nextNotes) : '<span style="color:var(--dim2)">— end of deck —</span>';
+    // auto-start the timer on first real slide advance
+    if(st.index > 0) startTimer();
+  }
+
+  if(chan) chan.onmessage = (e)=>{ apply(e.data); };
+  addEventListener('storage', (e)=>{
+    if(e.key === 'ph-deck-state' && e.newValue){ try { apply(JSON.parse(e.newValue)); } catch {} }
+  });
+
+  // cold start: read last known state, then say hello so the deck re-emits
+  try { const s = localStorage.getItem('ph-deck-state'); if(s) apply(JSON.parse(s)); } catch {}
+  function hello(){
+    try { chan && chan.postMessage({type:'hello'}); } catch {}
+    try { localStorage.setItem('ph-deck-hello', String(Date.now())); } catch {}
+  }
+  hello();
+
+  // ---- drive the deck ----
+  function nav(cmd){
+    const id = Date.now()+'-'+Math.floor(Math.random()*1e6); // dedupe key across both transports
+    try { chan && chan.postMessage({type:'nav', cmd, id}); } catch {}
+    try { localStorage.setItem('ph-deck-nav', JSON.stringify({cmd, id, ts:Date.now()})); } catch {}
+  }
+  $('next').onclick = ()=>nav('next');
+  $('prev').onclick = ()=>nav('prev');
+  addEventListener('keydown', (e)=>{
+    switch(e.key){
+      case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); nav('next'); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); nav('prev'); break;
+      case 'Home': nav('first'); break;
+      case 'End': nav('last'); break;
+    }
+  });
+
+  $('dismiss').onclick = ()=>{ $('setup').classList.add('hide'); hello(); startTimer(); };
+})();
+</script>
+</body>
+</html>
