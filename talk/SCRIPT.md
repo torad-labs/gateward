@@ -26,8 +26,8 @@ rule you wrote in that file.
 
 Yeah. That's the talk.
 
-I'm Marcos, I build Android at Realtor, and I've spent this year teaching
-agents to respect a ten-year-old codebase.
+I'm Marcos, Sr Staff Software Engineer at Realtor, and I've spent this year
+teaching agents to respect a ten-year-old codebase.
 
 **[Slide 3 · a file an agent wrote]**
 
