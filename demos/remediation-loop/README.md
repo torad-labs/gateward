@@ -21,6 +21,18 @@ Requirements: `tmux`, the `claude` CLI (logged in), `ast-grep`, `bun`, `git`.
 Each scenario is a short agent run — expect a couple of minutes and normal
 API usage for your account.
 
+### Stage mode (live, for the talk)
+
+```sh
+demos/remediation-loop/harvest.sh no-event-bus --live
+```
+
+`--live` (or `HARVEST_LIVE=1`) opens a Terminal window attached to the driven
+session so the audience watches the agent get blocked in real time, and pauses
+for Enter before cleanup so the result stays on screen as long as you want.
+macOS asks once for permission to control Terminal — approve during rehearsal.
+iTerm: `HARVEST_TERM_APP=iTerm`. One scenario per run works best on stage.
+
 ## What you get
 
 `out/` (not committed) fills with, per scenario:
