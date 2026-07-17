@@ -83,7 +83,8 @@ Beats to lift:
   Enforcing Engineering Tenets Across Claude Code, Codex, Antigravity, and OpenCode".
   The finale IS the open-source release of this repo.
 - **Demo:** none live — code on slides as single-delta builds (storyboarded like a demo).
-- **Company material:** open-source recreation only (portable-hooks + OpenHouse golden
-  app), plus the abstract's one already-public line: "implemented at Realtor — slop-free."
+- **Company material (clearance expanded 2026-07-17):** the abstract's "slop-free"
+  line + the 19,000-legacy-findings number at Realtor + the safe-migration ratchet
+  story. Everything deeper demoed via portable-hooks + OpenHouse golden app.
 - **5-hour deliverable:** locked plan + deck skeleton + code-build storyboards, all rough.
 - Plan lives in `talk/PLAN.md`.

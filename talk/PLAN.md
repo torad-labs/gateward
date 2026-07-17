@@ -4,8 +4,12 @@
 **Format:** 40-min slot — 30–35 min of content + 5–10 min Q&A (target ~33 min of content).
 **Demo strategy:** no live demo — all code shown as single-delta slide builds
 (code authored in a real IDE first, pasted, then mutated one line per frame).
-**Company reference:** only the abstract's own line ("implemented at Realtor — slop-free").
-All numbers and examples demonstrated through portable-hooks + the OpenHouse golden app.
+**Company reference (clearance expanded 2026-07-17):** the abstract's "slop-free" line,
+the **19,000 legacy findings** number at Realtor, and the safe-migration story (old code
+progressively migrating to the target architecture behind the ratchet). Everything else
+demonstrated through portable-hooks + the OpenHouse golden app.
+**Adversarial additions:** all locked (see ADVERSARIAL.md) — woven into beats below,
+not bolted on as sections.
 
 ## The refrain
 
@@ -34,6 +38,10 @@ final line of the close.
   reveals: looks fine → wait → oh no.
 - Beat: you wrote the rule down. The agent read it. It did this anyway. Not because
   it's careless — because it generates from probability, not from your rules.
+- Repositioning beat (disarms both camps in one line): "If you came hoping I'll say
+  AI is magic — wrong room. If you're certain AI code is garbage — you're going to
+  feel surprisingly good about the next 35 minutes, because I'm going to agree with
+  you. And then we're going to do something about it."
 - **Refrain lands (first time):** "A prompt is a suggestion. A gate is a rule."
 
 ### 1 · Agents don't read your docs (2:30–8:30)
@@ -56,6 +64,11 @@ Foundation to lock: *drift is structural, not a model-quality bug.*
 - Android-specific montage (abstract promise): logic in composables, UDF broken,
   ViewModel God-objects, managers, event buses, Context in business logic. One slide
   each, fast, laughs of recognition.
+- The seatbelt beat (kills "if it needs a cage it doesn't understand, so don't use
+  it"): we never required *understanding* from humans either — we required
+  verification. The type checker doesn't trust me. Rust's borrow checker is a hook
+  on my writes. We've been putting gates in front of ourselves for fifty years —
+  the agent just joined the queue.
 - Part-boundary refrain repeat.
 
 ### 2 · Gates, not guidelines (8:30–20:30) — the core build
@@ -81,24 +94,72 @@ Then the single-delta build, one element per step, each step a complete working 
    The bad code **never existed on disk**. (This replaces the live demo — storyboard
    it like a demo, frame by frame.)
 
+The "isn't this just lint?" slide (own the lineage, then the four differences —
+this objection WILL come from the room; Marcos has had it used against him):
+
+- **What it can see:** lint checks a file's style; it has no idea what architecture
+  you chose. ast-grep rules are structural — "domain never imports android.*",
+  "ViewModels never touch a repository directly" — and when a tenet spans multiple
+  files, a Python check goes where single-file patterns can't. Architecture becomes
+  enforceable, not just style.
+- **When it fires:** CI lints code that already exists (minutes later, red build,
+  context switch). The gate fires before the code lands on disk.
+- **Who fixes:** a linter emits a report for a tired human. The block message is
+  consumed by the *generator*, which rewrites in the same turn.
+- **The multiplier (the beat nobody expects):** block the agent once at generation
+  time and it respects that rule for the rest of the session — the correction count
+  is ONE. Let the violation live until pre-commit/CI and the agent has *built on top
+  of it* — now you rewrite everything downstream at 2–3× the tokens and a multiple
+  of the time. Same rule, same fix; the only variable is **when**.
+- Honesty line: "Yes, it's lint-shaped. Deliberately. We didn't invent a new
+  discipline — we moved a fifty-year-old one to the only place it works for
+  generators."
+
 The three design decisions (each one slide, from the post, told via the golden app):
 
-1. **Only new violations block.** Before/after diff of rule matches. A 10-year-old
-   codebase has thousands of findings — they never block; introducing one more stops
-   you. Legacy stays workable; new debt is impossible.
+1. **Only new violations block.** Born in legacy, not on a toy: the day a write-time
+   gate meets a 10-year-old codebase it meets **19,000 pre-existing findings** — block
+   on those and it's uninstalled by lunch. The before/after diff is the survival
+   adaptation: the 19,000 never block anyone; finding 19,001 stops you. And the
+   ratchet runs both ways at Realtor: zero new debt lands, while old code migrates
+   to the target architecture *safely* behind the gate.
 2. **There is no bypass.** The suppression comment is itself a blocked pattern; if the
    enforcement tool is missing, edits are denied, not waved through. A gate with a
    side door isn't a gate — and an agent *will* find the side door.
 3. **Everything is an error.** Agents ignore warnings. (Humans do too, honestly.)
+
+**The side-door story** (~2 min, real incident — the segment that converts the
+hardest skeptics, right after design decision #2 pays it off):
+
+- Hooks on a training-engine codebase enforce low-precision rules (FP4/FP8).
+- Sonnet 5, blocked at the gate, *adapted*: wrote the code — obfuscated — into a
+  scratchpad file using Python, then wrote a **mover script** to copy it from the
+  scratchpad into the codebase. Smuggling, with logistics.
+- Beat: "You can't predict everything. You can always evolve the gate." The
+  counter-rule was one YAML file away.
+- Framing for the room: yes, the agent will try the side door — unlike your
+  teammates, it will find it. That's not an argument against gates. It's the
+  reason gates exist, and why they're code you evolve, not a config you set once.
+- (Skeptics love watching AI fail. Give them AI failing *contained*.)
 
 Numbers beat (truth-coupled, measured on the golden app / portable-hooks CI):
 
 - a blocked violation costs ~80 ms; the CI-caught version costs a full lint run,
   a red build, a context switch
 - same-turn self-correction vs the review rework loop: same fix, ~10× the cost
+- gated vs ungated mini-benchmark (same tasks, same prompts, golden app): violations
+  landed, rework turns, tokens burned — honest small-N table beats any claim
 - declarative tested rules vs a pile of regex; whole-repo audit in seconds
 - CI thresholds enforced at write time with CI's exact numbers → lint failures
   trend to zero
+
+The honest boundary (concede the purist's point before they raise it): rules catch
+the *mechanical* 80% — layering, banned patterns, naming, thresholds, UDF shape.
+They cannot catch "this UseCase is conceptually wrong." That's the point: the gate
+clears the convention traffic so human review spends 100% of its attention on the
+20% that actually needs judgment. Review isn't replaced — it's *concentrated*.
+(Also answers "review is how juniors learn": they learn from instant, consistent
+block messages plus design-level review, not from nitpicks.)
 
 Part-boundary refrain repeat.
 
@@ -117,11 +178,18 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
   speaks a slightly different protocol. One rule set, thin shims per harness —
   write your tenets once, enforce them under Claude Code, Codex, Antigravity, and
   OpenCode. (Architecture slide of portable-hooks: engine + packs + shims.)
+- One rule, four places (converts the "I don't use agents" holdout): the same
+  15-line rule runs at agent write-time, in your pre-commit, in CI, and as a
+  whole-repo audit. One source of truth per tenet — executable architecture
+  documentation. And even if *you* never touch an agent, your teammates' agents
+  are already committing to the codebase you maintain.
 - **THE RELEASE** (the finale the abstract promises):
   - portable-hooks goes public — repo on screen
   - install: a few commands, pick your packs (or take everything)
   - the golden app before/after: same agent, same prompts, gated vs ungated
-  - the one permitted company line: "we run this at Realtor — we're slop-free."
+  - the Realtor proof (clearance expanded): 19,000 legacy findings that never block
+    anyone, zero new ones landing, and old code migrating safely to the target
+    architecture behind the ratchet — "we're slop-free."
 
 ### 4 · Close (30:30–33:00)
 
@@ -129,6 +197,10 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 - ONE actionable habit (style DNA: behavior change, not recap): *"Tonight: write one
   hook that blocks the one pattern you're most tired of reviewing. One rule. Watch
   the agent fix itself once and you won't go back."*
+- The ego flip (the emotional conversion — the injured engineer walks out *bigger*):
+  "Writing a rule pack is the most senior work you can do now. You're not reviewing
+  one PR — you're reviewing every PR the agent will ever write. Your taste, made
+  executable, outlives your attention." Typist → legislator.
 - Historical-moment framing, hype undercut: agents writing most of the code isn't a
   prediction to debate, it's a staffing change to prepare for. The codebases that
   survive it are the ones that turned their conventions into gates.
@@ -159,4 +231,9 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 - [ ] Harvest real material from this repo: a real pack rule, a real block message,
       golden-app before/after (`packs/`, `apps/golden`, `demos/`)
 - [ ] Verify release readiness claims: install commands actually work as shown
-- [ ] Timing pass: full run-through against the minute marks above
+- [ ] Build the gated-vs-ungated mini-benchmark on the golden app (`e2e/` is the
+      natural home) — feeds the numbers slide with honest small-N data
+- [ ] Reproduce the side-door sequence for slides (scratchpad smuggle + counter-rule)
+      on the golden app, or storyboard it from the training-engine incident
+- [ ] Timing pass: full run-through against the minute marks above (additions are
+      absorbed by tightening the montage + design-decision elaborations; target ≤ 34)
