@@ -1,0 +1,5 @@
+{
+  "description": "New TypeScript Write importing from node:test is denied; bun:test is required.",
+  "verdict": "deny",
+  "contains": "prefer-bun-test"
+}

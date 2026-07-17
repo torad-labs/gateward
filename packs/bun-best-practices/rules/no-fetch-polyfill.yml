@@ -1,0 +1,25 @@
+id: no-fetch-polyfill
+language: typescript
+severity: error
+message: >-
+  node-fetch/cross-fetch/axios/undici are banned: Bun ships a spec-compliant
+  global fetch. Delete the import and call fetch(...) directly.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: import_statement
+      has:
+        field: source
+        kind: string
+        regex: ^["'](node-fetch|cross-fetch|axios|undici)(/.+)?["']$
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: ^require$
+        - has:
+            field: arguments
+            has:
+              kind: string
+              regex: ^["'](node-fetch|cross-fetch|axios|undici)(/.+)?["']$

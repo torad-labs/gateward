@@ -1,0 +1,11 @@
+id: no-fs-helper-packages
+valid:
+  - 'import { rmSync } from "node:fs";'
+  - 'const glob = new Bun.Glob("**/*.ts");'
+  - 'import { globalState } from "./state";'
+invalid:
+  - 'import { rimraf } from "rimraf";'
+  - 'import mkdirp from "mkdirp";'
+  - 'import { glob } from "glob";'
+  - 'import fg from "fast-glob";'
+  - 'const rimraf = require("rimraf");'

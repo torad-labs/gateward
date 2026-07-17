@@ -2,18 +2,26 @@
   "name": "portable-hooks",
   "version": "0.1.0",
   "description": "Installs portable ast-grep hooks (rule packs + engine) into a project and wires them into detected AI coding harnesses (Claude Code, Codex, OpenCode).",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/torad-labs/portable-hooks.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/torad-labs/portable-hooks",
+  "bugs": "https://github.com/torad-labs/portable-hooks/issues",
   "bin": {
-    "portable-hooks": "./dist/index.js"
+    "portable-hooks": "./src/index.ts"
   },
   "engines": {
-    "node": ">=20"
+    "bun": ">=1.3"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js",
-    "test": "tsc && chmod +x dist/index.js && cd dist && node --test"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
+    "@types/bun": "^1.3.14",
     "typescript": "^5.9.3"
   }
 }

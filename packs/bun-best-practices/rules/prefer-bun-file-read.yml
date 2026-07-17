@@ -1,0 +1,23 @@
+id: prefer-bun-file-read
+language: typescript
+severity: error
+message: >-
+  Whole-file text reads use Bun.file(path).text() — Bun's documented
+  recommended file API — instead of fs.readFileSync with a text encoding.
+  (Buffer reads and structural fs calls are fine; there is no autofix
+  because the rewrite is sync-to-async.)
+metadata:
+  tier: deny
+rule:
+  kind: call_expression
+  all:
+    - has:
+        field: function
+        regex: readFileSync$
+    - has:
+        field: arguments
+        stopBy: end
+        has:
+          kind: string
+          stopBy: end
+          regex: ^["'](utf-?8|utf16le|ucs-?2|latin1|ascii)["']$

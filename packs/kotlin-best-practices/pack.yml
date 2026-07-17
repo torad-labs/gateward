@@ -2,6 +2,7 @@
 # tier for humans and the installer CLI; it is NOT read by ast-grep or by the
 # stdlib core (the core resolves tier from a project's .tenets/config.toml).
 id: kotlin-best-practices
+language: kotlin
 title: Kotlin Best Practices
 description: >-
   Correctness and clarity rules for Kotlin source, enforced at edit time by the

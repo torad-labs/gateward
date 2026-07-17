@@ -1,0 +1,9 @@
+id: no-dotenv
+valid:
+  - 'const port = process.env.PORT;'
+  - 'import { z } from "zod";'
+invalid:
+  - 'import "dotenv/config";'
+  - 'import dotenv from "dotenv";'
+  - 'require("dotenv").config();'
+  - 'const expand = require("dotenv-expand");'

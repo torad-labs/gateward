@@ -1,149 +1,141 @@
-import * as assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { test } from "node:test";
 import { sha256 } from "./lock";
 import { listSourceFiles, looksLikeTestFile, removeVendored, vendorDir, vendorInto, writeIfChanged } from "./vendor";
 
-function tmpdir(prefix: string): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+async function tmpdir(prefix: string): Promise<string> {
+  const dir = path.join(os.tmpdir(), prefix + crypto.randomUUID());
+  await Bun.$`mkdir -p ${dir}`.quiet();
+  return dir;
 }
 
-test("writeIfChanged: created, then unchanged, then updated", () => {
-  const dir = tmpdir("vendor-test-");
+test("writeIfChanged: created, then unchanged, then updated", async () => {
+  const dir = await tmpdir("vendor-test-");
   try {
     const file = path.join(dir, "nested", "file.txt");
-    assert.equal(writeIfChanged(file, "hello"), "created");
-    assert.equal(fs.readFileSync(file, "utf8"), "hello");
-    assert.equal(writeIfChanged(file, "hello"), "unchanged");
-    assert.equal(writeIfChanged(file, "goodbye"), "updated");
-    assert.equal(fs.readFileSync(file, "utf8"), "goodbye");
+    expect(await writeIfChanged(file, "hello")).toBe("created");
+    expect(await Bun.file(file).text()).toBe("hello");
+    expect(await writeIfChanged(file, "hello")).toBe("unchanged");
+    expect(await writeIfChanged(file, "goodbye")).toBe("updated");
+    expect(await Bun.file(file).text()).toBe("goodbye");
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
-test("vendorDir: recursively copies files, preserving relative structure and hashing content", () => {
-  const src = tmpdir("vendor-src-");
-  const dest = tmpdir("vendor-dest-");
+test("vendorDir: recursively copies files, preserving relative structure and hashing content", async () => {
+  const src = await tmpdir("vendor-src-");
+  const dest = await tmpdir("vendor-dest-");
   try {
-    fs.writeFileSync(path.join(src, "pack.yml"), "id: x\n");
+    await Bun.write(path.join(src, "pack.yml"), "id: x\n");
     fs.mkdirSync(path.join(src, "rules"));
-    fs.writeFileSync(path.join(src, "rules", "one.yml"), "rule: one\n");
+    await Bun.write(path.join(src, "rules", "one.yml"), "rule: one\n");
 
-    const results = vendorDir(src, dest);
+    const results = await vendorDir(src, dest);
     const byPath = Object.fromEntries(results.map((r) => [r.relPath, r]));
 
-    assert.equal(Object.keys(byPath).length, 2);
-    assert.equal(byPath["pack.yml"].result, "created");
-    assert.equal(byPath["pack.yml"].hash, sha256("id: x\n"));
-    assert.equal(byPath["rules/one.yml"].result, "created");
-    assert.equal(fs.readFileSync(path.join(dest, "pack.yml"), "utf8"), "id: x\n");
-    assert.equal(fs.readFileSync(path.join(dest, "rules", "one.yml"), "utf8"), "rule: one\n");
+    expect(Object.keys(byPath).length).toBe(2);
+    expect(byPath["pack.yml"].result).toBe("created");
+    expect(byPath["pack.yml"].hash).toBe(sha256("id: x\n"));
+    expect(byPath["rules/one.yml"].result).toBe("created");
+    expect(await Bun.file(path.join(dest, "pack.yml")).text()).toBe("id: x\n");
+    expect(await Bun.file(path.join(dest, "rules", "one.yml")).text()).toBe("rule: one\n");
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
-    fs.rmSync(dest, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
+    await Bun.$`rm -rf ${dest}`.quiet();
   }
 });
 
-test("vendorDir: skips .gitkeep and __pycache__", () => {
-  const src = tmpdir("vendor-src-");
-  const dest = tmpdir("vendor-dest-");
+test("vendorDir: skips .gitkeep placeholders", async () => {
+  const src = await tmpdir("vendor-src-");
+  const dest = await tmpdir("vendor-dest-");
   try {
-    fs.writeFileSync(path.join(src, ".gitkeep"), "");
-    fs.mkdirSync(path.join(src, "__pycache__"));
-    fs.writeFileSync(path.join(src, "__pycache__", "config.cpython-313.pyc"), "binary-ish");
-    fs.writeFileSync(path.join(src, "real.py"), "print(1)\n");
+    await Bun.write(path.join(src, ".gitkeep"), "");
+    await Bun.write(path.join(src, "real.ts"), "export {};\n");
 
-    const results = vendorDir(src, dest);
-    assert.deepEqual(results.map((r) => r.relPath), ["real.py"]);
-    assert.equal(fs.existsSync(path.join(dest, ".gitkeep")), false);
-    assert.equal(fs.existsSync(path.join(dest, "__pycache__")), false);
+    const results = await vendorDir(src, dest);
+    expect(results.map((r) => r.relPath)).toEqual(["real.ts"]);
+    expect(fs.existsSync(path.join(dest, ".gitkeep"))).toBe(false);
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
-    fs.rmSync(dest, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
+    await Bun.$`rm -rf ${dest}`.quiet();
   }
 });
 
-test("vendorDir: re-running with unchanged source reports 'unchanged' for every file", () => {
-  const src = tmpdir("vendor-src-");
-  const dest = tmpdir("vendor-dest-");
+test("vendorDir: re-running with unchanged source reports 'unchanged' for every file", async () => {
+  const src = await tmpdir("vendor-src-");
+  const dest = await tmpdir("vendor-dest-");
   try {
-    fs.writeFileSync(path.join(src, "a.txt"), "a");
-    vendorDir(src, dest);
-    const second = vendorDir(src, dest);
-    assert.deepEqual(second.map((r) => r.result), ["unchanged"]);
+    await Bun.write(path.join(src, "a.txt"), "a");
+    await vendorDir(src, dest);
+    const second = await vendorDir(src, dest);
+    expect(second.map((r) => r.result)).toEqual(["unchanged"]);
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
-    fs.rmSync(dest, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
+    await Bun.$`rm -rf ${dest}`.quiet();
   }
 });
 
-test("vendorInto: a single source file is copied into the destination directory by basename", () => {
-  const src = tmpdir("vendor-src-");
-  const dest = tmpdir("vendor-dest-");
+test("vendorInto: a single source file is copied into the destination directory by basename", async () => {
+  const src = await tmpdir("vendor-src-");
+  const dest = await tmpdir("vendor-dest-");
   try {
     const shimFile = path.join(src, "shim.js");
-    fs.writeFileSync(shimFile, "module.exports = {};\n");
-    const results = vendorInto(shimFile, dest);
-    assert.equal(results.length, 1);
-    assert.equal(results[0].relPath, "shim.js");
-    assert.equal(fs.readFileSync(path.join(dest, "shim.js"), "utf8"), "module.exports = {};\n");
+    await Bun.write(shimFile, "module.exports = {};\n");
+    const results = await vendorInto(shimFile, dest);
+    expect(results.length).toBe(1);
+    expect(results[0].relPath).toBe("shim.js");
+    expect(await Bun.file(path.join(dest, "shim.js")).text()).toBe("module.exports = {};\n");
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
-    fs.rmSync(dest, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
+    await Bun.$`rm -rf ${dest}`.quiet();
   }
 });
 
-test("listSourceFiles: enumerates without copying, skips .gitkeep/__pycache__, forward-slash relative paths", () => {
-  const src = tmpdir("vendor-src-");
+test("listSourceFiles: enumerates without copying, skips .gitkeep, forward-slash relative paths", async () => {
+  const src = await tmpdir("vendor-src-");
   try {
-    fs.writeFileSync(path.join(src, ".gitkeep"), "");
-    fs.mkdirSync(path.join(src, "events"));
-    fs.writeFileSync(path.join(src, "events", "pretooluse.py"), "x");
-    fs.mkdirSync(path.join(src, "__pycache__"));
-    fs.writeFileSync(path.join(src, "__pycache__", "x.pyc"), "y");
-    fs.writeFileSync(path.join(src, "config.py"), "z");
+    await Bun.write(path.join(src, ".gitkeep"), "");
+    await Bun.write(path.join(src, "events", "pretooluse.ts"), "x");
+    await Bun.write(path.join(src, "config.ts"), "z");
 
-    const files = listSourceFiles(src).map((f) => f.relPath).sort();
-    assert.deepEqual(files, ["config.py", "events/pretooluse.py"]);
+    const files = (await listSourceFiles(src)).map((f) => f.relPath).sort();
+    expect(files).toEqual(["config.ts", "events/pretooluse.ts"]);
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
   }
 });
 
 test("looksLikeTestFile: recognizes the real shim naming convention observed in packages/shims", () => {
-  assert.equal(looksLikeTestFile("test_claude_compat.py"), true);
-  assert.equal(looksLikeTestFile("smoke-test.js"), true);
-  assert.equal(looksLikeTestFile("claude_compat.py"), false);
-  assert.equal(looksLikeTestFile("portable-hooks.js"), false);
-  assert.equal(looksLikeTestFile("latest.js"), false); // contains "test" but no separator before it
-  assert.equal(looksLikeTestFile("entry.py"), false);
+  expect(looksLikeTestFile("test_claude_compat.py")).toBe(true);
+  expect(looksLikeTestFile("smoke-test.js")).toBe(true);
+  expect(looksLikeTestFile("claude_compat.py")).toBe(false);
+  expect(looksLikeTestFile("portable-hooks.js")).toBe(false);
+  expect(looksLikeTestFile("latest.js")).toBe(false); // contains "test" but no separator before it
+  expect(looksLikeTestFile("entry.py")).toBe(false);
 });
 
-test("vendorInto with exclude: a test-shaped file in a shim directory is skipped, the real entrypoint is not", () => {
-  const src = tmpdir("vendor-src-");
-  const dest = tmpdir("vendor-dest-");
+test("vendorInto with exclude: a test-shaped file in a shim directory is skipped, the real entrypoint is not", async () => {
+  const src = await tmpdir("vendor-src-");
+  const dest = await tmpdir("vendor-dest-");
   try {
-    fs.writeFileSync(path.join(src, "portable-hooks.js"), "module.exports = {};\n");
-    fs.writeFileSync(path.join(src, "smoke-test.js"), "assert(true);\n");
-    const results = vendorInto(src, dest, { exclude: looksLikeTestFile });
-    assert.deepEqual(
-      results.map((r) => r.relPath).sort(),
-      ["portable-hooks.js"],
-    );
-    assert.equal(fs.existsSync(path.join(dest, "smoke-test.js")), false);
+    await Bun.write(path.join(src, "portable-hooks.js"), "module.exports = {};\n");
+    await Bun.write(path.join(src, "smoke-test.js"), "assert(true);\n");
+    const results = await vendorInto(src, dest, { exclude: looksLikeTestFile });
+    expect(results.map((r) => r.relPath).sort()).toEqual(["portable-hooks.js"]);
+    expect(fs.existsSync(path.join(dest, "smoke-test.js"))).toBe(false);
   } finally {
-    fs.rmSync(src, { recursive: true, force: true });
-    fs.rmSync(dest, { recursive: true, force: true });
+    await Bun.$`rm -rf ${src}`.quiet();
+    await Bun.$`rm -rf ${dest}`.quiet();
   }
 });
 
-test("removeVendored: deletes the directory; is a no-op when it doesn't exist", () => {
-  const dest = tmpdir("vendor-dest-");
-  fs.writeFileSync(path.join(dest, "keep.txt"), "x");
-  removeVendored(dest);
-  assert.equal(fs.existsSync(dest), false);
-  assert.doesNotThrow(() => removeVendored(dest));
+test("removeVendored: deletes the directory; is a no-op when it doesn't exist", async () => {
+  const dest = await tmpdir("vendor-dest-");
+  await Bun.write(path.join(dest, "keep.txt"), "x");
+  await removeVendored(dest);
+  expect(fs.existsSync(dest)).toBe(false);
+  expect(async () => await removeVendored(dest)).not.toThrow();
 });

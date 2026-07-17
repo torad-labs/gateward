@@ -1,0 +1,10 @@
+id: no-redundant-natives
+valid:
+  - 'import { Database } from "bun:sqlite";'
+  - 'const hash = await Bun.password.hash(secret);'
+  - 'import { wsHandlers } from "./wsHandlers";'
+invalid:
+  - 'import bcrypt from "bcrypt";'
+  - 'import Database from "better-sqlite3";'
+  - 'import WebSocket from "ws";'
+  - 'import argon2 from "argon2";'

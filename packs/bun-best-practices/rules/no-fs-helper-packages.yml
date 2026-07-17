@@ -1,0 +1,26 @@
+id: no-fs-helper-packages
+language: typescript
+severity: error
+message: >-
+  rimraf/mkdirp/glob packages are banned. Use fs.rm(path, { recursive: true,
+  force: true }), fs.mkdir(path, { recursive: true }), or Bun.Glob — all
+  built in.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: import_statement
+      has:
+        field: source
+        kind: string
+        regex: ^["'](rimraf|mkdirp|glob|fast-glob|globby)(/.+)?["']$
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: ^require$
+        - has:
+            field: arguments
+            has:
+              kind: string
+              regex: ^["'](rimraf|mkdirp|glob|fast-glob|globby)(/.+)?["']$

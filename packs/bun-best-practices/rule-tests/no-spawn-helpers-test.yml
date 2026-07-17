@@ -1,0 +1,8 @@
+id: no-spawn-helpers
+valid:
+  - 'const proc = Bun.spawnSync({ cmd: ["ls"] });'
+  - 'await Bun.$`rm -rf ${dir}`.quiet();'
+invalid:
+  - 'import { execa } from "execa";'
+  - 'import spawn from "cross-spawn";'
+  - 'const shell = require("shelljs");'

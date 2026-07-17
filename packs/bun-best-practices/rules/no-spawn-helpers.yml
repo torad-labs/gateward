@@ -1,0 +1,26 @@
+id: no-spawn-helpers
+language: typescript
+severity: error
+message: >-
+  execa/cross-spawn/shelljs are banned. Use Bun.$ (built-in cross-platform
+  shell) or Bun.spawn/Bun.spawnSync — array-form commands also avoid shell
+  injection.
+metadata:
+  tier: deny
+rule:
+  any:
+    - kind: import_statement
+      has:
+        field: source
+        kind: string
+        regex: ^["'](execa|cross-spawn|shelljs)(/.+)?["']$
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            regex: ^require$
+        - has:
+            field: arguments
+            has:
+              kind: string
+              regex: ^["'](execa|cross-spawn|shelljs)(/.+)?["']$

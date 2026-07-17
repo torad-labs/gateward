@@ -1,0 +1,56 @@
+id: prefer-bun-file-read
+snapshots:
+  const text = fs.readFileSync(path, "utf-8");:
+    labels:
+    - source: fs.readFileSync(path, "utf-8")
+      style: primary
+      start: 13
+      end: 43
+    - source: fs.readFileSync
+      style: secondary
+      start: 13
+      end: 28
+    - source: '"utf-8"'
+      style: secondary
+      start: 35
+      end: 42
+    - source: '"utf-8"'
+      style: secondary
+      start: 35
+      end: 42
+  const text = fs.readFileSync(path, "utf8");:
+    labels:
+    - source: fs.readFileSync(path, "utf8")
+      style: primary
+      start: 13
+      end: 42
+    - source: fs.readFileSync
+      style: secondary
+      start: 13
+      end: 28
+    - source: '"utf8"'
+      style: secondary
+      start: 35
+      end: 41
+    - source: '"utf8"'
+      style: secondary
+      start: 35
+      end: 41
+  'const text = readFileSync(path, { encoding: "utf8" });':
+    labels:
+    - source: 'readFileSync(path, { encoding: "utf8" })'
+      style: primary
+      start: 13
+      end: 53
+    - source: readFileSync
+      style: secondary
+      start: 13
+      end: 25
+    - source: '"utf8"'
+      style: secondary
+      start: 44
+      end: 50
+    - source: '"utf8"'
+      style: secondary
+      start: 44
+      end: 50

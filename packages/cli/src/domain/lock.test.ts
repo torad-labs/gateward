@@ -1,83 +1,87 @@
-import * as assert from "node:assert/strict";
-import * as crypto from "node:crypto";
-import * as fs from "node:fs";
+import { expect, test } from "bun:test";
 import * as os from "node:os";
 import * as path from "node:path";
-import { test } from "node:test";
 import { buildLock, readLock, serializeLock, sha256, sha256File, toLockKey } from "./lock";
 
 test("sha256: matches the NIST FIPS 180-4 known-answer test vector for 'abc'", () => {
-  assert.equal(sha256("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  expect(sha256("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 });
 
-test("sha256: agrees with node:crypto computed independently for arbitrary content", () => {
+test("sha256: agrees with WebCrypto computed independently for arbitrary content", async () => {
   const content = "portable-hooks vendored file content\nwith multiple lines\n";
-  const expected = crypto.createHash("sha256").update(content).digest("hex");
-  assert.equal(sha256(content), expected);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+  const expected = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  expect(sha256(content)).toBe(expected);
 });
 
 test("sha256: different content produces different digests; same content is stable", () => {
-  assert.notEqual(sha256("a"), sha256("b"));
-  assert.equal(sha256("same"), sha256("same"));
+  expect(sha256("a")).not.toBe(sha256("b"));
+  expect(sha256("same")).toBe(sha256("same"));
 });
 
-test("sha256File: hashes the file's actual on-disk bytes", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lock-test-"));
+test("sha256File: hashes the file's actual on-disk bytes", async () => {
+  const dir = path.join(os.tmpdir(), `lock-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
   try {
     const file = path.join(dir, "content.txt");
-    fs.writeFileSync(file, "abc");
-    assert.equal(sha256File(file), sha256("abc"));
+    await Bun.write(file, "abc");
+    expect(await sha256File(file)).toBe(sha256("abc"));
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
 test("toLockKey: identity on POSIX-style relative paths", () => {
-  assert.equal(toLockKey("packs/kotlin-best-practices/pack.yml"), "packs/kotlin-best-practices/pack.yml");
+  expect(toLockKey("packs/kotlin-best-practices/pack.yml")).toBe("packs/kotlin-best-practices/pack.yml");
 });
 
 test("buildLock: sorts file keys deterministically regardless of insertion order", () => {
   const lock = buildLock("portable-hooks@0.1.0", {
-    "engine/config.py": sha256("config"),
-    "engine/audit.py": sha256("audit"),
+    "engine/config.ts": sha256("config"),
+    "engine/audit.ts": sha256("audit"),
     "packs/kotlin-best-practices/pack.yml": sha256("pack"),
   });
-  assert.deepEqual(Object.keys(lock.files), [
-    "engine/audit.py",
-    "engine/config.py",
+  expect(Object.keys(lock.files)).toEqual([
+    "engine/audit.ts",
+    "engine/config.ts",
     "packs/kotlin-best-practices/pack.yml",
   ]);
-  assert.equal(lock.version, 1);
-  assert.equal(lock.source, "portable-hooks@0.1.0");
+  expect(lock.version).toBe(1);
+  expect(lock.source).toBe("portable-hooks@0.1.0");
 });
 
-test("serializeLock + readLock round-trips through disk", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lock-test-"));
+test("serializeLock + readLock round-trips through disk", async () => {
+  const dir = path.join(os.tmpdir(), `lock-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
   try {
-    const lock = buildLock("portable-hooks@0.1.0", { "engine/config.py": sha256("x") });
-    fs.writeFileSync(path.join(dir, "lock.json"), serializeLock(lock));
-    const reread = readLock(dir);
-    assert.deepEqual(reread, lock);
+    const lock = buildLock("portable-hooks@0.1.0", { "engine/config.ts": sha256("x") });
+    await Bun.write(path.join(dir, "lock.json"), serializeLock(lock));
+    const reread = await readLock(dir);
+    expect(reread).toEqual(lock);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
-test("readLock: returns null when lock.json is absent", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lock-test-"));
+test("readLock: returns null when lock.json is absent", async () => {
+  const dir = path.join(os.tmpdir(), `lock-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
   try {
-    assert.equal(readLock(dir), null);
+    expect(await readLock(dir)).toBe(null);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });
 
-test("readLock: returns null (not a throw) when lock.json is corrupt", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lock-test-"));
+test("readLock: returns null (not a throw) when lock.json is corrupt", async () => {
+  const dir = path.join(os.tmpdir(), `lock-test-${crypto.randomUUID()}`);
+  await Bun.$`mkdir -p ${dir}`.quiet();
   try {
-    fs.writeFileSync(path.join(dir, "lock.json"), "{ not json");
-    assert.equal(readLock(dir), null);
+    await Bun.write(path.join(dir, "lock.json"), "{ not json");
+    expect(await readLock(dir)).toBe(null);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    await Bun.$`rm -rf ${dir}`.quiet();
   }
 });

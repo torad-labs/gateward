@@ -1,18 +1,16 @@
 /** sha256 content hashing and `.tenets/lock.json` read/write/build. */
-import * as crypto from "node:crypto";
-import * as fs from "node:fs";
 import * as path from "node:path";
-import type { LockFile } from "./types";
+import type { LockFile } from "../types";
 
 export const LOCK_VERSION = 1;
 export const LOCK_FILENAME = "lock.json";
 
-export function sha256(content: Buffer | string): string {
-  return crypto.createHash("sha256").update(content).digest("hex");
+export function sha256(content: Uint8Array | string): string {
+  return new Bun.CryptoHasher("sha256").update(content).digest("hex");
 }
 
-export function sha256File(filePath: string): string {
-  return sha256(fs.readFileSync(filePath));
+export async function sha256File(filePath: string): Promise<string> {
+  return sha256(await Bun.file(filePath).bytes());
 }
 
 /** Normalizes a filesystem-relative path to the forward-slash form lock.json keys use. */
@@ -28,18 +26,18 @@ export function buildLock(source: string, files: Record<string, string>): LockFi
 }
 
 export function serializeLock(lock: LockFile): string {
-  return JSON.stringify(lock, null, 2) + "\n";
+  return `${JSON.stringify(lock, null, 2)}\n`;
 }
 
 export function lockPath(tenetsDir: string): string {
   return path.join(tenetsDir, LOCK_FILENAME);
 }
 
-export function readLock(tenetsDir: string): LockFile | null {
-  const p = lockPath(tenetsDir);
-  if (!fs.existsSync(p)) return null;
+export async function readLock(tenetsDir: string): Promise<LockFile | null> {
+  const file = Bun.file(lockPath(tenetsDir));
+  if (!(await file.exists())) return null;
   try {
-    return JSON.parse(fs.readFileSync(p, "utf8")) as LockFile;
+    return (await file.json()) as LockFile;
   } catch {
     return null;
   }

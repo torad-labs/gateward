@@ -1,0 +1,13 @@
+id: no-node-shebang
+valid:
+  - |
+    #!/usr/bin/env bun
+    export {};
+  - 'const runtime = "env node";'
+invalid:
+  - |
+    #!/usr/bin/env node
+    export {};
+  - |
+    #!/usr/bin/node
+    export {};

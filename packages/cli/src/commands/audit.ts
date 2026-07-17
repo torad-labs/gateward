@@ -1,30 +1,53 @@
-import { spawnSync } from "node:child_process";
-import * as fs from "node:fs";
 import * as path from "node:path";
 import { tenetsDir } from "../paths";
 
-/** Shells `python3 .tenets/engine/audit.py . [--json]`, passing its output
- * and exit code straight through. Calls `process.exit` itself: audit's job
- * is to proxy the vendored engine faithfully, including whatever exit code
- * it uses, not to force it into this CLI's 0/1/2 contract. */
-export function runAudit(root: string, json: boolean): never {
-  const auditPath = path.join(tenetsDir(root), "engine", "audit.py");
-  if (!fs.existsSync(auditPath)) {
+export interface AuditRun {
+  status: number;
+  /** For index.ts to print — the engine's own output streams straight
+   * through via inherited stdio and never lands here. */
+  message?: { text: string; stream: "stdout" | "stderr" };
+}
+
+/** Runs `bun .tenets/engine/audit.ts . [--json]` (via the running Bun
+ * binary), passing its output and exit code straight through: audit's job is
+ * to proxy the vendored engine faithfully, including whatever exit code it
+ * uses, not to force it into this CLI's 0/1/2 contract. index.ts applies the
+ * returned exit code — commands never terminate the process themselves
+ * (architecture.test.ts). */
+export async function runAudit(root: string, json: boolean): Promise<AuditRun> {
+  const auditPath = path.join(tenetsDir(root), "engine", "audit.ts");
+  if (!(await Bun.file(auditPath).exists())) {
     const remedy = "re-run init";
-    if (json) {
-      console.log(JSON.stringify({ error: "audit.py not vendored in this project.", remedy }, null, 2));
-    } else {
-      console.error(`portable-hooks: audit.py not vendored in this project. remedy: ${remedy}`);
-    }
-    process.exit(1);
+    return {
+      status: 1,
+      message: json
+        ? {
+            text: JSON.stringify({ error: "audit.ts not vendored in this project.", remedy }, null, 2),
+            stream: "stdout",
+          }
+        : { text: `portable-hooks: audit.ts not vendored in this project. remedy: ${remedy}`, stream: "stderr" },
+    };
   }
 
   const args = [auditPath, "."];
   if (json) args.push("--json");
-  const result = spawnSync("python3", args, { cwd: root, stdio: "inherit" });
-  if (result.error) {
-    console.error(`portable-hooks: failed to run python3: ${result.error.message}`);
-    process.exit(1);
+  let result: ReturnType<typeof Bun.spawnSync>;
+  try {
+    result = Bun.spawnSync({
+      cmd: [process.execPath, ...args],
+      cwd: root,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+  } catch (err) {
+    return {
+      status: 1,
+      message: {
+        text: `portable-hooks: failed to run the vendored audit: ${(err as Error).message}`,
+        stream: "stderr",
+      },
+    };
   }
-  process.exit(result.status ?? 1);
+  return { status: result.exitCode ?? 1 };
 }

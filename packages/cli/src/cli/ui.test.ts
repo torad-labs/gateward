@@ -1,5 +1,4 @@
-import * as assert from "node:assert/strict";
-import { test } from "node:test";
+import { expect, test } from "bun:test";
 import { renderTable } from "./ui";
 
 test("renderTable: pads columns to the widest cell with a two-space gutter", () => {
@@ -7,14 +6,14 @@ test("renderTable: pads columns to the widest cell with a two-space gutter", () 
     ["claude", "yes"],
     ["opencode", "no"],
   ]);
-  assert.equal(text, "claude    yes\nopencode  no");
+  expect(text).toBe("claude    yes\nopencode  no");
 });
 
 test("renderTable: empty input renders an empty string", () => {
-  assert.equal(renderTable([]), "");
+  expect(renderTable([])).toBe("");
 });
 
 test("renderTable: trailing empty cells don't leave dangling whitespace", () => {
   const text = renderTable([["a", ""]]);
-  assert.equal(text, "a");
+  expect(text).toBe("a");
 });

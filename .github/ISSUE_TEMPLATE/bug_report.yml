@@ -1,0 +1,41 @@
+name: Bug report
+description: The gate denied something it shouldn't, allowed something it shouldn't, or broke.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the exact deny reason or error output if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >-
+        The smallest payload, edit, or command that shows it. For gate
+        verdicts, the PreToolUse payload JSON (or the file content being
+        written) is the most useful thing you can paste.
+    validations:
+      required: true
+  - type: input
+    id: harness
+    attributes:
+      label: Harness
+      placeholder: Claude Code / Codex / OpenCode
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: "`bun --version`, `ast-grep --version`, OS, and `portable-hooks doctor` output."
+    validations:
+      required: true

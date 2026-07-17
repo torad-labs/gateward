@@ -1,15 +1,15 @@
-import * as assert from "node:assert/strict";
-import { test } from "node:test";
-import { CLAUDE_HOOK_MARKER, mergeClaudeSettings, mergeCodexHooks } from "./merge";
+import { expect, test } from "bun:test";
+import { CLAUDE_HOOK_MARKER, mergeClaudeSettings } from "./claude";
+import { mergeCodexHooks } from "./codex";
 
 test("mergeClaudeSettings: no existing file creates settings.json with just our hook", () => {
   const { text, changed } = mergeClaudeSettings(null);
-  assert.equal(changed, true);
+  expect(changed).toBe(true);
   const parsed = JSON.parse(text);
-  assert.equal(parsed.hooks.PreToolUse.length, 1);
-  assert.equal(parsed.hooks.PreToolUse[0].matcher, "Write|Edit");
-  assert.equal(parsed.hooks.PreToolUse[0].hooks[0].command, `python3 "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`);
-  assert.equal(parsed.hooks.PreToolUse[0].hooks[0].timeout, 10);
+  expect(parsed.hooks.PreToolUse.length).toBe(1);
+  expect(parsed.hooks.PreToolUse[0].matcher).toBe("Write|Edit");
+  expect(parsed.hooks.PreToolUse[0].hooks[0].command).toBe(`bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`);
+  expect(parsed.hooks.PreToolUse[0].hooks[0].timeout).toBe(10);
 });
 
 test("mergeClaudeSettings: an existing user hook survives byte-for-byte except our addition", () => {
@@ -19,21 +19,23 @@ test("mergeClaudeSettings: an existing user hook survives byte-for-byte except o
       PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "/usr/local/bin/my-user-hook.sh" }] }],
     },
   };
-  const existingText = JSON.stringify(existingObj, null, 2) + "\n";
+  const existingText = `${JSON.stringify(existingObj, null, 2)}\n`;
 
   const { text, changed } = mergeClaudeSettings(existingText);
-  assert.equal(changed, true);
+  expect(changed).toBe(true);
 
   // Hand-build "existing + exactly our one addition" and compare full text,
   // not just parsed structure: this is the byte-for-byte guarantee.
-  const expectedObj: any = JSON.parse(JSON.stringify(existingObj));
+  const expectedObj = JSON.parse(JSON.stringify(existingObj)) as {
+    hooks: { PreToolUse: unknown[] };
+  };
   expectedObj.hooks.PreToolUse.push({
     matcher: "Write|Edit",
-    hooks: [{ type: "command", command: `python3 "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 10 }],
+    hooks: [{ type: "command", command: `bun "$CLAUDE_PROJECT_DIR"/${CLAUDE_HOOK_MARKER}`, timeout: 10 }],
   });
-  const expectedText = JSON.stringify(expectedObj, null, 2) + "\n";
+  const expectedText = `${JSON.stringify(expectedObj, null, 2)}\n`;
 
-  assert.equal(text, expectedText);
+  expect(text).toBe(expectedText);
 });
 
 test("mergeClaudeSettings: preserves unrelated hook event types (e.g. PostToolUse) untouched", () => {
@@ -42,10 +44,10 @@ test("mergeClaudeSettings: preserves unrelated hook event types (e.g. PostToolUs
       PostToolUse: [{ matcher: "*", hooks: [{ type: "command", command: "/usr/local/bin/post.sh" }] }],
     },
   };
-  const { text } = mergeClaudeSettings(JSON.stringify(existingObj, null, 2) + "\n");
+  const { text } = mergeClaudeSettings(`${JSON.stringify(existingObj, null, 2)}\n`);
   const parsed = JSON.parse(text);
-  assert.deepEqual(parsed.hooks.PostToolUse, existingObj.hooks.PostToolUse);
-  assert.equal(parsed.hooks.PreToolUse.length, 1);
+  expect(parsed.hooks.PostToolUse).toEqual(existingObj.hooks.PostToolUse);
+  expect(parsed.hooks.PreToolUse.length).toBe(1);
 });
 
 test("mergeClaudeSettings: a differently-matched PreToolUse entry does not count as already-wired", () => {
@@ -53,15 +55,15 @@ test("mergeClaudeSettings: a differently-matched PreToolUse entry does not count
     hooks: { PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "./scripts/lint.sh" }] }] },
   };
   const { changed } = mergeClaudeSettings(JSON.stringify(existingObj));
-  assert.equal(changed, true);
+  expect(changed).toBe(true);
 });
 
 test("mergeClaudeSettings: idempotent — re-merging the already-wired output changes nothing, byte-for-byte", () => {
   const first = mergeClaudeSettings(null);
-  assert.equal(first.changed, true);
+  expect(first.changed).toBe(true);
   const second = mergeClaudeSettings(first.text);
-  assert.equal(second.changed, false);
-  assert.equal(second.text, first.text);
+  expect(second.changed).toBe(false);
+  expect(second.text).toBe(first.text);
 });
 
 test("mergeClaudeSettings: detects our marker regardless of which other keys sit alongside it", () => {
@@ -76,16 +78,16 @@ test("mergeClaudeSettings: detects our marker regardless of which other keys sit
       ],
     },
   };
-  const { changed, text } = mergeClaudeSettings(JSON.stringify(alreadyWired, null, 2) + "\n");
-  assert.equal(changed, false);
-  assert.equal(text, JSON.stringify(alreadyWired, null, 2) + "\n");
+  const { changed, text } = mergeClaudeSettings(`${JSON.stringify(alreadyWired, null, 2)}\n`);
+  expect(changed).toBe(false);
+  expect(text).toBe(`${JSON.stringify(alreadyWired, null, 2)}\n`);
 });
 
 test("mergeCodexHooks: creates from scratch and is idempotent on a second merge (provisional schema)", () => {
-  const marker = ".tenets/engine/shims/codex/entry.py";
+  const marker = ".tenets/engine/shims/codex/entry.ts";
   const first = mergeCodexHooks(null, marker);
-  assert.equal(first.changed, true);
+  expect(first.changed).toBe(true);
   const second = mergeCodexHooks(first.text, marker);
-  assert.equal(second.changed, false);
-  assert.equal(second.text, first.text);
+  expect(second.changed).toBe(false);
+  expect(second.text).toBe(first.text);
 });

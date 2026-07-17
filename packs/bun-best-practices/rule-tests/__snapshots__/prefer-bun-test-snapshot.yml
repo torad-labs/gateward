@@ -1,0 +1,42 @@
+id: prefer-bun-test
+snapshots:
+  import { describe } from "mocha";:
+    labels:
+    - source: import { describe } from "mocha";
+      style: primary
+      start: 0
+      end: 33
+    - source: '"mocha"'
+      style: secondary
+      start: 25
+      end: 32
+  import { describe, it } from "vitest";:
+    labels:
+    - source: import { describe, it } from "vitest";
+      style: primary
+      start: 0
+      end: 38
+    - source: '"vitest"'
+      style: secondary
+      start: 29
+      end: 37
+  import { expect } from "@jest/globals";:
+    labels:
+    - source: import { expect } from "@jest/globals";
+      style: primary
+      start: 0
+      end: 39
+    - source: '"@jest/globals"'
+      style: secondary
+      start: 23
+      end: 38
+  import { test } from "node:test";:
+    labels:
+    - source: import { test } from "node:test";
+      style: primary
+      start: 0
+      end: 33
+    - source: '"node:test"'
+      style: secondary
+      start: 21
+      end: 32

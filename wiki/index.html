@@ -96,7 +96,7 @@ born whole, ending with what breaks when a step is skipped.</p>
 <tr><td><b>pack</b></td><td>A self-contained directory of rules (<code>pack.yml</code>, <code>sgconfig.yml</code>, <code>rules/</code>, <code>rule-tests/</code>) that <code>ast-grep test</code> can verify standalone.</td></tr>
 <tr><td><b>tier</b></td><td>What a rule's finding earns: <code>deny</code> (block and teach) or <code>autofix</code> (rewrite in flight).</td></tr>
 <tr><td><b>shim</b></td><td>A thin translator that lets a non-Claude harness speak to the one gate implementation.</td></tr>
-<tr><td><b>canonical audit</b></td><td>The one blessed command whose violation count is <em>the</em> number: <code>engine/audit.py</code>.</td></tr>
+<tr><td><b>canonical audit</b></td><td>The one blessed command whose violation count is <em>the</em> number: <code>engine/audit.ts</code>.</td></tr>
 <tr><td><b>the lock</b></td><td><code>.tenets/lock.json</code> — a content hash per vendored file; drift detection and local-edit protection.</td></tr>
 <tr><td><b>golden / broken</b></td><td>Two apps in this repo with the same features: the architecture done right (audits <b>0</b>) and done wrong (audits <b>52</b>). The rules' negative and positive corpora.</td></tr>
 </table>
@@ -172,7 +172,7 @@ per-harness matrix, including what could <em>not</em> be verified, is in the
 <a href="#appendix">appendix</a>.</div>
 
 <h2 id="ch3">3 · The gate</h2>
-<p>The gate is five small stages in stdlib Python, run once per intercepted write:</p>
+<p>The gate is five small stages of zero-dependency TypeScript run by Bun, run once per intercepted write:</p>
 <pre class="diagram">
  payload ──▶ config ──▶ projection ──▶ scan ──▶ diff ──▶ verdict
              (.tenets/    (what the      (ast-grep  (only new   (allow · deny+reason
@@ -206,11 +206,11 @@ tools, file types the project does not gate, projects with no <code>.tenets/</co
 and edits whose outcome cannot be reconstructed (a stale <code>old_string</code>, a
 missing file) are all silent allows: the harness will reject impossible edits on its
 own, and the gate never double-judges. Every early return in
-<code>engine/events/pretooluse.py</code> is one of these deliberate allows, commented
+<code>engine/events/pretooluse.ts</code> is one of these deliberate allows, commented
 as such.</p>
 <h3>The canonical audit</h3>
 <p>One command defines the project's violation count:
-<code>python3 .tenets/engine/audit.py . --json</code>. It resolves configuration
+<code>bun .tenets/engine/audit.ts . --json</code>. It resolves configuration
 exactly as the hook does, scans real files at their real paths, and counts only
 authored rules — ast-grep's own built-in diagnostics are excluded, because scanning
 pack-by-pack triple-counts them (this repository hit exactly this: a 52-versus-55
@@ -271,7 +271,7 @@ test that fires it; none is aspirational.</p>
 <div class="inv"><b>T1 — Only new violations block.</b> The diff compares finding
 multisets before and after the edit. A ten-year-old codebase with thousands of
 findings stays workable; finding <i>N+1</i> is impossible. Enforced in
-<code>engine/diff.py</code>; proven by e2e cases 03/04.</div>
+<code>engine/diff.ts</code>; proven by e2e cases 03/04.</div>
 <div class="inv"><b>T2 — Everything is an error.</b> There is no warning tier.
 Agents ignore warnings; humans do too, honestly. A finding either blocks, is
 autofixed, or the rule shouldn't exist.</div>
@@ -292,7 +292,7 @@ it blocks. The gate never silently fixes alongside a violation it is refusing.</
 the incoming <code>new_string</code> is rewritten. Surrounding old code is never
 silently modernized.</div>
 <div class="inv"><b>T9 — One canonical number.</b> Violation counts come from
-<code>audit.py</code>, which counts authored rules only. CI pins it.</div>
+<code>audit.ts</code>, which counts authored rules only. CI pins it.</div>
 <div class="inv"><b>T10 — The engine never parses rule YAML.</b> ast-grep owns rule
 semantics; the engine shuttles text. Rules stay portable to any future engine.</div>
 <div class="inv"><b>T11 — One brain, thin shims.</b> Exactly one gate implementation
@@ -408,20 +408,20 @@ practice for months.</p>
 <h3>B · CLI</h3>
 <table>
 <tr><td><code>init</code></td><td>Detect harnesses, pick packs (or <code>--packs all</code> / <code>-y</code>), vendor rules + engine into <code>.tenets/</code>, write config + lock, wire every present harness. Idempotent.</td></tr>
-<tr><td><code>doctor [--json]</code></td><td>python3, ast-grep, config structure, lock drift, per-harness wiring — each check with a remedy. Exit 1 on any failure.</td></tr>
+<tr><td><code>doctor [--json]</code></td><td>ast-grep, config structure, lock drift, per-harness wiring — each check with a remedy. Exit 1 on any failure.</td></tr>
 <tr><td><code>audit [--json]</code></td><td>The canonical number, via the vendored engine.</td></tr>
 <tr><td><code>add / remove &lt;pack&gt;</code></td><td>Vendor or unvendor one pack; config and lock updated.</td></tr>
 <tr><td><code>update</code></td><td>Re-sync from source; locally edited files are listed and left alone.</td></tr>
 </table>
 <h3>C · Repository map</h3>
 <pre class="diagram">
- packages/core/      the gate engine (stdlib Python): events/, projection, scan, diff, verdict, config, audit
+ packages/core/      the gate engine (zero-dependency TypeScript on Bun): events/, projection, scan, diff, verdict, config, audit
  packages/shims/     codex/ (apply_patch translator) · opencode/ (plugin)
  packages/cli/       the installer (TypeScript, zero runtime deps)
- packs/              4 packs · 19 rules · every rule with tests · every pack standalone
+ packs/              5 packs · 28 rules · every rule with tests · every pack standalone
  apps/golden/        the ideal — audits 0, and must stay there (CI-pinned)
  apps/broken/        the specimen — audits 52, exactly (CI-pinned)
- e2e/                payload replay: 13 cases through the real entrypoints
+ e2e/                payload replay: 15 cases through the real entrypoints
  wiki/               this book
 </pre>
 

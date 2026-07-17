@@ -1,0 +1,15 @@
+id: prefer-bun-test
+language: typescript
+severity: error
+message: >-
+  Import test primitives from "bun:test", not node:test/jest/vitest/mocha.
+  Bun's built-in runner is a drop-in for test/describe/expect — only the
+  import source changes.
+metadata:
+  tier: deny
+rule:
+  kind: import_statement
+  has:
+    field: source
+    kind: string
+    regex: ^["'](node:test|jest|@jest/.+|vitest(/.+)?|mocha)["']$

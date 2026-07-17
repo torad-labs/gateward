@@ -1,0 +1,60 @@
+id: no-fs-helper-packages
+snapshots:
+  const rimraf = require("rimraf");:
+    labels:
+    - source: require("rimraf")
+      style: primary
+      start: 15
+      end: 32
+    - source: require
+      style: secondary
+      start: 15
+      end: 22
+    - source: '"rimraf"'
+      style: secondary
+      start: 23
+      end: 31
+    - source: '"rimraf"'
+      style: secondary
+      start: 23
+      end: 31
+  import fg from "fast-glob";:
+    labels:
+    - source: import fg from "fast-glob";
+      style: primary
+      start: 0
+      end: 27
+    - source: '"fast-glob"'
+      style: secondary
+      start: 15
+      end: 26
+  import mkdirp from "mkdirp";:
+    labels:
+    - source: import mkdirp from "mkdirp";
+      style: primary
+      start: 0
+      end: 28
+    - source: '"mkdirp"'
+      style: secondary
+      start: 19
+      end: 27
+  import { glob } from "glob";:
+    labels:
+    - source: import { glob } from "glob";
+      style: primary
+      start: 0
+      end: 28
+    - source: '"glob"'
+      style: secondary
+      start: 21
+      end: 27
+  import { rimraf } from "rimraf";:
+    labels:
+    - source: import { rimraf } from "rimraf";
+      style: primary
+      start: 0
+      end: 32
+    - source: '"rimraf"'
+      style: secondary
+      start: 23
+      end: 31

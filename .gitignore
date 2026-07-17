@@ -1,7 +1,4 @@
 node_modules/
-dist/
-__pycache__/
-*.pyc
 .gradle/
 build/
 local.properties
@@ -12,3 +9,4 @@ local.properties
 
 # talk research downloads (transcripts, video metadata) — local only
 talk/research/
+coverage/

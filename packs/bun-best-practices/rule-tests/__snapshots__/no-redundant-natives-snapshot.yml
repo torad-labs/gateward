@@ -1,0 +1,42 @@
+id: no-redundant-natives
+snapshots:
+  import Database from "better-sqlite3";:
+    labels:
+    - source: import Database from "better-sqlite3";
+      style: primary
+      start: 0
+      end: 38
+    - source: '"better-sqlite3"'
+      style: secondary
+      start: 21
+      end: 37
+  import WebSocket from "ws";:
+    labels:
+    - source: import WebSocket from "ws";
+      style: primary
+      start: 0
+      end: 27
+    - source: '"ws"'
+      style: secondary
+      start: 22
+      end: 26
+  import argon2 from "argon2";:
+    labels:
+    - source: import argon2 from "argon2";
+      style: primary
+      start: 0
+      end: 28
+    - source: '"argon2"'
+      style: secondary
+      start: 19
+      end: 27
+  import bcrypt from "bcrypt";:
+    labels:
+    - source: import bcrypt from "bcrypt";
+      style: primary
+      start: 0
+      end: 28
+    - source: '"bcrypt"'
+      style: secondary
+      start: 19
+      end: 27
