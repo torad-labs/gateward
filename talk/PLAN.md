@@ -226,10 +226,17 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 ## Production checklist (rest of the 5 hours)
 
 - [ ] Deck skeleton: section headers + slide-by-slide beats (`talk/DECK.md`)
-- [ ] Code-build storyboards (the "demo on slides"): exact code states per frame for
-      the Part 2 build and the Part 3 stop-hook transcript (`talk/storyboards/`)
-- [ ] Harvest real material from this repo: a real pack rule, a real block message,
-      golden-app before/after (`packs/`, `apps/golden`, `demos/`)
+- [x] Code-build storyboards: S20 payoff done (`talk/storyboards/S20-payoff-transcript.md`)
+      from real captures. Still TODO: Part 2 rule-build frames (S15–S19) and the
+      Part 3 stop-hook transcript (S31) — blocked on the G17 decision-hook gap below.
+- [x] Harvest real material: `demos/remediation-loop/harvest.sh` drives a real agent
+      against the golden app (worktree-isolated) and captures three live gate blocks
+      (context-in-domain, event-bus, logic-in-composable) + the agent self-correcting.
+      Reproducible by anyone who checks out the repo.
+- [ ] GIT HYGIENE: commit 996b65f accidentally swept pre-staged Bun-migration file
+      moves into a talk commit (harmless, WIP intact). Going forward, stage talk/demo
+      files by explicit path only. Optional cleanup (needs Marcos + rewrites pushed
+      master): soft-reset, unstage packages/, re-commit talk-only.
 - [ ] Verify release readiness claims: install commands actually work as shown
 - [ ] Build the gated-vs-ungated mini-benchmark on the golden app (`e2e/` is the
       natural home) — feeds the numbers slide with honest small-N data
