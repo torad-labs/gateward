@@ -16,6 +16,7 @@ const steps: [string, () => Promise<unknown>][] = [
   ["bun test: packages/cli", () => Bun.$`bun test`.cwd(path.join(REPO, "packages", "cli"))],
   ["bun test: packages/core", () => Bun.$`bun test`.cwd(path.join(REPO, "packages", "core"))],
   ["bun test: codex shim", () => $`bun test packages/shims/codex/claude_compat.test.ts`],
+  ["bun test: copilot shim", () => $`bun test packages/shims/copilot/entry.test.ts`],
   ["opencode plugin smoke test", () => $`bun packages/shims/opencode/smoke-test.ts`],
   [
     "rule packs: ast-grep test",

@@ -8,13 +8,12 @@ import type { HarnessDetection } from "../types";
 import type { HarnessAdapter } from "./adapter";
 import { claudeAdapter } from "./claude";
 import { codexAdapter } from "./codex";
+import { copilotAdapter } from "./copilot";
 import { opencodeAdapter } from "./opencode";
 
-export type { HarnessAdapter, WireContext, WireReport } from "./adapter";
+export const HARNESSES: readonly HarnessAdapter[] = [claudeAdapter, codexAdapter, opencodeAdapter, copilotAdapter];
 
-export const HARNESSES: readonly HarnessAdapter[] = [claudeAdapter, codexAdapter, opencodeAdapter];
-
-export const WIRE_ORDER: readonly HarnessAdapter[] = [codexAdapter, opencodeAdapter, claudeAdapter];
+export const WIRE_ORDER: readonly HarnessAdapter[] = [codexAdapter, opencodeAdapter, copilotAdapter, claudeAdapter];
 
 export function detectHarnesses(projectRoot: string): HarnessDetection[] {
   return HARNESSES.map((adapter) => {
