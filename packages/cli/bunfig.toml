@@ -1,11 +1,12 @@
 # Test coverage for this package. Lives here, not at the repo root: bun
 # resolves bunfig.toml from the working directory, and CI runs `bun test
-# --coverage` from this directory. Thresholds are a floor just under the
-# measured baseline (86.5% lines / 82.8% functions at migration time) —
-# ratchet them up, never down.
+# --coverage` from this directory (table in the job log, lcov uploaded as an
+# artifact). Baseline at migration time: 82.8% lines / 86.5% functions.
+#
+# No coverageThreshold, deliberately: on Bun 1.3.14 the enforced number does
+# not track the reported totals (a lines floor of 0.49 fails while the
+# report says 82.8%, and floors at 0.10 pass — verified empirically), so a
+# gate here would fail contributors with a number the report contradicts.
+# Revisit when bun's threshold enforcement matches its own coverage report.
 [test]
 coverageReporter = ["text", "lcov"]
-
-[test.coverageThreshold]
-lines = 0.85
-functions = 0.8
