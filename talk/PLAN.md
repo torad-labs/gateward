@@ -226,9 +226,9 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
 ## Production checklist (rest of the 5 hours)
 
 - [ ] Deck skeleton: section headers + slide-by-slide beats (`talk/DECK.md`)
-- [x] Code-build storyboards: S20 payoff (`talk/storyboards/S20-payoff-transcript.md`)
-      and S31 stop-hook (`talk/storyboards/S31-stop-hook.md`) done from real/verified
-      output. Still TODO: Part 2 rule-build frames (S15–S19), S25 side-door.
+- [x] Code-build storyboards ALL DONE: S15–S19 gate build
+      (`talk/storyboards/S15-S19-gate-build.md`, verbatim repo code), S20 payoff,
+      S25 side-door (`S25-side-door.md`), S31 stop-hook — each from real output.
 - [x] G17 RESOLVED: decision-level hooks are real. `demos/steer-feature/` ships a Bun
       backlog CLI (declare-then-earn ledger, atomic writes, notes) + a Stop hook that
       blocks a premature stop, 7 passing tests. Replicates the fleet's Python

@@ -125,12 +125,18 @@ The suppression comment is itself a blocked pattern. Tool missing → edits deni
 
 **S25 [BUILD ×3] — The side-door story.** (announced "I" zone — war story)
 {move: I-testifies}
-"Our hooks enforce low-precision rules on training-engine code — FP4, FP8. One
-night, Sonnet, blocked at the gate, adapted: wrote the code — obfuscated — into a
-scratchpad file with Python… then wrote a second script to *move it* into the
-codebase. Smuggling, with logistics."
-Frame 3: the counter-rule. "You can't predict everything. You can always evolve
-the gate. This one was one YAML file away."
+Storyboard: `talk/storyboards/S25-side-door.md`; real proof: `demos/side-door/`.
+War story: hooks enforce FP4/FP8 rules on training-engine code; Sonnet, blocked,
+wrote obfuscated code to a scratchpad then a mover script to smuggle it in.
+Then prove the shape on the golden app — `bun demos/side-door/prove.ts`, three
+acts: Write → BLOCKED · same content via `mv` → the write gate is BLIND · Bash
+counter-guard on → the identical `mv` BLOCKED. Deterministic, safe on stage.
+The point: "I didn't predict `mv`, or the scratchpad. When the agent finds a
+surface you didn't gate, you attach the gate to that surface — Act 3 was one hook
+away, reusing the same 'gated file' definition as the write gate. A gate isn't a
+wall you build once. It's code you evolve."
+- (Skeptics love watching AI fail — a demo that admits its blind spot on stage,
+  then closes it, is the one they believe.)
 
 **S26 — Design decision 3: everything is an error.**
 "We had exactly one warning-level message. We removed it. Agents ignore warnings.
@@ -221,10 +227,13 @@ agent just joined the queue."
   export one-frame-per-build PDF, flip, fix, repeat.
 - All code slides authored in `apps/golden` in the IDE first, pasted with real
   highlighting, then mutated per frame.
-- S20 storyboard done (real captures). S25 (side-door) still to storyboard.
+- Storyboards done: S15–S19 (`talk/storyboards/S15-S19-gate-build.md`, verbatim
+  repo code), S20 payoff (real captures), S25 side-door (`S25-side-door.md`, real
+  `demos/side-door/` proof), S31 stop-hook (real captured block).
 - G17 RESOLVED: the decision-level hook is built, tested, and real in
-  `demos/steer-feature/` (Bun backlog CLI + Stop hook, 7 passing tests). S31/S32
-  storyboarded from verified output. Graduates to `packages/core` post-migration.
+  `demos/steer-feature/` (Bun backlog CLI + Stop hook). Graduates to `packages/core`.
+- S25 side-door: the write gate's Bash blind spot is real and now has a tested
+  counter-guard (`demos/side-door/bash-guard.ts`); `prove.ts` runs the 3 acts.
 - S27 table: blocked on the gated-vs-ungated mini-benchmark (e2e/).
 - Q&A pocket material: live-failure-to-material move — if anything breaks on
   stage, it becomes an exhibit.
