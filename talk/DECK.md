@@ -156,13 +156,17 @@ the 300-IQ intern. The gate is the staff engineer who's seen things.")
 "So far the gate watches what the agent writes. It can also watch what the agent
 *decides*."
 
-**S31 [BUILD ×3] — The stop hook.** Transcript: agent declares done early → hook:
-"you decided to stop — did you verify the acceptance criteria?" → agent goes back
-to work. (storyboard 2 source)
+**S31 [BUILD ×4] — The stop hook.** (real, tested — `demos/steer-feature/`;
+storyboard: `talk/storyboards/S31-stop-hook.md`)
+Backlog is the memory (2 items) → agent does the easy half, declares done → Stop
+hook reads the ledger, blocks the stop, names the open item → agent goes back to
+work. Verified block output on the slide, not a mockup.
 
-**S32 — The backlog nudge.** A script reads the agent's own backlog; unfinished
-items → nudge to continue. "'Don't stop until you're fully done' as a mechanical
-check, not a hopeful prompt line."
+**S32 — Why this shape.** Declare-then-earn: the tracker is an *input* you can't lie
+to. Substrate not instruction: the nudge rides the agent's own stop (a prompt line
+decays at compaction; a hook fires every turn, every model). Loop-safe via
+`stop_hook_active`. "'Don't stop until you're done' — a mechanical check, not a
+hopeful prompt line. One discipline, two checkpoints: the file, and the session."
 
 **S33 — Portability.** Four harnesses, four slightly different hook protocols, one
 rule set. Architecture slide: engine + packs + thin shims. "Write your tenets once."
@@ -217,11 +221,10 @@ agent just joined the queue."
   export one-frame-per-build PDF, flip, fix, repeat.
 - All code slides authored in `apps/golden` in the IDE first, pasted with real
   highlighting, then mutated per frame.
-- S20/S25/S31 transcripts: harvest real material (storyboards to be built next).
-- GATE BLOCK (G17, truth-coupling) to clear before S31/S32 ship: a scan of
-  `packages/` found no stop-hook / backlog-nudge implementation. Either it lives
-  elsewhere (check demos/, e2e/, engine config) or it must be built — the abstract
-  promises decision-level hooks, so this is release-blocking either way.
+- S20 storyboard done (real captures). S25 (side-door) still to storyboard.
+- G17 RESOLVED: the decision-level hook is built, tested, and real in
+  `demos/steer-feature/` (Bun backlog CLI + Stop hook, 7 passing tests). S31/S32
+  storyboarded from verified output. Graduates to `packages/core` post-migration.
 - S27 table: blocked on the gated-vs-ungated mini-benchmark (e2e/).
 - Q&A pocket material: live-failure-to-material move — if anything breaks on
   stage, it becomes an exhibit.

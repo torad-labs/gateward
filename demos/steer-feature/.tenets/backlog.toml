@@ -1,0 +1,20 @@
+# Feature backlog. This CLI is the only writer.
+# Open items (todo|in_flight) block a stop — you cannot declare done with work left.
+# Notes are dated lines carrying decisions + resume pointers: an agent killed
+# mid-task is resumable from this file alone.
+
+[[items]]
+id = "F1"
+title = "Add ToggleFavoriteUseCase and wire it into the ViewModel"
+status = "todo"
+files = ["FavoritesViewModel.kt"]
+verify = "bun test"
+# 2026-07-17 created — the visible, easy slice; the agent will do this and try to stop
+
+[[items]]
+id = "F2"
+title = "Add the unit test that proves toggling twice is a no-op"
+status = "todo"
+files = ["FavoritesViewModelTest.kt"]
+verify = "bun test passes with the new case"
+# 2026-07-17 created — the boring slice agents skip; the stop hook makes it non-optional

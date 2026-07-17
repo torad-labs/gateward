@@ -8,7 +8,7 @@
 # deleted on exit, including on interrupt. Anyone who checks out the repo can
 # reproduce every slide transcript with one command.
 #
-# Requirements: tmux, claude (logged in), ast-grep, python3, git.
+# Requirements: tmux, claude (logged in), ast-grep, bun, git.
 # Usage:
 #   demos/remediation-loop/harvest.sh                 # all scenarios
 #   demos/remediation-loop/harvest.sh no-event-bus    # one scenario
@@ -39,7 +39,7 @@ PROMPTS=(
 )
 
 # --------------------------------------------------------------- preflight ---
-for tool in tmux claude ast-grep python3 git; do
+for tool in tmux claude ast-grep bun git; do
   command -v "$tool" >/dev/null || { echo "missing required tool: $tool" >&2; exit 1; }
 done
 mkdir -p "$OUT"
@@ -109,7 +109,7 @@ run_scenario() {
   latest="$([ -n "$proj" ] && ls -t "$proj"/*.jsonl 2>/dev/null | head -1 || true)"
   if [ -n "$latest" ]; then
     cp "$latest" "$OUT/$name.session.jsonl"
-    python3 "$REPO/demos/remediation-loop/extract_blocks.py" \
+    bun "$REPO/demos/remediation-loop/extract_blocks.ts" \
       "$OUT/$name.session.jsonl" "$OUT/$name.blocks.txt"
   else
     echo "  warning: no session transcript under $proj"
