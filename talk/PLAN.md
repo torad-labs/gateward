@@ -254,6 +254,9 @@ Two moves: widen from *files* to *decisions*, then from *one harness* to *all of
       counts, ⛔/✓ panel) and plain for agents/pipes; hook JSON contract untouched.
       Rehearsal note: approve the macOS "control Terminal" prompt BEFORE stage.
 - [ ] Verify release readiness claims: install commands actually work as shown
+- [ ] Ship a pre-commit recipe (or document one) before the talk — the "one rule,
+      four places" slide references pre-commit; repo currently has no integration
+      (deck wording softened to "any pre-commit runner" until this lands)
 - [ ] Build the gated-vs-ungated mini-benchmark on the golden app (`e2e/` is the
       natural home) — feeds the numbers slide with honest small-N data
 - [ ] Reproduce the side-door sequence for slides (scratchpad smuggle + counter-rule)
