@@ -33,10 +33,22 @@ async function freshRoot(): Promise<string> {
   return root;
 }
 
-/** A minimal, valid project config with no packs enabled — enough to drive
- * scan()/applyFix() through exec() without needing real rule content, since
- * these tests fake the ast-grep binary itself. */
+/** A minimal, valid project config with ONE enabled pack holding one rule —
+ * enough that `scan()`/`applyFix()` reach `exec()`. (An empty enabled set is
+ * a legitimate early "nothing to check" allow that never invokes ast-grep, so
+ * these timeout tests must enable a real rule to drive the scanner path.) The
+ * rule's content is irrelevant here: these tests fake the ast-grep binary
+ * itself, which ignores the rules and just sleeps. */
 async function minimalConfig(root: string) {
+  const packs = path.join(root, "packs");
+  await Bun.write(
+    path.join(packs, "test-pack", "pack.yml"),
+    "id: test-pack\nlanguage: kotlin\ntitle: Test Pack\nrules:\n  - id: no-bang-bang\n",
+  );
+  await Bun.write(
+    path.join(packs, "test-pack", "rules", "no-bang-bang.yml"),
+    "id: no-bang-bang\nlanguage: kotlin\nseverity: error\nmessage: banned\nrule:\n  pattern: $A!!\n",
+  );
   const project = path.join(root, "project");
   await Bun.write(
     path.join(project, ".tenets", "config.toml"),
@@ -45,8 +57,8 @@ languages = ["kotlin"]
 default_tier = "deny"
 
 [packs]
-packs_dir = "${path.join(root, "packs")}"
-enabled = []
+packs_dir = "${packs}"
+enabled = ["test-pack"]
 `,
   );
   const config = await find(project);
@@ -107,6 +119,41 @@ test("exec() throws AstGrepFailed on a real timeout-kill, not a silent empty res
   });
 });
 
+test("scan() throws AstGrepFailed on a nonzero exit with empty stdout (broken/invalid rules)", async () => {
+  // Distinct from a timeout: ast-grep exits nonzero with NOTHING on stdout
+  // (its error goes to stderr) when the rules don't parse. That must fail
+  // closed, not read as "[]" → zero matches → allow.
+  const root = await freshRoot();
+  const brokenBinary = path.join(root, "broken-ast-grep.sh");
+  await Bun.write(brokenBinary, "#!/bin/sh\necho 'YAML parse error' >&2\nexit 2\n");
+  await Bun.$`chmod +x ${brokenBinary}`.quiet();
+  const { project, config } = await minimalConfig(root);
+  const filePath = path.join(project, "A.kt");
+  await withEnv({ PORTABLE_HOOKS_AST_GREP: brokenBinary }, async () => {
+    await expect(scan("val a = x!!\n", filePath, config)).rejects.toThrow(AstGrepFailed);
+  });
+});
+
+test("scan() returns [] (allow) when no rules are enabled, without invoking ast-grep", async () => {
+  // An empty enabled set is a legitimate "nothing to check" allow — and it
+  // must NOT call ast-grep (an empty --inline-rules would itself error). The
+  // fake binary here would throw if invoked; the test passing proves it isn't.
+  const root = await freshRoot();
+  const neverCalled = path.join(root, "must-not-run.sh");
+  await Bun.write(neverCalled, "#!/bin/sh\nexit 3\n");
+  await Bun.$`chmod +x ${neverCalled}`.quiet();
+  const project = path.join(root, "project");
+  await Bun.write(
+    path.join(project, ".tenets", "config.toml"),
+    `[core]\nlanguages = ["kotlin"]\ndefault_tier = "deny"\n\n[packs]\npacks_dir = "${path.join(root, "packs")}"\nenabled = []\n`,
+  );
+  const config = await find(project);
+  if (!config) throw new Error("config should resolve");
+  await withEnv({ PORTABLE_HOOKS_AST_GREP: neverCalled }, async () => {
+    expect(await scan("val a = x!!\n", path.join(project, "A.kt"), config)).toEqual([]);
+  });
+});
+
 test("scan() propagates AstGrepFailed on a timeout instead of returning zero matches", async () => {
   const root = await freshRoot();
   const slowBinary = await writeSlowFakeBinary(root);
@@ -128,10 +175,10 @@ test("applyFix() throws AstGrepFailed instead of returning unverified temp-file 
 });
 
 test("applyFix() still returns the rewritten file on a real, successful invocation", async () => {
-  // minimalConfig enables no packs, so there is nothing to fix — this
-  // confirms the happy path (no throw, real ast-grep run to completion)
-  // still round-trips content unchanged, as a control against the
-  // fake-slow-binary failure tests above.
+  // minimalConfig's one rule (no-bang-bang) has no `fix:`, so a real
+  // --update-all run completes and rewrites nothing — this confirms the happy
+  // path (no throw, real ast-grep run to completion) round-trips content
+  // unchanged, as a control against the fake-slow-binary failure tests above.
   const root = await freshRoot();
   const { project, config } = await minimalConfig(root);
   const filePath = path.join(project, "A.kt");

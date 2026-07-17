@@ -43,6 +43,17 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
   }
   if (!path) return allow();
 
+  // Same guard for the content fields: a present-but-non-string content /
+  // old_string / new_string is a malformed payload for a tool we enforce on.
+  // Projection would otherwise coerce it (e.g. write a number to disk) or the
+  // string ops downstream would throw — both fail open. Deny instead.
+  const malformedField = firstMalformedContentField(toolName, toolInput);
+  if (malformedField !== null) {
+    return deny(
+      `[portable-hooks] malformed tool_input: ${malformedField} must be a string. Refusing to allow unchecked edits.`,
+    );
+  }
+
   const config = await find(path);
   if (config === null) {
     return allow(); // no .tenets/: not installed here
@@ -76,7 +87,7 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
       return deny(denyReason(blocking));
     }
 
-    return await runAutofix(proj, toolInput, config);
+    return await runAutofix(proj, toolInput, config, current);
   } catch (error) {
     if (error instanceof AstGrepMissing) {
       // Config is present and gates this file, but the scanner is gone:
@@ -93,17 +104,57 @@ export async function evaluate(payload: PreToolUsePayload): Promise<Verdict | nu
   }
 }
 
-async function runAutofix(proj: Projection, toolInput: ToolInput, config: Config): Promise<Verdict> {
-  if (proj.toolName === WRITE) {
-    const fixed = await applyFix(proj.projected, proj.path, config);
-    return autofix({ content: fixed });
+/** The name of the first content field that is present but not a string, or
+ * null when every relevant field is a string (or absent). Write carries
+ * `content`; Edit carries `old_string`/`new_string`. */
+function firstMalformedContentField(toolName: string, toolInput: ToolInput): string | null {
+  const nonString = (value: unknown) => value !== undefined && typeof value !== "string";
+  if (toolName === WRITE && nonString(toolInput.content)) return "content";
+  if (toolName === EDIT) {
+    if (nonString(toolInput.old_string)) return "old_string";
+    if (nonString(toolInput.new_string)) return "new_string";
   }
-  // Edit: fix only the newly written text. The new finding lives in
-  // new_string, so fixing it in isolation leaves surrounding legacy code
-  // untouched.
-  const newString = toolInput.new_string ?? "";
-  const fixed = await applyFix(newString, proj.path, config);
-  return autofix({ new_string: fixed });
+  return null;
+}
+
+/**
+ * Applies the autofix rewrite and VERIFIES it actually removed the new
+ * violations before allowing. A rule marked autofix-tier but without a `fix:`
+ * rewrites nothing, so `applyFix` would return the still-violating content and
+ * we would "allow" a dirty edit — a warning tier / side door. So: re-project
+ * the tool call with the fixed field, re-scan the result, and if it still
+ * introduces new violations relative to `current`, deny instead. Only a fix
+ * that genuinely cleans the edit is allowed through.
+ */
+async function runAutofix(proj: Projection, toolInput: ToolInput, config: Config, current: Match[]): Promise<Verdict> {
+  const fixed =
+    proj.toolName === WRITE
+      ? await applyFix(proj.projected, proj.path, config)
+      : // Edit: fix only the newly written text. The new finding lives in
+        // new_string, so fixing it in isolation leaves surrounding legacy
+        // code untouched.
+        await applyFix(toolInput.new_string ?? "", proj.path, config);
+
+  const updatedInput = proj.toolName === WRITE ? { ...toolInput, content: fixed } : { ...toolInput, new_string: fixed };
+
+  // Verify the fix: re-project with the fixed field and re-scan the result.
+  const verifyProj = await project(proj.toolName, updatedInput);
+  if (verifyProj !== null) {
+    const rescanned = await scan(verifyProj.projected, verifyProj.path, config);
+    if (newViolations(current, rescanned).length > 0) {
+      return deny(autofixFailedReason());
+    }
+  }
+
+  return autofix(proj.toolName === WRITE ? { content: fixed } : { new_string: fixed });
+}
+
+function autofixFailedReason(): string {
+  return (
+    "[portable-hooks] an autofix-tier rule matched but its rewrite did not remove the violation " +
+    "(the rule likely has no `fix:`). Refusing to allow the edit unchanged — fix it by hand, or give " +
+    "the rule a real fix."
+  );
 }
 
 function denyReason(matches: Match[]): string {

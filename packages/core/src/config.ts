@@ -98,9 +98,12 @@ export class Config {
     return extensions;
   }
 
-  /** True when this project gates the given file's type. */
+  /** True when this project gates the given file's type. Extension match is
+   * case-insensitive: `Foo.KT` and `Foo.kt` gate identically. Filesystems
+   * vary on case sensitivity, and `LANGUAGE_EXTENSIONS` lists lowercase, so a
+   * case-sensitive compare would let `.KT` slip past the gate unchecked. */
   gates(filePath: string): boolean {
-    return this.gatedExtensions.has(path.extname(filePath));
+    return this.gatedExtensions.has(path.extname(filePath).toLowerCase());
   }
 
   /** Absolute paths of every rule file in the enabled packs, sorted. */

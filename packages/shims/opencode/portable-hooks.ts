@@ -65,6 +65,14 @@ function resolveEnginePretooluse(startDir: string): string | null {
 const WRITE_TOOLS = new Set(["write"]);
 const EDIT_TOOLS = new Set(["edit"]);
 
+/** True when the tool is one this gate is responsible for (a write or edit),
+ * regardless of whether its arguments map cleanly. Used to tell "not our
+ * tool — safe to allow" apart from "our tool, but we couldn't read its args
+ * — must fail closed". */
+function isWriteOrEditTool(toolName: unknown): boolean {
+  return typeof toolName === "string" && (WRITE_TOOLS.has(toolName) || EDIT_TOOLS.has(toolName));
+}
+
 interface ToolArgs {
   filePath?: unknown;
   content?: unknown;
@@ -201,10 +209,24 @@ function PortableHooksPlugin(ctx?: PluginContext) {
   const context = ctx ?? {};
   return {
     "tool.execute.before": (input: ToolExecuteInput, output: ToolExecuteOutput) => {
-      const mapped = claudeToolInputFor(input?.tool, output?.args ?? {});
-      if (mapped === null) return; // not a write/edit call this gate covers
-
       const cwd = context.directory || process.cwd();
+      const mapped = claudeToolInputFor(input?.tool, output?.args ?? {});
+      if (mapped === null) {
+        // A write/edit tool whose args we couldn't map is NOT a safe allow
+        // when the project gates: our OpenCode arg-name assumptions
+        // (filePath + content/oldString) are unconfirmed against every
+        // version, and silently allowing an edit we failed to read would be
+        // fail-open. A tool that isn't a write/edit at all is genuinely not
+        // ours — allow.
+        if (isWriteOrEditTool(input?.tool)) {
+          failClosedOrAllow(
+            cwd,
+            "an OpenCode write/edit arrived with arguments this gate could not map (expected filePath plus " +
+              "content or oldString). The gate cannot judge it, and refusing beats waving an unread edit through.",
+          );
+        }
+        return;
+      }
       const engine = resolveEnginePretooluse(cwd);
       if (engine === null) {
         failClosedOrAllow(
