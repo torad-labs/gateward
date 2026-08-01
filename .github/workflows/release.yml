@@ -17,6 +17,13 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          # Caching is DISABLED in the release path on purpose. This workflow is
+          # triggered by a tag push and produces published artifacts, so a cache
+          # entry poisoned from a lower-trust context (a PR run writing the same
+          # key) would be restored straight into a release build. zizmor flags
+          # this as cache-poisoning at HIGH severity. A release runs once per
+          # tag; a cold install costs seconds and removes the vector entirely.
+          no-cache: true
       - name: Install ast-grep
         run: |
           bun add -g @ast-grep/cli
