@@ -1,0 +1,15 @@
+# Path -> label map for pr-labeler.yml.
+apps:
+  - changed-files: [{ any-glob-to-any-file: 'apps/**' }]
+packages:
+  - changed-files: [{ any-glob-to-any-file: 'packages/**' }]
+packs:
+  - changed-files: [{ any-glob-to-any-file: 'packs/**' }]
+docs:
+  - changed-files: [{ any-glob-to-any-file: ['**/*.md', 'wiki/**', 'demos/**'] }]
+ci:
+  - changed-files: [{ any-glob-to-any-file: '.github/**' }]
+e2e:
+  - changed-files: [{ any-glob-to-any-file: 'e2e/**' }]
+tenets:
+  - changed-files: [{ any-glob-to-any-file: '.tenets/**' }]
