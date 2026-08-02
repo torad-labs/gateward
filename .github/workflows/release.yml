@@ -17,6 +17,9 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          # Release publishes artifacts; caching the toolchain is a
+          # cache-poisoning vector (zizmor high). Install fresh each release.
+          no-cache: true
       - name: Install ast-grep
         run: |
           bun add -g @ast-grep/cli
