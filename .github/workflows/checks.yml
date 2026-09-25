@@ -1,7 +1,10 @@
 name: checks
 
 on:
+  # Main only: a PR branch's commits run once, on pull_request. Push to every branch ran each
+  # of them twice (refs/heads and refs/pull are separate concurrency groups), billed twice.
   push:
+    branches: [main]
   pull_request:
 
 permissions:
